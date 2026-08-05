@@ -1,76 +1,244 @@
 @import "tailwindcss";
 
-/* ── Цветовая система Lumina перенесена прямо в Tailwind v4 ── */
-@theme {
-  --color-milk: #F5F0E8;
-  --color-milk-50: #FDFBF7;
-  --color-milk-100: #FAF7F0;
-  --color-milk-200: #F5F0E8;
-  --color-milk-300: #EDE5D4;
-  --color-milk-400: #E0D5BE;
+/*
+  Bepair / Впаре — design tokens.
+  Semantic layer flips with theme; @theme maps it into Tailwind utilities.
+  Mood spectrum is the one saturated family in the system and is reserved for mood:
+  no other affordance may use green or red, or it reads as a mood value.
+*/
 
-  --color-bark: #2C1F14;
-  --color-bark-50: #7A6355;
-  --color-bark-100: #5C4A3A;
-  --color-bark-200: #3D2E20;
-  --color-bark-300: #2C1F14;
-  --color-bark-400: #1A1008;
+:root {
+  color-scheme: light;
 
-  --color-terra: #B85C3A;
-  --color-terra-50: #FDF0EB;
-  --color-terra-100: #F5D4C5;
-  --color-terra-200: #E8A888;
-  --color-terra-300: #D4744E;
-  --color-terra-400: #B85C3A;
+  --c-canvas: #f5f5fa;
+  --c-surface: #ffffff;
+  --c-surface-sunken: #eeeef6;
+  --c-rail: #ffffff;
+  --c-border: #e2e2ee;
+  --c-border-strong: #cfcfe0;
+
+  --c-ink: #1a1a28;
+  --c-ink-soft: #5b5b74;
+  --c-ink-faint: #65657b;
+
+  --c-accent: #5b54e8;
+  --c-accent-hover: #4a43d6;
+  --c-accent-ink: #ffffff;
+  --c-accent-soft: #edecfd;
+  --c-accent-soft-ink: #3f38c4;
+
+  --c-partner: #d98324;
+  --c-partner-soft: #fdf1e2;
+
+  --c-danger: #c0392f;
+  --c-danger-soft: #fdeceb;
+
+  --c-veil: rgba(245, 245, 250, 0.72);
+  --c-scrim: rgba(16, 16, 26, 0.44);
+
+  --sh-card: 0 1px 2px rgba(22, 22, 44, 0.05), 0 4px 14px rgba(22, 22, 44, 0.06);
+  --sh-lift: 0 2px 6px rgba(22, 22, 44, 0.07), 0 14px 34px rgba(22, 22, 44, 0.11);
+  --sh-rail: 0 1px 3px rgba(22, 22, 44, 0.06), 0 8px 24px rgba(22, 22, 44, 0.07);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-canvas: #0f0f17;
+  --c-surface: #1a1a25;
+  --c-surface-sunken: #14141d;
+  --c-rail: #16161f;
+  --c-border: #2b2b3b;
+  --c-border-strong: #3d3d52;
+
+  --c-ink: #f0f0f6;
+  --c-ink-soft: #b3b3ca;
+  --c-ink-faint: #9595ae;
+
+  --c-accent: #8b85ff;
+  --c-accent-hover: #9d98ff;
+  --c-accent-ink: #16162a;
+  --c-accent-soft: #262441;
+  --c-accent-soft-ink: #c3bfff;
+
+  --c-partner: #e8a552;
+  --c-partner-soft: #2e2417;
+
+  --c-danger: #ef6b60;
+  --c-danger-soft: #33201e;
+
+  --c-veil: rgba(15, 15, 23, 0.72);
+  --c-scrim: rgba(0, 0, 0, 0.62);
+
+  --sh-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.34);
+  --sh-lift: 0 2px 6px rgba(0, 0, 0, 0.36), 0 14px 34px rgba(0, 0, 0, 0.46);
+  --sh-rail: 0 1px 3px rgba(0, 0, 0, 0.34), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --c-canvas: #0f0f17;
+    --c-surface: #1a1a25;
+    --c-surface-sunken: #14141d;
+    --c-rail: #16161f;
+    --c-border: #2b2b3b;
+    --c-border-strong: #3d3d52;
+
+    --c-ink: #f0f0f6;
+    --c-ink-soft: #b3b3ca;
+    --c-ink-faint: #9595ae;
+
+    --c-accent: #8b85ff;
+    --c-accent-hover: #9d98ff;
+    --c-accent-ink: #16162a;
+    --c-accent-soft: #262441;
+    --c-accent-soft-ink: #c3bfff;
+
+    --c-partner: #e8a552;
+    --c-partner-soft: #2e2417;
+
+    --c-danger: #ef6b60;
+    --c-danger-soft: #33201e;
+
+    --c-veil: rgba(15, 15, 23, 0.72);
+    --c-scrim: rgba(0, 0, 0, 0.62);
+
+    --sh-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.34);
+    --sh-lift: 0 2px 6px rgba(0, 0, 0, 0.36), 0 14px 34px rgba(0, 0, 0, 0.46);
+    --sh-rail: 0 1px 3px rgba(0, 0, 0, 0.34), 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/*
+  `inline` is required: without it Tailwind resolves these at build time and the
+  utilities stop tracking the runtime theme variables, so the light theme never
+  reaches the components.
+*/
+@theme inline {
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-sunken: var(--c-surface-sunken);
+  --color-rail: var(--c-rail);
+  --color-line: var(--c-border);
+  --color-line-strong: var(--c-border-strong);
+
+  --color-ink: var(--c-ink);
+  --color-ink-soft: var(--c-ink-soft);
+  --color-ink-faint: var(--c-ink-faint);
+
+  --color-accent: var(--c-accent);
+  --color-accent-hover: var(--c-accent-hover);
+  --color-accent-ink: var(--c-accent-ink);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-accent-soft-ink: var(--c-accent-soft-ink);
+
+  --color-partner: var(--c-partner);
+  --color-partner-soft: var(--c-partner-soft);
+
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+
+  /* Mood spectrum — reserved for mood, never for status or decoration. */
+  --color-mood-1: #3fa46b;
+  --color-mood-2: #7cb85a;
+  --color-mood-3: #e6b02e;
+  --color-mood-4: #e4823c;
+  --color-mood-5: #d2504b;
+
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+
+  --shadow-card: var(--sh-card);
+  --shadow-lift: var(--sh-lift);
+  --shadow-rail: var(--sh-rail);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
   html {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-milk text-bark selection:bg-terra/20;
+    font-family: var(--font-onest), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    overflow-x: hidden; 
+    min-height: 100dvh;
+    background-color: var(--c-canvas);
+    color: var(--c-ink);
+    overscroll-behavior-y: none;
   }
 
-  table {
-    border-collapse: collapse;
+  ::selection {
+    background-color: var(--c-accent-soft);
+    color: var(--c-accent-soft-ink);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-terra);
+    outline: 2px solid var(--c-accent);
     outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
   }
 }
 
-@layer components {
-  .swiss-grid-cell {
-    @apply border-bark/10 p-4 transition-colors duration-150;
+@layer utilities {
+  /* Every tap target on a touch surface clears 44px; the incumbent app failed on this. */
+  .tap {
+    min-block-size: 2.75rem;
+    min-inline-size: 2.75rem;
   }
 
-  .btn-swiss {
-    @apply px-6 py-2 border border-bark uppercase tracking-widest text-xs 
-           hover:bg-bark hover:text-milk transition-all duration-150;
+  .mood-track {
+    background: linear-gradient(
+      to right,
+      var(--color-mood-1) 0%,
+      var(--color-mood-2) 25%,
+      var(--color-mood-3) 50%,
+      var(--color-mood-4) 75%,
+      var(--color-mood-5) 100%
+    );
   }
 
-  .input-swiss {
-    @apply bg-transparent border-b border-bark/30 py-2 focus:border-bark 
-           outline-none transition-all placeholder:text-bark/30;
+  .safe-b {
+    padding-block-end: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-milk;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-bark/10 hover:bg-bark/20;
+  background: var(--c-border-strong);
+  border-radius: 999px;
+  border: 3px solid var(--c-canvas);
 }

@@ -1,51 +1,57 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { Header } from "@/components/Header";
+import type { Metadata, Viewport } from 'next';
+import { Onest } from 'next/font/google';
+import './globals.css';
 import { AuthProvider } from '@/hooks/useSpaceAuth';
+import { ThemeScript } from '@/components/ThemeScript';
 
-const inter = Inter({ 
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-inter",
+const onest = Onest({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-onest',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "Lumina — Наше пространство",
-  description: "Приватный цифровой дом для двоих",
+  title: 'Впаре — общее пространство',
+  description: 'Общее ежедневное пространство для двоих',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f5f5fa' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f0f17' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
+
+const DIRECTION_CONTRACT = `<!--
+THESIS: A shared daily space whose reciprocity is structural — your partner's day stays
+sealed until you record your own. Refuses the mood-tracker arrangement: no score, no
+streak, no chart on the surface the couple actually lives in.
+OWN-WORLD: Conventional wellness-app language, chosen by the user over a rolled
+alternative — rounded cards on a cool near-white ground, Onest throughout, indigo accent
+for every action and selection. The green→red mood spectrum is the only saturated family
+and is reserved for mood alone, so no control may wear it.
+STORY: I mark how today went by colour, say why in a note, and only then does what my
+partner left me open.
+FIRST VIEWPORT: Today's date, the mood scale at full width with an unset magnifier dot,
+the note beneath it, and the partner's card sealed alongside — nav rail left on desktop,
+tab bar bottom on mobile.
+FORM: Category standard (canon), taken by the user over assigned candidate 6 of 7; seed
+key 07c6cf5a.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+-->`;
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className="selection:bg-terra/20" suppressHydrationWarning>
-      <body
-        suppressHydrationWarning
-        className={`${inter.variable} font-sans bg-milk text-bark antialiased min-h-screen flex flex-col`}
-      >
-        {/* Обязательно возвращаем AuthProvider, чтобы Header не ломался */}
-        <AuthProvider>
-          <div className="flex-grow flex flex-col border-bark/10 border-x mx-auto w-full max-w-screen-2xl min-h-screen">
-            
-            <Header />
-
-            <main className="flex-grow flex flex-col relative">
-              {children}
-            </main>
-
-            <footer className="border-t border-bark/10 py-4 px-8 flex justify-between items-end">
-              <div className="text-[9px] uppercase tracking-widest opacity-30">
-                © 2024 — {new Date().getFullYear()} / Сделано с любовью
-              </div>
-              <div className="flex gap-2">
-                <div className="w-1.5 h-1.5 bg-terra/40" />
-                <div className="w-1.5 h-1.5 bg-bark/20" />
-              </div>
-            </footer>
-          </div>
-        </AuthProvider>
+    <html lang="ru" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
+      <body className={`${onest.variable} antialiased`}>
+        <div hidden dangerouslySetInnerHTML={{ __html: DIRECTION_CONTRACT }} />
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

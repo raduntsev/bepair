@@ -87,12 +87,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (fetchError) throw fetchError;
 
+      /*
+        The invite code must be re-read on every load. It was previously set
+        only by createSpace, so after any reload the UI fell back to showing the
+        raw space_id — which joinSpace looks up by invite_code and never finds.
+      */
+      let inviteCode: string | null = null;
+      if (profile?.space_id) {
+        const { data: space } = await supabase
+          .from('spaces')
+          .select('invite_code')
+          .eq('id', profile.space_id)
+          .maybeSingle();
+        inviteCode = space?.invite_code ?? null;
+      }
+
       setState(s => ({
         ...s,
         user:      session.user,
         session,
         profile:   profile || null,
         spaceId:   profile?.space_id || null,
+        inviteCode,
         isLoading: false,
         error:     null,
       }));
