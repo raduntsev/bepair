@@ -39,7 +39,9 @@ Confirmed functional scope for this pass (Phase 1 — core daily flow), in the u
 7. **Right panel "you & partner"** — organized by whose day it is; the partner's block stays visually locked until the viewer marks their own day — this should read as protection, not as a broken/empty state.
 8. **Navigation** — a persistent side "remote control" rail (not a top icon row) covering: day, calendar, letters, tasks, store, settings. Must adapt sensibly to mobile (a bottom bar, per the Airbnb reference, is an acceptable mobile pattern — final call is a design decision in new-work, not fixed here).
 
-Explicitly deferred to a later phase (do not build now, but do not architecturally block them either): Google OAuth + post-signup optional setup onboarding flow, notification system, partner profile screen, personal vs. paired settings screen, neural-network data export, menstrual/lunar cycle tracking, days-together counter + "combo" mechanic, phone home-screen widgets, relationship-questions onboarding, important-dates calendar layer, "near" vs. "long-distance" relationship mode.
+Built in phase 2 (October 2026): Google OAuth + onboarding (name, «он/она», eight relationship questions), notification system (in-app feed + web push), couple profile, personal vs. paired settings (paired change only by agreement of both), data export (JSON of your own data), cycle tracking (private, neutral ink), days-together counter + «комбо», «near» vs. «long-distance» mode (partner's local time), «Летопись» and «Весточка».
+
+Still deferred (do not block architecturally): phone home-screen widgets (need native apps), important-dates calendar layer, neural-network analysis of exported data.
 
 Stack is not a hard constraint: the current stack (Next.js 16, Tailwind 4, Supabase, framer-motion, recharts, lucide-react) is the starting point, and new dependencies may be added if a feature genuinely needs one (e.g. a calendar/date library, a rich text editor primitive) — do not restrict candidate implementation approaches to "what's already installed."
 

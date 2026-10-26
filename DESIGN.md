@@ -60,11 +60,29 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
 - **Rounded cards on a cool near-white ground.** `rounded-2xl`, hairline
   `border-line`, `shadow-card`. Shadows always carry offset plus blur.
 - **Navigation is a persistent rail** on `md+` and a **bottom tab bar** below it.
-  The tab bar carries *every* destination including Settings — it holds the
-  invite code and sign-out, which have no other route on a phone.
+  Five tabs on a phone — День · Календарь · Летопись · Задачи · Ещё — because
+  nine destinations at 390px leave 43px each. «Ещё» lists Письма, Услуги,
+  Уведомления, Профиль пары, Настройки, so settings (invite, sign-out) stay
+  reachable. The desktop rail has room for everything and shows it all, plus a
+  primary «Весточка» action. The ping composer hides the tab bar: it is a
+  focused task.
 - **44px is the floor for anything tappable.** Use the `.tap` utility. The
   incumbent app's failure was small controls; this is the rule that answers it.
   Pages clear the tab bar with `pb-28` plus `safe-b` for the home indicator.
+
+## The pair mark
+
+The one graphic device, taken from the calendar: an indigo **ring** is your
+day, an amber **disc** is your partner's. It is the app icon, the wordmark and
+the empty-state illustration (apart, overlapping, or a dotted promise). It never
+wears green or red.
+
+## Motion
+
+One authored moment: when your own mark unseals the partner's card in front of
+you, the card opens from the lock outward and their mood disc springs in. An
+already-open day plays nothing. Onboarding questions slide; everything else is
+plain state change. `prefers-reduced-motion` turns all of it off.
 
 ## The mood scale
 
@@ -123,15 +141,29 @@ Task states are **ждёт выполнения → выполнено, парт
 The middle state means the partner has not noticed yet — never "on review", or
 the product becomes an acceptance process.
 
+## Language
+
+Russian verbs agree with gender, so the profile carries an optional «он/она»
+(`src/lib/words.ts`): «Аня отметила», «Алекс отметил», and the neutral
+«отметил(а)» when unset. Names are declined for «от Ани» with a light rule set;
+anything unrecognised stays as written. Prefer constructions that need no case
+at all — a card titled «Аня» rather than «День Ани».
+
+## Closed from the previous finish review
+
+Empty states use the pair mark instead of glyphs in dashed boxes; the partner
+card unseals with motion; the chosen mood tints the mood card; the note and
+letters keep a 68ch measure (`.measure`); `ink-soft` is now `#4b4b63` so the
+ink ramp reads as three steps; the letter composer separates its options with a
+rule instead of a nested filled box; scheduled letters are flipped to delivered
+by `bp_deliver_due()` (pg_cron, with the app as fallback).
+
+`--c-partner-ink` was added: amber as text failed contrast (2.9:1 on white).
+Amber stays for shapes and icons; text uses the ink.
+
 ## Known open items
 
-Carried from the finish review, not yet closed: no illustration anywhere (empty
-states are lucide glyphs in dashed boxes, the generic SaaS register the named
-quality bar refuses); framer-motion is a dependency but the build has no authored
-motion moment — notably the partner card unsealing, which is the thesis, happens
-as an instant swap; the chosen mood colour touches a 72px dot and never reaches
-the page; the day note textarea runs ~90ch on desktop, over the 65–75ch measure;
-light-theme `ink-soft` and `ink-faint` differ by only 1.15:1, so the three-step
-ink ramp renders as two; `letters/page.tsx` nests a filled container inside the
-composer card; and `status` never flips to `delivered`, so `isDelivered` is a
-client-side fiction until a scheduled job or trigger exists.
+Push copy is fact-only by design, which also hides harmless ping text from the
+lock screen — revisit if couples ask for it. Calendar mood colours stay
+indistinguishable for colour-blind users beyond the verbal label on the day
+itself.
