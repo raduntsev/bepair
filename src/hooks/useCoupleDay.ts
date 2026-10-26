@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import supabase from '@/lib/supabase';
+import { todayISO } from '@/lib/dates';
+import { flushPush } from '@/lib/push';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+
+export { todayISO };
+export type { Partner } from '@/hooks/useSpaceAuth';
 
 export interface DayEntry {
   user_id: string;
@@ -12,22 +17,9 @@ export interface DayEntry {
   updated_at: string;
 }
 
-export interface Partner {
-  id: string;
-  display_name: string;
-  avatar_url: string | null;
-}
-
-export function todayISO() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset();
-  return new Date(now.getTime() - offset * 60_000).toISOString().slice(0, 10);
-}
-
 export function useCoupleDay(date: string) {
-  const { user, spaceId } = useSpaceAuth();
+  const { user, spaceId, partner, settings } = useSpaceAuth();
 
-  const [partner, setPartner] = useState<Partner | null>(null);
   const [mine, setMine] = useState<DayEntry | null>(null);
   const [theirs, setTheirs] = useState<DayEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,47 +30,45 @@ export function useCoupleDay(date: string) {
       setIsLoading(false);
       return;
     }
-    setIsLoading(true);
 
-    const [partnerResult, entriesResult] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('id, display_name, avatar_url')
-        .eq('space_id', spaceId)
-        .neq('id', user.id)
-        .maybeSingle(),
-      supabase
-        .from('day_entries')
-        .select('user_id, entry_date, mood, note, updated_at')
-        .eq('space_id', spaceId)
-        .eq('entry_date', date),
-    ]);
+    /* RLS returns the partner's row only once yours exists — the gate lives in SQL. */
+    const { data, error: loadError } = await supabase
+      .from('day_entries')
+      .select('user_id, entry_date, mood, note, updated_at')
+      .eq('space_id', spaceId)
+      .eq('entry_date', date);
 
-    /*
-      A dropped partner error would render "you are here alone" to a paired user.
-      Keep the last known partner rather than inventing an empty space.
-    */
-    if (!partnerResult.error) setPartner(partnerResult.data ?? null);
-
-    const rows = (entriesResult.data ?? []) as DayEntry[];
-    setMine(rows.find((row) => row.user_id === user.id) ?? null);
-    setTheirs(rows.find((row) => row.user_id !== user.id) ?? null);
-    setError(
-      entriesResult.error || partnerResult.error
-        ? 'Не удалось загрузить день. Проверьте связь и обновите страницу.'
-        : null,
-    );
+    if (loadError) {
+      setError('Не удалось загрузить день. Проверьте связь и обновите страницу.');
+    } else {
+      const rows = (data ?? []) as DayEntry[];
+      setMine(rows.find((row) => row.user_id === user.id) ?? null);
+      setTheirs(rows.find((row) => row.user_id !== user.id) ?? null);
+      setError(null);
+    }
     setIsLoading(false);
   }, [user, spaceId, date]);
 
   useEffect(() => {
+    setIsLoading(true);
     load();
   }, [load]);
+
+  /* The partner marking their day while you look at yours. */
+  useEffect(() => {
+    if (!spaceId) return;
+    const channel = supabase
+      .channel(`day:${spaceId}:${date}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'day_entries', filter: `space_id=eq.${spaceId}` }, () => load())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [spaceId, date, load]);
 
   const save = useCallback(
     async (mood: number, note: string) => {
       if (!user || !spaceId) return false;
-
       const { error: saveError } = await supabase
         .from('day_entries')
         .upsert(
@@ -90,12 +80,14 @@ export function useCoupleDay(date: string) {
         setError('Не удалось сохранить день. Проверьте связь и попробуйте ещё раз.');
         return false;
       }
-
+      flushPush();
       await load();
       return true;
     },
     [user, spaceId, date, load],
   );
+
+  const revealFirst = settings?.reveal_first ?? true;
 
   return {
     partner,
@@ -105,8 +97,8 @@ export function useCoupleDay(date: string) {
     error,
     save,
     reload: load,
-    /* The partner's day only becomes readable once your own exists. */
-    isUnlocked: mine !== null,
+    /* With «сначала свой день» switched off by both, the partner's day is open anyway. */
+    isUnlocked: mine !== null || !revealFirst,
     isToday: date === todayISO(),
   };
 }

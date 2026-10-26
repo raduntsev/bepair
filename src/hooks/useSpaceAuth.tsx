@@ -1,288 +1,395 @@
-// src/hooks/useSpaceAuth.ts
-// Lumina — Authentication & Space Linking Logic
-// "Secret Link" invitation flow: no passwords, no friction.
-
 'use client';
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-} from 'react';
+/*
+  Bepair — session, profile, partner and the couple's paired settings.
+  One provider, because nearly every screen needs all four, and because the
+  partner and the paired settings change underneath you (they join, they agree).
+*/
+
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Session, User } from '@supabase/supabase-js';
 import supabase from '@/lib/supabase';
-import type { User, Session } from '@supabase/supabase-js';
+import { localTimezone } from '@/lib/dates';
+import type { Gender } from '@/lib/words';
 
-// ── Interfaces ────────────────────────────────────────────────────────────────
-
-interface Profile {
-  id:            string;
-  space_id:      string | null;
-  display_name:  string;
-  avatar_url:    string | null;
-  total_balance: number;
+export interface Profile {
+  id: string;
+  space_id: string | null;
+  display_name: string;
+  avatar_url: string | null;
+  timezone: string | null;
+  gender: 'm' | 'f' | null;
+  onboarded_at: string | null;
+  cycle_tracking: boolean;
+  notify_pings: boolean;
+  notify_day: boolean;
+  notify_tasks: boolean;
+  notify_letters: boolean;
+  notify_sound: boolean;
 }
 
-interface SpaceAuthState {
-  user:       User | null;
-  session:    Session | null;
-  profile:    Profile | null;
-  spaceId:    string | null;
+export interface Partner {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+  gender: Gender;
+  timezone: string | null;
+}
+
+export interface SpaceSettings {
+  space_id: string;
+  reveal_first: boolean;
+  chronicle_deletable: boolean;
+  long_distance: boolean;
+  count_streak: boolean;
+  together_since: string | null;
+  pending_key: string | null;
+  pending_value: boolean | null;
+  pending_by: string | null;
+}
+
+const PROFILE_COLUMNS =
+  'id, space_id, display_name, avatar_url, timezone, gender, onboarded_at, cycle_tracking, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound';
+
+export const INVITE_KEY = 'bepair-invite';
+
+interface State {
+  user: User | null;
+  session: Session | null;
+  profile: Profile | null;
+  partner: Partner | null;
+  settings: SpaceSettings | null;
   inviteCode: string | null;
-  isLoading:  boolean;
-  error:      string | null;
+  isLoading: boolean;
+  /* A load failure, worded for the person — never raw PostgREST text. */
+  error: string | null;
+  /* The database is older than the app: migration 0002 has not been applied. */
+  needsMigration: boolean;
 }
 
-interface SpaceAuthValue extends SpaceAuthState {
-  sendMagicLink:     (email: string) => Promise<boolean>;
-  createSpace:       (spaceName?: string) => Promise<any | null>;
-  joinSpace:         (inviteCode: string) => Promise<boolean>;
+interface Value extends State {
+  spaceId: string | null;
+  isAuthenticated: boolean;
+  hasSpace: boolean;
+  sendMagicLink: (email: string) => Promise<boolean>;
+  signInWithGoogle: () => Promise<void>;
+  createSpace: () => Promise<boolean>;
+  joinSpace: (code: string) => Promise<boolean>;
+  updateProfile: (patch: Partial<Omit<Profile, 'id' | 'space_id'>>) => Promise<boolean>;
   updateDisplayName: (name: string) => Promise<void>;
-  signOut:           () => Promise<void>;
-  getInviteUrl:      () => string | null;
-  isAuthenticated:   boolean;
-  hasSpace:          boolean;
+  refresh: () => Promise<void>;
+  refreshSettings: () => Promise<void>;
+  clearError: () => void;
+  signOut: () => Promise<void>;
+  getInviteUrl: () => string | null;
 }
 
-// ── Context ───────────────────────────────────────────────────────────────────
+const Context = createContext<Value | null>(null);
 
-const AuthContext = createContext<SpaceAuthValue | null>(null);
-
-// ── Provider ──────────────────────────────────────────────────────────────────
+const EMPTY: State = {
+  user: null,
+  session: null,
+  profile: null,
+  partner: null,
+  settings: null,
+  inviteCode: null,
+  isLoading: true,
+  error: null,
+  needsMigration: false,
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [state, setState] = useState<State>(EMPTY);
+  const sessionRef = useRef<Session | null>(null);
 
-  const [state, setState] = useState<SpaceAuthState>({
-    user:       null,
-    session:    null,
-    profile:    null,
-    spaceId:    null,
-    inviteCode: null,
-    isLoading:  true,
-    error:      null,
-  });
+  const loadSettings = useCallback(async () => {
+    const { data, error } = await supabase.rpc('bp_settings');
+    if (error) return null;
+    return (data as SpaceSettings | null) ?? null;
+  }, []);
 
-  // ── Core: load profile from session ────────────────────────────────────────
+  const load = useCallback(
+    async (session: Session | null) => {
+      sessionRef.current = session;
+      if (!session?.user) {
+        setState({ ...EMPTY, isLoading: false });
+        return;
+      }
 
-  const loadData = useCallback(async (session: Session | null) => {
-    if (!session?.user) {
-      setState(s => ({
-        ...s,
-        user: null, session: null, profile: null, spaceId: null,
-        isLoading: false,
-      }));
-      return;
-    }
-
-    try {
-      const { data: profile, error: fetchError } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, space_id, display_name, avatar_url, total_balance')
+        .select(PROFILE_COLUMNS)
         .eq('id', session.user.id)
         .maybeSingle();
 
-      if (fetchError) throw fetchError;
-
-      /*
-        The invite code must be re-read on every load. It was previously set
-        only by createSpace, so after any reload the UI fell back to showing the
-        raw space_id — which joinSpace looks up by invite_code and never finds.
-      */
-      let inviteCode: string | null = null;
-      if (profile?.space_id) {
-        const { data: space } = await supabase
-          .from('spaces')
-          .select('invite_code')
-          .eq('id', profile.space_id)
-          .maybeSingle();
-        inviteCode = space?.invite_code ?? null;
+      if (profileError) {
+        setState((s) => ({
+          ...s,
+          user: session.user,
+          session,
+          isLoading: false,
+          needsMigration: profileError.code === '42703',
+          error: 'Не удалось загрузить профиль. Проверьте связь и обновите страницу.',
+        }));
+        return;
       }
 
-      setState(s => ({
-        ...s,
-        user:      session.user,
+      let current = (profile as Profile | null) ?? null;
+
+      /* «Сегодня» is computed in the person's own zone; keep the database told. */
+      const zone = localTimezone();
+      if (current && zone && current.timezone !== zone) {
+        const { error: zoneError } = await supabase.from('profiles').update({ timezone: zone }).eq('id', current.id);
+        if (!zoneError) current = { ...current, timezone: zone };
+      }
+
+      let partner: Partner | null = null;
+      let inviteCode: string | null = null;
+      let settings: SpaceSettings | null = null;
+
+      if (current?.space_id) {
+        const [partnerResult, spaceResult, settingsResult] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('id, display_name, avatar_url, gender, timezone')
+            .eq('space_id', current.space_id)
+            .neq('id', current.id)
+            .maybeSingle(),
+          supabase.from('spaces').select('invite_code').eq('id', current.space_id).maybeSingle(),
+          loadSettings(),
+        ]);
+        partner = (partnerResult.data as Partner | null) ?? null;
+        inviteCode = spaceResult.data?.invite_code ?? null;
+        settings = settingsResult;
+      }
+
+      setState({
+        user: session.user,
         session,
-        profile:   profile || null,
-        spaceId:   profile?.space_id || null,
+        profile: current,
+        partner,
+        settings,
         inviteCode,
         isLoading: false,
-        error:     null,
+        error: null,
+        needsMigration: false,
+      });
+    },
+    [loadSettings],
+  );
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => load(session));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      /* Token refreshes arrive hourly; re-reading everything for them only flickers the UI. */
+      if (event === 'TOKEN_REFRESHED') {
+        sessionRef.current = session;
+        return;
+      }
+      load(session);
+    });
+    return () => subscription.unsubscribe();
+  }, [load]);
+
+  const spaceId = state.profile?.space_id ?? null;
+
+  /* The partner joining, and paired settings agreed on the other phone. */
+  useEffect(() => {
+    if (!spaceId) return;
+    const channel = supabase
+      .channel(`space:${spaceId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'space_settings', filter: `space_id=eq.${spaceId}` }, async () => {
+        const settings = await loadSettings();
+        if (settings) setState((s) => ({ ...s, settings }));
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+        const kind = (payload.new as { kind?: string }).kind;
+        if (kind === 'joined') load(sessionRef.current);
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [spaceId, loadSettings, load]);
+
+  const refresh = useCallback(() => load(sessionRef.current), [load]);
+
+  const refreshSettings = useCallback(async () => {
+    const settings = await loadSettings();
+    if (settings) setState((s) => ({ ...s, settings }));
+  }, [loadSettings]);
+
+  const sendMagicLink = useCallback(async (email: string) => {
+    setState((s) => ({ ...s, error: null }));
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback`, shouldCreateUser: true },
+    });
+    if (error) {
+      setState((s) => ({
+        ...s,
+        error:
+          error.status === 429
+            ? 'Слишком много попыток подряд. Подождите минуту и попробуйте снова.'
+            : 'Не получилось отправить ссылку. Проверьте адрес и попробуйте ещё раз.',
       }));
-    } catch {
-      setState(s => ({ ...s, isLoading: false, error: 'Ошибка загрузки профиля' }));
+      return false;
+    }
+    return true;
+  }, []);
+
+  const signInWithGoogle = useCallback(async () => {
+    setState((s) => ({ ...s, error: null }));
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) {
+      setState((s) => ({
+        ...s,
+        error: 'Вход через Google сейчас недоступен. Войдите по ссылке на почту.',
+      }));
     }
   }, []);
 
-  // ── Init: session + auth listener ──────────────────────────────────────────
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => loadData(session));
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      loadData(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [loadData]);
-
-  // ── STEP 1: Send magic link ─────────────────────────────────────────────────
-
-  const sendMagicLink = useCallback(async (email: string) => {
-    setState(s => ({ ...s, isLoading: true, error: null }));
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        shouldCreateUser: true,
-      },
-    });
-    setState(s => ({ ...s, isLoading: false, error: error?.message ?? null }));
-    return !error;
-  }, []);
-
-  // ── STEP 2 (Creator): Create space + get invite code ───────────────────────
-
-  const createSpace = useCallback(async (spaceName?: string) => {
-    if (!state.user) return null;
-    setState(s => ({ ...s, isLoading: true, error: null }));
+  const createSpace = useCallback(async () => {
+    const user = sessionRef.current?.user;
+    if (!user) return false;
+    setState((s) => ({ ...s, error: null }));
 
     const { data: space, error: spaceError } = await supabase
       .from('spaces')
-      .insert({ name: spaceName ?? 'Our Space' })
-      .select()
+      .insert({ name: 'Наше пространство' })
+      .select('id, invite_code')
       .single();
 
-    if (spaceError) {
-      setState(s => ({ ...s, isLoading: false, error: spaceError.message }));
-      return null;
+    if (spaceError || !space) {
+      setState((s) => ({ ...s, error: 'Не получилось создать пространство. Попробуйте ещё раз.' }));
+      return false;
     }
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ space_id: space.id })
-      .eq('id', state.user.id);
-
+    const { error: profileError } = await supabase.from('profiles').update({ space_id: space.id }).eq('id', user.id);
     if (profileError) {
-      setState(s => ({ ...s, isLoading: false, error: profileError.message }));
-      return null;
+      setState((s) => ({ ...s, error: 'Пространство создано, но не привязалось к вам. Попробуйте ещё раз.' }));
+      return false;
     }
 
     await supabase.from('wallet').insert({ space_id: space.id, balance: 0 });
-
-    setState(s => ({
-      ...s,
-      spaceId:    space.id,
-      inviteCode: space.invite_code,
-      isLoading:  false,
-    }));
-
-    return space;
-  }, [state.user]);
-
-  // ── STEP 2 (Partner): Join via invite code ─────────────────────────────────
-
-  const joinSpace = useCallback(async (inviteCode: string) => {
-    if (!state.user) return false;
-    setState(s => ({ ...s, isLoading: true, error: null }));
-
-    const { data: space, error: findError } = await supabase
-      .from('spaces')
-      .select('id, invite_code')
-      .eq('invite_code', inviteCode.trim().toLowerCase())
-      .single();
-
-    if (findError || !space) {
-      setState(s => ({
-        ...s,
-        isLoading: false,
-        error: 'Invite code not found. Check the link and try again.',
-      }));
-      return false;
-    }
-
-    const { count } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('space_id', space.id);
-
-    if ((count ?? 0) >= 2) {
-      setState(s => ({
-        ...s,
-        isLoading: false,
-        error: 'This space is already full (2 partners maximum).',
-      }));
-      return false;
-    }
-
-    const { error: joinError } = await supabase
-      .from('profiles')
-      .update({ space_id: space.id })
-      .eq('id', state.user!.id);
-
-    if (joinError) {
-      setState(s => ({ ...s, isLoading: false, error: joinError.message }));
-      return false;
-    }
-
-    setState(s => ({ ...s, spaceId: space.id, isLoading: false }));
+    await load(sessionRef.current);
     return true;
-  }, [state.user]);
+  }, [load]);
 
-  // ── Update display name ────────────────────────────────────────────────────
+  const joinSpace = useCallback(
+    async (rawCode: string) => {
+      const user = sessionRef.current?.user;
+      if (!user) return false;
+      const code = rawCode.trim().toLowerCase();
+      setState((s) => ({ ...s, error: null }));
 
-  const updateDisplayName = useCallback(async (name: string) => {
-    if (!state.user) return;
-    await supabase.from('profiles').update({ display_name: name }).eq('id', state.user.id);
-    setState(s => ({
-      ...s,
-      profile: s.profile ? { ...s.profile, display_name: name } : null,
-    }));
-  }, [state.user]);
+      const { data: space } = await supabase.from('spaces').select('id').eq('invite_code', code).maybeSingle();
+      if (!space) {
+        setState((s) => ({ ...s, error: 'Такого кода нет. Проверьте, что он скопирован целиком.' }));
+        return false;
+      }
 
-  // ── Sign out ───────────────────────────────────────────────────────────────
+      const { count } = await supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('space_id', space.id);
+
+      if ((count ?? 0) >= 2) {
+        setState((s) => ({ ...s, error: 'В этом пространстве уже двое. Попросите у партнёра свежий код.' }));
+        return false;
+      }
+
+      const { error: joinError } = await supabase.from('profiles').update({ space_id: space.id }).eq('id', user.id);
+      if (joinError) {
+        setState((s) => ({ ...s, error: 'Не получилось войти в пространство. Попробуйте ещё раз.' }));
+        return false;
+      }
+
+      try {
+        localStorage.removeItem(INVITE_KEY);
+      } catch {}
+      await load(sessionRef.current);
+      return true;
+    },
+    [load],
+  );
+
+  const updateProfile = useCallback(async (patch: Partial<Omit<Profile, 'id' | 'space_id'>>) => {
+    const user = sessionRef.current?.user;
+    if (!user) return false;
+    const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
+    if (error) return false;
+    setState((s) => ({ ...s, profile: s.profile ? { ...s.profile, ...patch } : s.profile }));
+    return true;
+  }, []);
+
+  const updateDisplayName = useCallback(
+    async (name: string) => {
+      await updateProfile({ display_name: name });
+    },
+    [updateProfile],
+  );
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    setState({
-      user: null, session: null, profile: null,
-      spaceId: null, inviteCode: null, isLoading: false, error: null,
-    });
+    setState({ ...EMPTY, isLoading: false });
     router.push('/');
   }, [router]);
 
-  // ── Generate shareable invite URL ──────────────────────────────────────────
-
   const getInviteUrl = useCallback(() => {
-    const code = state.inviteCode ?? state.profile?.space_id;
-    if (!code) return null;
-    return `${window.location.origin}/join/${code}`;
-  }, [state.inviteCode, state.profile?.space_id]);
+    if (!state.inviteCode) return null;
+    return `${window.location.origin}/join/${state.inviteCode}`;
+  }, [state.inviteCode]);
 
-  // ── Memoized context value ─────────────────────────────────────────────────
+  const clearError = useCallback(() => setState((s) => ({ ...s, error: null })), []);
 
-  const value = useMemo<SpaceAuthValue>(() => ({
-    ...state,
-    sendMagicLink,
-    createSpace,
-    joinSpace,
-    updateDisplayName,
-    signOut,
-    getInviteUrl,
-    isAuthenticated: !!state.user,
-    hasSpace:        !!state.spaceId,
-  }), [state, sendMagicLink, createSpace, joinSpace, updateDisplayName, signOut, getInviteUrl]);
+  const value = useMemo<Value>(
+    () => ({
+      ...state,
+      spaceId,
+      isAuthenticated: !!state.user,
+      hasSpace: !!spaceId,
+      sendMagicLink,
+      signInWithGoogle,
+      createSpace,
+      joinSpace,
+      updateProfile,
+      updateDisplayName,
+      refresh,
+      refreshSettings,
+      clearError,
+      signOut,
+      getInviteUrl,
+    }),
+    [
+      state,
+      spaceId,
+      sendMagicLink,
+      signInWithGoogle,
+      createSpace,
+      joinSpace,
+      updateProfile,
+      updateDisplayName,
+      refresh,
+      refreshSettings,
+      clearError,
+      signOut,
+      getInviteUrl,
+    ],
+  );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 
-// ── Hook ──────────────────────────────────────────────────────────────────────
-
-export function useSpaceAuth(): SpaceAuthValue {
-  const context = useContext(AuthContext);
+export function useSpaceAuth() {
+  const context = useContext(Context);
   if (!context) throw new Error('useSpaceAuth must be used within <AuthProvider>');
   return context;
 }
