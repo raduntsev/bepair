@@ -3,6 +3,7 @@
 import { Bell, Gift, Mail, Settings, Users } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { LinkRow, Page, PageHeader, RowGroup } from '@/components/ui/Blocks';
+import { InstallCard } from '@/components/InstallCard';
 
 export default function MorePage() {
   const { unread } = useNotifications();
@@ -16,6 +17,9 @@ export default function MorePage() {
         <LinkRow href="/couple" Icon={Users} title="Профиль пары" sub="Дни вместе и общие факты" />
         <LinkRow href="/settings" Icon={Settings} title="Настройки" sub="Имя, тема, код приглашения" />
       </RowGroup>
+      <div className="mt-4">
+        <InstallCard />
+      </div>
     </Page>
   );
 }

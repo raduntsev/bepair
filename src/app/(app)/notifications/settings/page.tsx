@@ -4,6 +4,7 @@ import { Bell, ListChecks, Mail, Send, Sun } from 'lucide-react';
 import { useSpaceAuth, type Profile } from '@/hooks/useSpaceAuth';
 import { Page, PageHeader, RowGroup, SwitchRow } from '@/components/ui/Blocks';
 import { PushCard } from '@/components/PushCard';
+import { InstallCard } from '@/components/InstallCard';
 
 type Key = keyof Pick<Profile, 'notify_pings' | 'notify_day' | 'notify_tasks' | 'notify_letters' | 'notify_sound'>;
 
@@ -15,6 +16,7 @@ export default function NotificationSettingsPage() {
     <Page width="form">
       <PageHeader title="Что присылать" back={{ href: '/notifications', label: 'Уведомления' }} />
       <div className="space-y-4">
+        <InstallCard />
         <PushCard />
 
         <RowGroup label="Что присылать">
