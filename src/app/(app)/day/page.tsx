@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Check, ChevronLeft, Droplet, Mail } from 'lucide-react';
+import { CalendarHeart, Check, ChevronLeft, Droplet, Mail } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { moodColor } from '@/lib/mood';
 import { fmt, longDate, todayISO } from '@/lib/dates';
@@ -18,6 +18,10 @@ import { useCoupleDay } from '@/hooks/useCoupleDay';
 import { useTasks } from '@/hooks/useTasks';
 import { usePresence } from '@/hooks/usePresence';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { useImportantDates, useShowMoon } from '@/hooks/useImportantDates';
+import { occursOn, withAnniversary, upcoming } from '@/lib/importantDates';
+import { moonAt } from '@/lib/moon';
+import { MoonGlyph } from '@/components/MoonGlyph';
 
 export default function DayPage() {
   return (
@@ -90,6 +94,35 @@ function CycleRow({ userId }: { userId: string }) {
   );
 }
 
+/* Birthdays, anniversaries: shared by the couple, so shown on any day they fall on. */
+function DatesChip({ date, isToday, togetherSince }: { date: string; isToday: boolean; togetherSince: string | null }) {
+  const { items } = useImportantDates();
+  const todays = upcoming(withAnniversary(items, togetherSince).filter((d) => occursOn(d, date)), date, 0);
+  if (todays.length === 0) return null;
+  return (
+    <p className="inline-flex min-h-11 items-center gap-2 rounded-full bg-accent-soft px-4 text-sm font-medium text-accent-soft-ink">
+      <CalendarHeart className="size-4" aria-hidden />
+      {isToday ? 'Сегодня' : 'В этот день'}: {todays.map((o) => o.title).join(', ')}
+    </p>
+  );
+}
+
+/* Personal and off by default. Ink only — colour is mood's alone. */
+function MoonRow() {
+  const { showMoon } = useShowMoon();
+  if (!showMoon) return null;
+  const moon = moonAt(new Date());
+  return (
+    <section className="order-3 flex items-center gap-3 rounded-2xl border border-line bg-surface px-5 py-4 shadow-card md:px-6">
+      <MoonGlyph phase={moon.phase} size={22} className="shrink-0 text-ink-soft" />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">Луна: {moon.label}</p>
+        <p className="text-sm text-ink-faint">Освещено {Math.round(moon.lit * 100)}% · {moon.waxing ? 'растёт' : 'убывает'}</p>
+      </div>
+    </section>
+  );
+}
+
 function DayView() {
   const params = useSearchParams();
   const date = params.get('d') ?? todayISO();
@@ -152,6 +185,7 @@ function DayView() {
           <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{isToday ? 'Сегодня' : fmt(date, 'd MMMM')}</h1>
           <p className="mt-1 text-sm text-ink-faint">{longDate(date)}</p>
         </div>
+        <DatesChip date={date} isToday={isToday} togetherSince={settings?.together_since ?? null} />
         {isToday && waitingLetters.sealed + waitingLetters.unread > 0 && (
           <Link
             href="/letters"
@@ -240,6 +274,8 @@ function DayView() {
                   <CycleRow userId={user.id} />
                 </div>
               )}
+
+              {isToday && <MoonRow />}
 
               {isToday && user && (
                 <div className="order-4">
