@@ -1,141 +1,132 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, Copy, Monitor, Moon, Sun } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Bell, Check, Lock, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import { displayName } from '@/lib/words';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Field';
+import { Segment } from '@/components/ui/Controls';
+import { Card, LinkRow, Page, PageHeader, RowGroup } from '@/components/ui/Blocks';
+import { InviteCard } from '@/components/InviteCard';
 
 type ThemeChoice = 'system' | 'light' | 'dark';
 
-const THEMES: { value: ThemeChoice; label: string; Icon: typeof Sun }[] = [
-  { value: 'system', label: 'Как в системе', Icon: Monitor },
-  { value: 'light', label: 'Светлая', Icon: Sun },
-  { value: 'dark', label: 'Тёмная', Icon: Moon },
-];
+function readTheme(): ThemeChoice {
+  try {
+    const stored = localStorage.getItem('bepair-theme');
+    return stored === 'light' || stored === 'dark' ? stored : 'system';
+  } catch {
+    return 'system';
+  }
+}
 
 export default function SettingsPage() {
-  const { profile, inviteCode, updateDisplayName, signOut } = useSpaceAuth();
+  const { profile, partner, updateProfile, signOut } = useSpaceAuth();
 
-  const [name, setName] = useState('');
+  const [name, setName] = useState(profile?.display_name ?? '');
   const [savedName, setSavedName] = useState(false);
   const [theme, setTheme] = useState<ThemeChoice>('system');
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    setName(profile?.display_name ?? '');
-  }, [profile?.display_name]);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('bepair-theme');
-    if (stored === 'light' || stored === 'dark') setTheme(stored);
+    setTheme(readTheme());
   }, []);
 
   const applyTheme = (choice: ThemeChoice) => {
     setTheme(choice);
-    if (choice === 'system') {
-      localStorage.removeItem('bepair-theme');
-      delete document.documentElement.dataset.theme;
-    } else {
-      localStorage.setItem('bepair-theme', choice);
-      document.documentElement.dataset.theme = choice;
-    }
+    try {
+      if (choice === 'system') localStorage.removeItem('bepair-theme');
+      else localStorage.setItem('bepair-theme', choice);
+    } catch {}
+    if (choice === 'system') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = choice;
   };
 
-  /* Only a real invite code — a space_id here would never resolve on join. */
-  const code = inviteCode;
-
   return (
-    <div className="mx-auto w-full max-w-2xl px-5 py-7 md:px-8 md:py-10">
-      <header className="mb-7">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Настройки</h1>
-      </header>
+    <Page width="form">
+      <PageHeader title="Настройки" />
 
       <div className="space-y-4">
-        <section className="rounded-2xl border border-line bg-surface p-6 shadow-card">
+        <Card>
           <h2 className="font-semibold">Как вас зовут</h2>
           <p className="mt-1.5 mb-4 text-sm text-ink-soft">Это имя видит партнёр.</p>
-          <div className="flex flex-wrap gap-2">
-            <input
+          <form
+            className="flex flex-wrap gap-2"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (await updateProfile({ display_name: name.trim() })) setSavedName(true);
+            }}
+          >
+            <Input
               aria-label="Имя"
+              autoComplete="given-name"
               value={name}
               onChange={(event) => {
                 setName(event.target.value);
                 setSavedName(false);
               }}
-              className="h-11 min-w-0 flex-1 rounded-lg border border-line bg-sunken px-3.5 text-base outline-none focus:border-accent focus:bg-surface"
+              className="min-w-0 flex-1"
             />
-            <Button
-              variant="secondary"
-              disabled={!name.trim() || name === profile?.display_name}
-              onClick={async () => {
-                await updateDisplayName(name.trim());
-                setSavedName(true);
-              }}
-            >
-              {savedName ? <Check className="size-4" aria-hidden /> : null} Сохранить
+            <Button type="submit" variant="secondary" disabled={!name.trim() || name.trim() === profile?.display_name}>
+              {savedName && <Check className="size-4" aria-hidden />} {savedName ? 'Сохранено' : 'Сохранить'}
             </Button>
-          </div>
-        </section>
+          </form>
 
-        <section className="rounded-2xl border border-line bg-surface p-6 shadow-card">
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-medium">Как о вас писать</p>
+            <Segment
+              legend="Как о вас писать"
+              options={[
+                { value: 'f' as const, label: 'Она отметила' },
+                { value: 'm' as const, label: 'Он отметил' },
+              ]}
+              value={profile?.gender ?? null}
+              onChange={(gender) => updateProfile({ gender })}
+            />
+            <p className="mt-2 text-sm text-ink-faint">Чтобы уведомления партнёру звучали по-человечески.</p>
+          </div>
+        </Card>
+
+        <Card>
           <h2 className="font-semibold">Тема</h2>
-          <p className="mt-1.5 mb-4 text-sm text-ink-soft">
-            Вечером в темноте светлая тема бьёт по глазам — можно переключить.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {THEMES.map(({ value, label, Icon }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => applyTheme(value)}
-                aria-pressed={theme === value}
-                className={`tap flex items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors ${
-                  theme === value
-                    ? 'border-accent bg-accent-soft text-accent-soft-ink'
-                    : 'border-line text-ink-soft hover:border-line-strong hover:text-ink'
-                }`}
-              >
-                <Icon className="size-4" aria-hidden /> {label}
-              </button>
-            ))}
-          </div>
-        </section>
+          <p className="mt-1.5 mb-4 text-sm text-ink-soft">Вечером в темноте светлая тема бьёт по глазам — можно переключить.</p>
+          <Segment
+            legend="Тема"
+            options={[
+              { value: 'system' as const, label: 'Как в системе', Icon: Monitor },
+              { value: 'light' as const, label: 'Светлая', Icon: Sun },
+              { value: 'dark' as const, label: 'Тёмная', Icon: Moon },
+            ]}
+            value={theme}
+            onChange={applyTheme}
+          />
+        </Card>
 
-        {code && (
-          <section className="rounded-2xl border border-line bg-surface p-6 shadow-card">
-            <h2 className="font-semibold">Код приглашения</h2>
-            <p className="mt-1.5 mb-4 text-sm text-ink-soft">
-              Отправьте его партнёру, чтобы он вошёл в ваше пространство.
+        {partner ? (
+          <Card>
+            <h2 className="font-semibold">Пространство</h2>
+            <p className="mt-1.5 text-sm text-ink-soft">
+              В пространстве вас двое: вы и {displayName(partner.display_name)}. Больше двух в нём не бывает, поэтому код приглашения уже не нужен.
             </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-lg bg-sunken px-3.5 py-2.5 text-sm">
-                {code}
-              </code>
-              <Button
-                variant="secondary"
-                onClick={async () => {
-                  await navigator.clipboard.writeText(code);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
-              >
-                {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
-                {copied ? 'Скопировано' : 'Копировать'}
-              </Button>
-            </div>
-          </section>
+          </Card>
+        ) : (
+          <InviteCard />
         )}
 
-        <section className="rounded-2xl border border-line bg-surface p-6 shadow-card">
+        <RowGroup label="Ещё настройки">
+          <LinkRow href="/settings/paired" Icon={Lock} title="Парные настройки" sub="Меняются только по согласию обоих" />
+          <LinkRow href="/settings/personal" Icon={UserRound} title="Личные и данные" sub="Цикл, выгрузка ваших данных" />
+          <LinkRow href="/notifications/settings" Icon={Bell} title="Уведомления" sub="Что присылать на это устройство" />
+        </RowGroup>
+
+        <Card>
           <h2 className="font-semibold">Аккаунт</h2>
-          <p className="mt-1.5 mb-4 text-sm text-ink-soft">
-            Выход не удаляет ваши дни — они останутся на месте.
-          </p>
+          <p className="mt-1.5 mb-4 text-sm text-ink-soft">Выход не удаляет ваши дни — они останутся на месте.</p>
           <Button variant="danger" onClick={signOut}>
             Выйти
           </Button>
-        </section>
+        </Card>
       </div>
-    </div>
+    </Page>
   );
 }

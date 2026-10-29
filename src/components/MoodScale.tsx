@@ -105,7 +105,7 @@ export function MoodScale({ value, onChange, disabled = false }: MoodScaleProps)
         </span>
       </div>
 
-      <div className="mt-5 flex min-h-6 items-center justify-between text-sm">
+      <div className="mt-5 flex min-h-6 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
         {isSet ? (
           <>
             <span className="flex items-center gap-2 font-medium text-ink">

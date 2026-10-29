@@ -18,8 +18,8 @@
   --c-border-strong: #cfcfe0;
 
   --c-ink: #1a1a28;
-  --c-ink-soft: #5b5b74;
-  --c-ink-faint: #65657b;
+  --c-ink-soft: #4b4b63;
+  --c-ink-faint: #68687f;
 
   --c-accent: #5b54e8;
   --c-accent-hover: #4a43d6;
@@ -28,6 +28,7 @@
   --c-accent-soft-ink: #3f38c4;
 
   --c-partner: #d98324;
+  --c-partner-ink: #94500f;
   --c-partner-soft: #fdf1e2;
 
   --c-danger: #c0392f;
@@ -62,6 +63,7 @@
   --c-accent-soft-ink: #c3bfff;
 
   --c-partner: #e8a552;
+  --c-partner-ink: #f0b56b;
   --c-partner-soft: #2e2417;
 
   --c-danger: #ef6b60;
@@ -97,6 +99,7 @@
     --c-accent-soft-ink: #c3bfff;
 
     --c-partner: #e8a552;
+    --c-partner-ink: #f0b56b;
     --c-partner-soft: #2e2417;
 
     --c-danger: #ef6b60;
@@ -136,6 +139,7 @@
 
   --color-partner: var(--c-partner);
   --color-partner-soft: var(--c-partner-soft);
+  --color-partner-ink: var(--c-partner-ink);
 
   --color-danger: var(--c-danger);
   --color-danger-soft: var(--c-danger-soft);
@@ -212,6 +216,15 @@
       var(--color-mood-4) 75%,
       var(--color-mood-5) 100%
     );
+  }
+
+  .safe-t {
+    padding-block-start: env(safe-area-inset-top, 0px);
+  }
+
+  /* Comfortable reading measure for prose blocks — notes, letters, answers. */
+  .measure {
+    max-inline-size: 68ch;
   }
 
   .safe-b {

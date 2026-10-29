@@ -13,6 +13,9 @@ const onest = Onest({
 export const metadata: Metadata = {
   title: 'Впаре — общее пространство',
   description: 'Общее ежедневное пространство для двоих',
+  applicationName: 'Впаре',
+  appleWebApp: { capable: true, title: 'Впаре', statusBarStyle: 'default' },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {

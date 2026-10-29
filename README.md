@@ -1,39 +1,85 @@
-# bepair
-It's an app for a couple
+# Впаре / Bepair
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Общее пространство дня для пары. Сначала отмечаешь свой день — потом открывается день партнёра. Next.js 16 (App Router) + React 19 + Tailwind 4 + Supabase, устанавливается на телефон как PWA.
 
-## Getting Started
+## Что внутри
 
-First, run the development server:
+| Раздел | Что умеет |
+|---|---|
+| **День** | Настроение цветом (единственное обязательное), заметка, день партнёра под замком до вашей отметки, «Вас попросили» — чек-лист, «Сделал для вас» — подтверждение, дни вместе и серия, день цикла (если включён), время партнёра (если «на расстоянии») |
+| **Календарь** | Кольцо — ваш день, заливка — день партнёра, «оба» не режет ячейку; переход в любой прошлый день |
+| **Летопись** | Лента всего посланного: весточки, снимки, голос, треки, письма |
+| **Весточка** | Мгновенное сообщение партнёру со снимком, ссылкой на трек или голосовым |
+| **Задачи** | Просьбы с весом-баллами, редактирование до выполнения, своя подборка шаблонов, статус «партнёр ещё не видел» |
+| **Письма** | Вложения (фото, видео, аудио, голос), черновики, отложенная отправка с отменой, «открыть после того, как партнёр отметит день» |
+| **Услуги** | Предложить услугу, попросить за баллы, «сделано, предложить снова» |
+| **Ещё** | Уведомления, профиль пары (дни вместе, общие факты, ответы на вопросы), настройки |
+| **Настройки** | Имя и «он/она», тема, приглашение; парные (меняются только по согласию обоих); личные (цикл, выгрузка данных в JSON); уведомления на устройстве |
+| **Вход** | Google или ссылка на почту → создать пространство или войти по коду/ссылке → знакомство и 8 вопросов (любой можно пропустить) |
+
+## Запуск за 15 минут
+
+### 1. База (Supabase → SQL Editor)
+
+Выполните по очереди, каждый файл целиком:
+
+1. `supabase/migrations/0001_bepair_redesign.sql`
+2. `supabase/migrations/0002_bepair_complete.sql`
+
+Обе миграции можно запускать повторно — они идемпотентны. `supabase_migration.sql` в корне — старая разовая правка, повторно её не запускайте.
+
+Желательно, но не обязательно: **Database → Extensions → pg_cron** — включить и ещё раз выполнить 0002. Тогда отложенные письма доставляются ровно в срок, а не при следующем открытии приложения.
+
+### 2. Вход
+
+**Authentication → URL Configuration**
+
+- Site URL: адрес на Vercel, например `https://vpare.vercel.app`
+- Redirect URLs: `https://vpare.vercel.app/auth/callback` и `http://localhost:3000/auth/callback`
+
+**Authentication → Providers → Google** (если нужен вход через Google): включить, вставить Client ID и Secret из Google Cloud Console (OAuth client, тип Web). В Google в «Authorized redirect URIs» добавить `https://<ваш-проект>.supabase.co/auth/v1/callback`.
+
+### 3. Push-уведомления
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx web-push generate-vapid-keys
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Публичный ключ → `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, приватный → `VAPID_PRIVATE_KEY`. Ещё нужен `SUPABASE_SERVICE_ROLE_KEY` (Project Settings → API) — только на сервере, он отправляет push партнёру. Без этих ключей всё работает, кроме системных уведомлений: лента внутри приложения обновляется сама.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+На iPhone push работает только у приложения, добавленного на экран «Домой» (Safari → «Поделиться» → «На экран Домой»), iOS 16.4+.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Локально
 
-## Learn More
+```bash
+cp .env.example .env.local   # заполнить
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 5. Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Import репозитория → Framework: Next.js → Environment Variables: все переменные из `.env.example` → Deploy. После первого деплоя вернитесь к шагу 2 и проверьте адреса.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Как устроена взаимность
 
-## Deploy on Vercel
+Правило «сначала свой день» живёт в SQL, а не в интерфейсе: пока вы не отметили день, строки партнёра за эту дату и закрытые письма просто не приходят в браузер. Там, где нужно показать факт без содержания (отметка в календаре, «письмо ждёт вас»), работают функции, возвращающие только присутствие. Уведомления тоже сообщают факт («Аня отметила день»), а не содержание.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+«Сегодня» считается в часовом поясе человека: приложение сообщает его базе при каждом входе.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Проверено
+
+Миграции прогнаны на чистом Postgres 16 дважды подряд; сценарии RLS проверены от лица двух пользователей. Приложение прогнано через настоящий PostgREST поверх этой базы в Playwright: отметка дня с раскрытием партнёра, задачи, письма, весточка со снимком, создание пространства, онбординг, вход по ссылке-приглашению, согласование парной настройки.
+
+Не проверялось вживую (нужен настоящий проект Supabase): вход через Google, отправка писем со ссылкой, загрузка файлов в Storage, Realtime и доставка push на телефон.
+
+## Где что лежит
+
+| Что | Где |
+|---|---|
+| Токены, темы | `src/app/globals.css` |
+| Шкала настроения | `src/lib/mood.ts` |
+| Тексты уведомлений (общие для ленты и push) | `src/lib/notices.ts` |
+| Сессия, профиль, партнёр, парные настройки | `src/hooks/useSpaceAuth.tsx` |
+| Рассылка push | `src/app/api/push/flush/route.ts`, `public/sw.js` |
+| Правила дизайна | `DESIGN.md`, границы продукта — `PRODUCT.md` |

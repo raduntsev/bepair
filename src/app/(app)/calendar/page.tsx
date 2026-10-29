@@ -15,7 +15,8 @@ import {
 import { ru } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MOOD_INK, moodColor } from '@/lib/mood';
-import { todayISO } from '@/hooks/useCoupleDay';
+import { sentence, todayISO } from '@/lib/dates';
+import { Alert } from '@/components/ui/Blocks';
 import { useMonthEntries, type DayMark } from '@/hooks/useMonthEntries';
 
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
@@ -61,7 +62,9 @@ export default function CalendarPage() {
     [gridStart, gridEnd],
   );
 
-  const { marks, error } = useMonthEntries(iso(gridStart), iso(gridEnd));
+  const { marks, error, isLoading } = useMonthEntries(iso(gridStart), iso(gridEnd));
+  const monthHasDays = days.some((day) => isSameMonth(day, cursor) && (marks[iso(day)]?.mineMarked || marks[iso(day)]?.theirsMarked));
+  const isCurrentMonth = isSameMonth(cursor, new Date());
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-7 md:px-8 md:py-10">
@@ -71,9 +74,9 @@ export default function CalendarPage() {
       </header>
 
       {error && (
-        <p role="alert" className="mb-4 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
-          {error}
-        </p>
+        <div className="mb-4">
+          <Alert>{error}</Alert>
+        </div>
       )}
 
       <div className="rounded-2xl border border-line bg-surface p-3 shadow-card md:p-6">
@@ -87,8 +90,8 @@ export default function CalendarPage() {
             <ChevronLeft className="size-5" aria-hidden />
           </button>
 
-          <h2 className="text-base font-semibold capitalize">
-            {format(cursor, 'LLLL yyyy', { locale: ru })}
+          <h2 className="text-base font-semibold" aria-live="polite">
+            {sentence(format(cursor, 'LLLL yyyy', { locale: ru }))}
           </h2>
 
           <button
@@ -137,6 +140,25 @@ export default function CalendarPage() {
             );
           })}
         </div>
+
+        {!isLoading && !error && !monthHasDays && (
+          <p className="mt-4 rounded-xl bg-sunken px-4 py-3 text-center text-sm text-ink-soft">
+            {isCurrentMonth
+              ? 'В этом месяце пока ни одного отмеченного дня. Начните с сегодняшнего.'
+              : 'Этот месяц пуст. Дни появляются здесь, когда вы их отмечаете.'}
+          </p>
+        )}
+        {!isCurrentMonth && (
+          <div className="mt-3 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setCursor(startOfMonth(new Date()))}
+              className="tap rounded-lg px-3 text-sm font-medium text-accent hover:underline"
+            >
+              К текущему месяцу
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-sm text-ink-soft">
