@@ -1,0 +1,81 @@
+name: Native apps
+
+# Builds the iOS and Android shells with their widgets.
+# Set the repository variable BEPAIR_URL (Settings → Secrets and variables →
+# Actions → Variables) to the Vercel address, and the APK from the Android job
+# opens your deployed app. Without it the build still runs, pointed at a placeholder.
+
+on:
+  push:
+    branches: [main, feature/native-widgets]
+    paths:
+      - 'android/**'
+      - 'ios/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/lib/native.ts'
+      - '.github/workflows/native.yml'
+  workflow_dispatch:
+
+env:
+  BEPAIR_URL: ${{ vars.BEPAIR_URL || 'https://vpare.example' }}
+
+jobs:
+  android:
+    name: Android (APK + widget render tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npx cap sync android
+      - name: Test widgets and build the debug APK
+        working-directory: android
+        run: ./gradlew testDebugUnitTest assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vpare-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-widget-previews
+          path: android/app/build/widget-previews/
+
+  ios:
+    name: iOS (app + widget extension, simulator build)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx cap sync ios
+      - name: Build for the simulator (no signing)
+        run: |
+          xcodebuild -version
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build > build.log 2>&1
+          status=$?
+          # Surface compiler errors as annotations, so they show on the commit.
+          grep -E '^/.+:[0-9]+:[0-9]+: error: ' build.log | sort -u | head -40 | \
+            sed -E 's#^'"$GITHUB_WORKSPACE"'/##; s#^([^:]+):([0-9]+):([0-9]+): error: (.*)$#::error file=\1,line=\2,col=\3::\4#'
+          grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build.log | grep -vE '^/.+:[0-9]+:[0-9]+: error: ' | sort -u | head -20 | sed 's/^/::warning::/'
+          tail -5 build.log
+          exit $status
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-build-log
+          path: build.log
