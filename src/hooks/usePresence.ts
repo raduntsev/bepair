@@ -32,6 +32,8 @@ export function usePresence() {
     }
     const both = new Set([...byDate].filter(([, users]) => users.size >= 2).map(([date]) => date));
     const mine = new Set(rows.filter((r) => r.user_id === user?.id).map((r) => r.entry_date));
-    return { ...streaks(both, todayISO()), bothDays: both.size, myDays: mine.size, isLoading, reload: load };
+    /* Presence, not content: whether someone other than you marked this date. */
+    const partnerMarked = (date: string) => [...(byDate.get(date) ?? [])].some((id) => id !== user?.id);
+    return { ...streaks(both, todayISO()), bothDays: both.size, myDays: mine.size, partnerMarked, isLoading, reload: load };
   }, [rows, user?.id, isLoading, load]);
 }
