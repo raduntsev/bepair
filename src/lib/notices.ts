@@ -1,4 +1,4 @@
-import { verb, type Gender } from './words';
+import { genitive, verb, type Gender } from './words';
 
 /*
   One wording for the in-app feed and for system push. Every line reports a
@@ -17,7 +17,9 @@ export type NoticeKind =
   | 'service'
   | 'paired_proposal'
   | 'paired_answer'
-  | 'joined';
+  | 'joined'
+  | 'remind_morning'
+  | 'remind_evening';
 
 export interface NoticeLike {
   kind: NoticeKind;
@@ -62,13 +64,21 @@ export function noticeText(notice: NoticeLike, actor: string, gender: Gender) {
     }
     case 'joined':
       return `${actor} ${verb(gender, 'присоединился')} к пространству`;
+    case 'remind_morning':
+      return `Вчерашний день ${actor === 'Партнёр' ? 'партнёра' : genitive(actor, gender)} ждёт вас — вы его ещё не открывали`;
+    case 'remind_evening':
+      return 'Вечер. Можно отметить, как прошёл день';
     default:
       return 'Новое событие';
   }
 }
 
-export function noticeHref(kind: NoticeKind) {
+export function noticeHref(kind: NoticeKind, payload?: Record<string, unknown> | null) {
   switch (kind) {
+    case 'remind_morning':
+      return typeof payload?.date === 'string' ? `/day?d=${payload.date}` : '/calendar';
+    case 'remind_evening':
+      return '/day';
     case 'ping':
       return '/chronicle';
     case 'day':

@@ -14,6 +14,8 @@ import { Segment } from '@/components/ui/Controls';
 import { Alert } from '@/components/ui/Blocks';
 import { InviteCard } from '@/components/InviteCard';
 import { Centered } from '@/components/AuthScreens';
+import { ReminderSettings } from '@/components/ReminderSettings';
+import { useReminders } from '@/hooks/useReminders';
 
 const TOTAL = QUESTIONS.length;
 
@@ -30,6 +32,7 @@ export default function OnboardingPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [askReminders, setAskReminders] = useState(false);
 
   /* Coming back later: start from what was already said. */
   useEffect(() => {
@@ -50,7 +53,7 @@ export default function OnboardingPage() {
 
   const finish = async () => {
     if (!profile?.onboarded_at) await updateProfile({ onboarded_at: new Date().toISOString() });
-    setDone(true);
+    setAskReminders(true);
   };
 
   const introduce = async () => {
@@ -88,6 +91,8 @@ export default function OnboardingPage() {
     if (step === TOTAL) await finish();
     else setStep(step + 1);
   };
+
+  if (askReminders && !done) return <RemindersStep onDone={() => setDone(true)} />;
 
   if (done) {
     return (
@@ -237,6 +242,48 @@ export default function OnboardingPage() {
           </div>
         </motion.div>
       </AnimatePresence>
+    </div>
+  );
+}
+
+/*
+  The quick setup the concept asks for right after sign-up: two reminders with
+  sensible defaults already on. «Настрою позже» is an equal path, not an escape
+  hatch — skipping keeps the defaults, so nothing is lost.
+*/
+function RemindersStep({ onDone }: { onDone: () => void }) {
+  const { reminders, available, error, update } = useReminders();
+
+  /* Before migration 0004 there is nothing to set up: go straight on. */
+  useEffect(() => {
+    if (!available) onDone();
+  }, [available, onDone]);
+
+  if (!available || !reminders) return null;
+
+  return (
+    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 py-10">
+      <p className="text-sm text-ink-faint">Последний шаг</p>
+      <h1 className="mt-2 text-2xl leading-snug font-semibold tracking-tight md:text-3xl">Когда напоминать?</h1>
+      <p className="mt-3 text-sm text-ink-faint">
+        Только когда есть повод и не чаще раза в день. Поменять можно в любой момент в настройках уведомлений.
+      </p>
+      <div className="mt-6">
+        <ReminderSettings value={reminders} onChange={update} />
+      </div>
+      {error && (
+        <div className="mt-4">
+          <Alert>{error}</Alert>
+        </div>
+      )}
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <Button size="lg" onClick={onDone}>
+          Готово <ArrowRight className="size-4" aria-hidden />
+        </Button>
+        <Button variant="ghost" onClick={onDone}>
+          Настрою позже
+        </Button>
+      </div>
     </div>
   );
 }

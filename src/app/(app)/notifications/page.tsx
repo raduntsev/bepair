@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { Bell, Gift, ListChecks, Mail, Send, Settings2, SlidersHorizontal, Sun, UserPlus } from 'lucide-react';
+import { Bell, Gift, ListChecks, Mail, Moon, Send, Settings2, SlidersHorizontal, Sun, Sunrise, UserPlus } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { relativeStamp } from '@/lib/dates';
 import { noticeHref, noticeText, type NoticeKind } from '@/lib/notices';
@@ -23,6 +23,8 @@ const ICONS: Record<NoticeKind, LucideIcon> = {
   paired_proposal: SlidersHorizontal,
   paired_answer: Settings2,
   joined: UserPlus,
+  remind_morning: Sunrise,
+  remind_evening: Moon,
 };
 
 export default function NotificationsPage() {
@@ -64,7 +66,7 @@ export default function NotificationsPage() {
             return (
               <li key={notice.id}>
                 <Link
-                  href={noticeHref(notice.kind)}
+                  href={noticeHref(notice.kind, notice.payload)}
                   className={`flex items-start gap-3 rounded-2xl border border-line px-5 py-4 transition-colors hover:border-line-strong ${
                     fresh ? 'bg-surface shadow-card' : 'bg-transparent'
                   }`}

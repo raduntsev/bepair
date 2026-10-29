@@ -2,7 +2,9 @@
 
 import { Bell, ListChecks, Mail, Send, Sun } from 'lucide-react';
 import { useSpaceAuth, type Profile } from '@/hooks/useSpaceAuth';
-import { Page, PageHeader, RowGroup, SwitchRow } from '@/components/ui/Blocks';
+import { Alert, Page, PageHeader, RowGroup, SwitchRow } from '@/components/ui/Blocks';
+import { ReminderSettings } from '@/components/ReminderSettings';
+import { useReminders } from '@/hooks/useReminders';
 import { PushCard } from '@/components/PushCard';
 import { InstallCard } from '@/components/InstallCard';
 
@@ -11,6 +13,7 @@ type Key = keyof Pick<Profile, 'notify_pings' | 'notify_day' | 'notify_tasks' | 
 export default function NotificationSettingsPage() {
   const { profile, updateProfile } = useSpaceAuth();
   const set = (key: Key) => (next: boolean) => updateProfile({ [key]: next });
+  const { reminders, available, error: reminderError, update: updateReminders } = useReminders();
 
   return (
     <Page width="form">
@@ -18,6 +21,17 @@ export default function NotificationSettingsPage() {
       <div className="space-y-4">
         <InstallCard />
         <PushCard />
+
+        {available && reminders && (
+          <section aria-labelledby="reminders-title" className="space-y-2">
+            <h2 id="reminders-title" className="px-1 pt-2 text-sm font-medium text-ink-soft">
+              Напоминания по времени
+            </h2>
+            <ReminderSettings value={reminders} onChange={updateReminders} />
+            <p className="px-1 text-sm text-ink-faint">По вашему местному времени, не чаще раза в день. Если повода нет — напоминания не будет.</p>
+            {reminderError && <Alert>{reminderError}</Alert>}
+          </section>
+        )}
 
         <RowGroup label="Что присылать">
           <SwitchRow Icon={Send} title="Весточки" sub="Приходят сразу, это их смысл" checked={profile?.notify_pings ?? true} onChange={set('notify_pings')} />
