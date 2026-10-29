@@ -20,24 +20,25 @@ interface RowProps {
 function ReminderRow({ Icon, title, sub, on, at, onToggle, onTime }: RowProps) {
   const timeId = useId();
   return (
-    <li className="flex flex-wrap items-center gap-x-3.5 gap-y-2 px-5 py-3.5">
-      <Icon className="size-5 shrink-0 text-ink-soft" aria-hidden />
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium text-ink">{title}</span>
-        <span className="block text-sm text-ink-faint">{sub}</span>
-      </span>
-      <label htmlFor={timeId} className="sr-only">
-        {`${title}: время`}
-      </label>
-      <Input
-        id={timeId}
-        type="time"
-        value={at}
-        disabled={!on}
-        onChange={(event) => event.target.value && onTime(event.target.value)}
-        className="w-28 text-center"
-      />
-      <Toggle checked={on} onChange={onToggle} label={title} />
+    <li className="px-5 py-3.5">
+      <div className="flex items-center gap-3.5">
+        <Icon className="size-5 shrink-0 text-ink-soft" aria-hidden />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium text-ink">{title}</span>
+          <span className="block text-sm text-ink-faint">{sub}</span>
+        </span>
+        <Toggle checked={on} onChange={onToggle} label={title} />
+      </div>
+      {on && (
+        <div className="mt-2 flex items-center gap-2 pl-8.5">
+          <label htmlFor={timeId} className="text-sm text-ink-soft">
+            в
+          </label>
+          <div className="w-36">
+            <Input id={timeId} type="time" aria-label={`${title}, время`} value={at} onChange={(event) => event.target.value && onTime(event.target.value)} />
+          </div>
+        </div>
+      )}
     </li>
   );
 }
