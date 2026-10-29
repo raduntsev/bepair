@@ -27,6 +27,7 @@
 2. `supabase/migrations/0002_bepair_complete.sql`
 3. `supabase/migrations/0003_bepair_native.sql`
 4. `supabase/migrations/0004_bepair_reminders.sql`
+5. `supabase/migrations/0005_bepair_partner_profile.sql`
 
 Все миграции можно запускать повторно — они идемпотентны. `supabase_migration.sql` в корне — старая разовая правка, повторно её не запускайте.
 

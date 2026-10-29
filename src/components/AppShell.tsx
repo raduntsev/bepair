@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
+import supabase from '@/lib/supabase';
 import { usePathname } from 'next/navigation';
 import {
   Bell,
@@ -83,6 +85,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { unread } = useNotifications();
   /* The ping composer is a focused task: no tab bar under the thumb. */
   const focused = pathname === '/ping';
+
+  /* «Заходил(а)» in the partner's profile: on open and on coming back. Throttled in SQL. */
+  useEffect(() => {
+    const touch = () => {
+      if (document.visibilityState === 'visible') supabase.rpc('bp_touch').then(() => undefined);
+    };
+    touch();
+    document.addEventListener('visibilitychange', touch);
+    return () => document.removeEventListener('visibilitychange', touch);
+  }, []);
 
   return (
     <div className="min-h-dvh md:flex">
