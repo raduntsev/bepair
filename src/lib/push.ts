@@ -1,4 +1,5 @@
 import supabase from './supabase';
+import { refreshWidgets } from './native';
 
 /*
   Database triggers write notifications; this asks the server to deliver the
@@ -6,6 +7,8 @@ import supabase from './supabase';
   must never fail the action that caused it — the in-app feed already has it.
 */
 export async function flushPush() {
+  /* Whatever changed for the partner also changed on your own home screen. */
+  refreshWidgets();
   try {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;

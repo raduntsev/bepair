@@ -176,6 +176,8 @@
     min-height: 100dvh;
     background-color: var(--c-canvas);
     color: var(--c-ink);
+    /* Under the status bar in the native shell; 0 in browsers. */
+    padding-top: env(safe-area-inset-top, 0px);
     overscroll-behavior-y: none;
   }
 

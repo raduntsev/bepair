@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
 import { noticeHref, noticeText, pushPreference, type NoticeKind } from '@/lib/notices';
+import { apnsConfigured, fcmConfigured, sendApns, sendFcm, type PushMessage } from '@/lib/nativePush';
 import { displayName } from '@/lib/words';
 
 export const runtime = 'nodejs';
@@ -28,7 +29,8 @@ interface Row {
 }
 
 export async function POST(request: Request) {
-  if (!URL || !SERVICE_KEY || !VAPID_PUBLIC || !VAPID_PRIVATE) {
+  const webReady = !!(VAPID_PUBLIC && VAPID_PRIVATE);
+  if (!URL || !SERVICE_KEY || (!webReady && !fcmConfigured() && !apnsConfigured())) {
     return Response.json({ configured: false, sent: 0 });
   }
 
@@ -67,11 +69,11 @@ export async function POST(request: Request) {
       .from('profiles')
       .select('id, display_name, gender, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound')
       .in('id', people),
-    admin.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').in('user_id', [...new Set(rows.map((r) => r.user_id))]),
+    admin.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth, kind').in('user_id', [...new Set(rows.map((r) => r.user_id))]),
   ]);
 
   const byId = new Map((profiles ?? []).map((p) => [p.id as string, p as Record<string, unknown>]));
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+  if (webReady) webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC!, VAPID_PRIVATE!);
 
   let sent = 0;
   const dead: string[] = [];
@@ -87,9 +89,18 @@ export async function POST(request: Request) {
     const body = noticeText({ kind: row.kind, payload: row.payload }, name, actor?.gender as 'm' | 'f' | null);
     const silent = row.kind !== 'ping' && recipient.notify_sound === false;
 
-    const message = JSON.stringify({ title: 'Впаре', body, url: noticeHref(row.kind), tag: row.kind === 'day' ? 'day' : row.id, silent });
+    const push: PushMessage = { title: 'Впаре', body, url: noticeHref(row.kind), tag: row.kind === 'day' ? 'day' : row.id, silent };
+    const message = JSON.stringify(push);
 
     for (const sub of (subscriptions ?? []).filter((s) => s.user_id === row.user_id)) {
+      /* Native devices: FCM for Android, APNs for iPhone. */
+      if (sub.kind === 'fcm' || sub.kind === 'apns') {
+        const result = sub.kind === 'fcm' ? await sendFcm(sub.endpoint, push) : await sendApns(sub.endpoint, push);
+        if (result === 'ok') sent += 1;
+        if (result === 'dead') dead.push(sub.id as string);
+        continue;
+      }
+      if (!webReady) continue;
       try {
         await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, message, { TTL: 60 * 60 * 12 });
         sent += 1;

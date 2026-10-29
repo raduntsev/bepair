@@ -3,6 +3,7 @@ import { Onest } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/hooks/useSpaceAuth';
 import { ThemeScript } from '@/components/ThemeScript';
+import { NativeAuthListener } from '@/components/NativeAuthListener';
 
 const onest = Onest({
   subsets: ['latin', 'cyrillic'],
@@ -54,7 +55,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${onest.variable} antialiased`}>
         <div hidden dangerouslySetInnerHTML={{ __html: DIRECTION_CONTRACT }} />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <NativeAuthListener />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
