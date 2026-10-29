@@ -1,7 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+/*
+  Missing env vars must not break the build (Vercel prerenders pages without a
+  session). The client is created against a placeholder and the app shows a
+  plain «не настроено» screen instead of failing deep inside supabase-js.
+*/
+export const isSupabaseConfigured = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://not-configured.supabase.co';
+const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'not-configured';
 
 const isBrowser = typeof window !== 'undefined';
 

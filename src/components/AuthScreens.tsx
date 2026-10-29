@@ -207,3 +207,18 @@ export function MigrationNotice() {
     </Centered>
   );
 }
+
+export function ConfigNotice() {
+  return (
+    <Centered>
+      <Panel>
+        <h1 className="font-semibold">Приложение не подключено к базе</h1>
+        <p className="mt-2 text-sm text-ink-soft">
+          В Vercel → Settings → Environment Variables добавьте <code className="rounded bg-sunken px-1.5 py-0.5">NEXT_PUBLIC_SUPABASE_URL</code> и{' '}
+          <code className="rounded bg-sunken px-1.5 py-0.5">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> из Supabase → Project Settings → API, затем
+          сделайте Redeploy.
+        </p>
+      </Panel>
+    </Centered>
+  );
+}
