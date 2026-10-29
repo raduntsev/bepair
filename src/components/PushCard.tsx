@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { BellRing, Check } from 'lucide-react';
 import { currentSubscription, pushSupported, subscribePush, unsubscribePush, VAPID_PUBLIC_KEY } from '@/lib/push';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { isNative } from '@/lib/native';
+import { nativePushStatus, subscribeNativePush, unsubscribeNativePush } from '@/lib/nativePushClient';
 import { Button } from '@/components/ui/Button';
 
 type Status = 'checking' | 'on' | 'off' | 'denied' | 'unsupported' | 'unconfigured' | 'ios-install';
@@ -16,7 +18,7 @@ function isStandalone() {
 }
 
 /* Push is per device: this card is about the phone or laptop in your hand. */
-export function PushCard() {
+function WebPushCard() {
   const { user } = useSpaceAuth();
   const [status, setStatus] = useState<Status>('checking');
   const [busy, setBusy] = useState(false);
@@ -91,4 +93,78 @@ export function PushCard() {
       </div>
     </section>
   );
+}
+
+/* Inside the iOS/Android app: APNs or FCM instead of web push. */
+function NativePushCard() {
+  const { user } = useSpaceAuth();
+  const [status, setStatus] = useState<'checking' | 'on' | 'off' | 'denied'>('checking');
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    nativePushStatus().then(setStatus);
+  }, []);
+
+  const copy = {
+    checking: 'Проверяем телефон…',
+    on: 'Уведомления приходят на этот телефон. Весточки — сразу, остальное — по настройкам ниже.',
+    off: 'Включите, чтобы весточки и новости партнёра приходили, даже когда приложение закрыто.',
+    denied: 'Уведомления для Впаре выключены в настройках телефона. Включите их там и вернитесь сюда.',
+  };
+
+  return (
+    <section className="rounded-2xl border border-line bg-surface p-5 shadow-card md:p-6">
+      <div className="flex items-start gap-3">
+        <BellRing className="mt-0.5 size-5 shrink-0 text-ink-soft" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold">Уведомления на этом телефоне</h2>
+          <p className="mt-1.5 text-sm text-ink-soft" role="status">
+            {copy[status]}
+          </p>
+          {failed && <p className="mt-2 text-sm text-danger">Не получилось подключить уведомления. Попробуйте ещё раз чуть позже.</p>}
+          {(status === 'on' || status === 'off') && (
+            <div className="mt-4">
+              <Button
+                variant={status === 'on' ? 'secondary' : 'primary'}
+                loading={busy}
+                onClick={async () => {
+                  if (!user) return;
+                  setBusy(true);
+                  setFailed(false);
+                  if (status === 'on') {
+                    await unsubscribeNativePush();
+                    setStatus('off');
+                  } else {
+                    const result = await subscribeNativePush(user.id);
+                    if (result === 'subscribed') setStatus('on');
+                    else if (result === 'denied') setStatus('denied');
+                    else setFailed(true);
+                  }
+                  setBusy(false);
+                }}
+              >
+                {status === 'on' ? (
+                  <>
+                    <Check className="size-4" aria-hidden /> Включено — выключить
+                  </>
+                ) : (
+                  'Включить уведомления'
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function PushCard() {
+  const [native, setNative] = useState<boolean | null>(null);
+  useEffect(() => {
+    setNative(isNative());
+  }, []);
+  if (native === null) return null;
+  return native ? <NativePushCard /> : <WebPushCard />;
 }

@@ -200,8 +200,8 @@ export function MigrationNotice() {
       <Panel>
         <h1 className="font-semibold">База данных старше приложения</h1>
         <p className="mt-2 text-sm text-ink-soft">
-          Примените миграцию <code className="rounded bg-sunken px-1.5 py-0.5">supabase/migrations/0002_bepair_complete.sql</code>{' '}
-          в Supabase → SQL Editor и обновите страницу. Подробности — в README.
+          Выполните по порядку все файлы из <code className="rounded bg-sunken px-1.5 py-0.5">supabase/migrations</code> в Supabase → SQL
+          Editor и обновите страницу. Подробности — в README.
         </p>
       </Panel>
     </Centered>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_bg">#1A1A25</color>
+    <color name="widget_ink">#F0F0F6</color>
+    <color name="widget_ink_soft">#B3B3CA</color>
+    <color name="widget_ink_faint">#9595AE</color>
+    <color name="widget_line">#2B2B3B</color>
+    <color name="widget_accent">#8B85FF</color>
+    <color name="widget_accent_ink">#16162A</color>
+    <color name="widget_accent_soft">#262441</color>
+    <color name="widget_accent_soft_ink">#C3BFFF</color>
+    <color name="widget_partner">#E8A552</color>
+    <color name="widget_partner_ink">#F0B56B</color>
+    <color name="widget_partner_soft">#2E2417</color>
+</resources>

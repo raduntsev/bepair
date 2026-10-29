@@ -53,3 +53,9 @@ export function moodLabel(value: number): string {
   contrast there — so it always appears as a filled shape beside its label.
 */
 export const MOOD_INK = '#101018';
+
+/* The same colour as #rrggbb, for native widgets that do not parse CSS rgb(). */
+export function moodHex(value: number): string {
+  const [r, g, b] = moodColor(value).match(/\d+/g)!.map(Number);
+  return `#${[r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+}

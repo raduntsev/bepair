@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, Check, Lock, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import { Bell, Check, LayoutGrid, Lock, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import { displayName } from '@/lib/words';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Button } from '@/components/ui/Button';
@@ -117,6 +117,7 @@ export default function SettingsPage() {
           <LinkRow href="/settings/paired" Icon={Lock} title="Парные настройки" sub="Меняются только по согласию обоих" />
           <LinkRow href="/settings/personal" Icon={UserRound} title="Личные и данные" sub="Цикл, выгрузка ваших данных" />
           <LinkRow href="/notifications/settings" Icon={Bell} title="Уведомления" sub="Что присылать на это устройство" />
+          <LinkRow href="/settings/widgets" Icon={LayoutGrid} title="Виджеты" sub="День и пара на экране «Домой»" />
         </RowGroup>
 
         <Card>
