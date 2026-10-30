@@ -18,6 +18,14 @@ import { MOOD_INK, moodColor } from '@/lib/mood';
 import { sentence, todayISO } from '@/lib/dates';
 import { Alert } from '@/components/ui/Blocks';
 import { useMonthEntries, type DayMark } from '@/hooks/useMonthEntries';
+import { useImportantDates, useShowMoon } from '@/hooks/useImportantDates';
+import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { occursOn, withAnniversary } from '@/lib/importantDates';
+import { PRINCIPAL_LABEL, phasesBetween, type Principal } from '@/lib/moon';
+import { ImportantDates } from '@/components/ImportantDates';
+import { MoonGlyph } from '@/components/MoonGlyph';
+
+const PRINCIPAL_PHASE: Record<Principal, number> = { new: 0, first: 0.25, full: 0.5, last: 0.75 };
 
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
 
@@ -63,6 +71,18 @@ export default function CalendarPage() {
   );
 
   const { marks, error, isLoading } = useMonthEntries(iso(gridStart), iso(gridEnd));
+  const { settings } = useSpaceAuth();
+  const dates = useImportantDates();
+  const { showMoon } = useShowMoon();
+  const allDates = useMemo(() => withAnniversary(dates.items, settings?.together_since ?? null), [dates.items, settings?.together_since]);
+
+  /* Principal phases only, on the local day they fall on: a quiet mark, not a lunar chart. */
+  const moonByDay = useMemo(() => {
+    const map: Record<string, Principal> = {};
+    if (!showMoon) return map;
+    for (const e of phasesBetween(gridStart, new Date(gridEnd.getTime() + 86400000))) map[iso(e.at)] = e.kind;
+    return map;
+  }, [showMoon, gridStart, gridEnd]);
   const monthHasDays = days.some((day) => isSameMonth(day, cursor) && (marks[iso(day)]?.mineMarked || marks[iso(day)]?.theirsMarked));
   const isCurrentMonth = isSameMonth(cursor, new Date());
 
@@ -117,6 +137,8 @@ export default function CalendarPage() {
             const isToday = key === today;
             const isFuture = key > today;
             const mark = marks[key];
+            const special = allDates.filter((d) => occursOn(d, key));
+            const moon = moonByDay[key];
 
             return (
               <button
@@ -124,10 +146,21 @@ export default function CalendarPage() {
                 type="button"
                 disabled={isFuture}
                 onClick={() => router.push(`/day?d=${key}`)}
-                aria-label={`${format(day, 'd MMMM yyyy', { locale: ru })}${mark?.theirsMarked ? ', партнёр отметил день' : ''}${mark?.mineMarked ? ', ваш день отмечен' : ''}`}
-                className="relative flex aspect-square min-h-11 items-center justify-center rounded-full text-sm font-medium transition-colors enabled:hover:bg-sunken disabled:cursor-default disabled:opacity-30"
+                aria-label={`${format(day, 'd MMMM yyyy', { locale: ru })}${mark?.theirsMarked ? ', партнёр отметил день' : ''}${mark?.mineMarked ? ', ваш день отмечен' : ''}${special.length ? `, ${special.map((d) => (d.id ? d.title : 'годовщина')).join(', ')}` : ''}${moon ? `, ${PRINCIPAL_LABEL[moon]}` : ''}`}
+                className={`relative flex aspect-square min-h-11 items-center justify-center rounded-full text-sm font-medium transition-colors enabled:hover:bg-sunken disabled:cursor-default ${
+                  special.length ? 'disabled:opacity-60' : 'disabled:opacity-30'
+                }`}
               >
                 <DayCell mark={mark} muted={outside} />
+                {special.length > 0 && (
+                  <span
+                    className="pointer-events-none absolute bottom-1 left-1/2 z-10 size-1.5 -translate-x-1/2 rounded-full bg-accent ring-[1.5px] ring-surface"
+                    aria-hidden
+                  />
+                )}
+                {moon && (
+                  <MoonGlyph phase={PRINCIPAL_PHASE[moon]} size={10} className="pointer-events-none absolute top-0.5 right-0.5 z-10 text-ink-soft" />
+                )}
                 <span
                   className={`relative z-10 ${
                     mark?.theirsMood == null && outside ? 'text-ink-faint' : 'text-ink'
@@ -174,7 +207,33 @@ export default function CalendarPage() {
           <span className="size-5 rounded-full bg-sunken ring-[2.5px] ring-inset ring-line-strong" aria-hidden />
           отметились оба
         </span>
+        {allDates.length > 0 && (
+          <span className="flex items-center gap-2">
+            <span className="flex size-5 items-center justify-center" aria-hidden>
+              <span className="size-1.5 rounded-full bg-accent" />
+            </span>
+            важная дата
+          </span>
+        )}
+        {showMoon && (
+          <span className="flex items-center gap-2">
+            <MoonGlyph phase={0.5} size={14} className="text-ink-soft" />
+            главные фазы луны
+          </span>
+        )}
       </div>
+
+      {dates.available && (
+        <div className="mt-6">
+          <ImportantDates
+            items={dates.items}
+            togetherSince={settings?.together_since ?? null}
+            error={dates.error}
+            onAdd={dates.add}
+            onRemove={dates.remove}
+          />
+        </div>
+      )}
     </div>
   );
 }

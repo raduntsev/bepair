@@ -1,12 +1,14 @@
 'use client';
 
-import { Droplet } from 'lucide-react';
+import { Droplet, Moon } from 'lucide-react';
+import { useShowMoon } from '@/hooks/useImportantDates';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { AiExportCard } from '@/components/AiExportCard';
 import { Page, PageHeader, RowGroup, SwitchRow } from '@/components/ui/Blocks';
 
 export default function PersonalSettingsPage() {
   const { user, profile, updateProfile } = useSpaceAuth();
+  const { showMoon, setShowMoon } = useShowMoon();
   return (
     <Page width="form">
       <PageHeader title="Личные и данные" back={{ href: '/settings', label: 'Настройки' }} />
@@ -21,6 +23,15 @@ export default function PersonalSettingsPage() {
             checked={profile?.cycle_tracking ?? false}
             onChange={(next) => updateProfile({ cycle_tracking: next })}
           />
+          {showMoon !== null && (
+            <SwitchRow
+              Icon={Moon}
+              title="Показывать фазу луны"
+              sub="На экране дня и главные фазы в календаре. Видно только вам"
+              checked={showMoon}
+              onChange={setShowMoon}
+            />
+          )}
         </RowGroup>
 
         {user && <AiExportCard userId={user.id} name={profile?.display_name ?? ''} />}
