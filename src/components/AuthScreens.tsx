@@ -200,8 +200,23 @@ export function MigrationNotice() {
       <Panel>
         <h1 className="font-semibold">База данных старше приложения</h1>
         <p className="mt-2 text-sm text-ink-soft">
-          Примените миграцию <code className="rounded bg-sunken px-1.5 py-0.5">supabase/migrations/0002_bepair_complete.sql</code>{' '}
-          в Supabase → SQL Editor и обновите страницу. Подробности — в README.
+          Выполните по порядку все файлы из <code className="rounded bg-sunken px-1.5 py-0.5">supabase/migrations</code> в Supabase → SQL
+          Editor и обновите страницу. Подробности — в README.
+        </p>
+      </Panel>
+    </Centered>
+  );
+}
+
+export function ConfigNotice() {
+  return (
+    <Centered>
+      <Panel>
+        <h1 className="font-semibold">Приложение не подключено к базе</h1>
+        <p className="mt-2 text-sm text-ink-soft">
+          В Vercel → Settings → Environment Variables добавьте <code className="rounded bg-sunken px-1.5 py-0.5">NEXT_PUBLIC_SUPABASE_URL</code> и{' '}
+          <code className="rounded bg-sunken px-1.5 py-0.5">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> из Supabase → Project Settings → API, затем
+          сделайте Redeploy.
         </p>
       </Panel>
     </Centered>

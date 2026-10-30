@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { INVITE_KEY, useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Alert } from '@/components/ui/Blocks';
-import { Centered, LoginPanel, MigrationNotice, Opening, Panel, SpaceChoice } from '@/components/AuthScreens';
+import { Centered, ConfigNotice, LoginPanel, MigrationNotice, Opening, Panel, SpaceChoice } from '@/components/AuthScreens';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 
 function readInvite() {
@@ -42,6 +43,7 @@ export function AuthGate({ children, requireOnboarded = true }: { children: Reac
     if (mustOnboard && pathname !== '/onboarding') router.replace('/onboarding');
   }, [mustOnboard, pathname, router]);
 
+  if (!isSupabaseConfigured) return <ConfigNotice />;
   if (isLoading) return <Opening />;
   if (needsMigration) return <MigrationNotice />;
   if (!isAuthenticated) return <LoginPanel />;

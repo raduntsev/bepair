@@ -9,8 +9,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Session, User } from '@supabase/supabase-js';
-import supabase from '@/lib/supabase';
+import supabase, { isNativeShell, NATIVE_AUTH_CALLBACK } from '@/lib/supabase';
 import { localTimezone } from '@/lib/dates';
+import { clearWidgets } from '@/lib/native';
 import type { Gender } from '@/lib/words';
 
 export interface Profile {
@@ -27,6 +28,7 @@ export interface Profile {
   notify_tasks: boolean;
   notify_letters: boolean;
   notify_sound: boolean;
+  widget_hide_colors: boolean;
 }
 
 export interface Partner {
@@ -50,7 +52,7 @@ export interface SpaceSettings {
 }
 
 const PROFILE_COLUMNS =
-  'id, space_id, display_name, avatar_url, timezone, gender, onboarded_at, cycle_tracking, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound';
+  'id, space_id, display_name, avatar_url, timezone, gender, onboarded_at, cycle_tracking, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound, widget_hide_colors';
 
 export const INVITE_KEY = 'bepair-invite';
 
@@ -227,7 +229,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState((s) => ({ ...s, error: null }));
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback`, shouldCreateUser: true },
+      options: {
+        emailRedirectTo: isNativeShell() ? NATIVE_AUTH_CALLBACK : `${window.location.origin}/auth/callback`,
+        shouldCreateUser: true,
+      },
     });
     if (error) {
       setState((s) => ({
@@ -244,6 +249,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     setState((s) => ({ ...s, error: null }));
+    /*
+      Google refuses to sign in inside an embedded web view, so the native app
+      opens the system browser and waits for vpare://auth-callback.
+    */
+    if (isNativeShell()) {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: NATIVE_AUTH_CALLBACK, skipBrowserRedirect: true },
+      });
+      if (!error && data.url) {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({ url: data.url, presentationStyle: 'popover' });
+        return;
+      }
+      setState((s) => ({ ...s, error: 'Вход через Google сейчас недоступен. Войдите по ссылке на почту.' }));
+      return;
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -338,6 +360,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    /* The widget's key belongs to this account; a signed-out phone shows nothing private. */
+    await clearWidgets();
     await supabase.auth.signOut();
     setState({ ...EMPTY, isLoading: false });
     router.push('/');

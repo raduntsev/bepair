@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Впаре</string>
+    <string name="title_activity_main">Впаре</string>
+    <string name="package_name">app.bepair.vpare</string>
+    <string name="custom_url_scheme">app.bepair.vpare</string>
+    <string name="widget_day_name">День</string>
+    <string name="widget_day_description">Ваш день и день партнёра — одним взглядом</string>
+    <string name="widget_couple_name">Пара</string>
+    <string name="widget_couple_description">День, дни вместе, серия и быстрые действия</string>
+    <string name="widget_action_day">Отметить</string>
+    <string name="widget_action_ping">Весточка</string>
+    <string name="widget_setup_headline">Откройте Впаре</string>
+    <string name="widget_setup_sub">Войдите — и здесь появится ваш день</string>
+    <string name="widget_loading">Загружаем день…</string>
+</resources>

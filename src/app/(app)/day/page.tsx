@@ -168,6 +168,17 @@ function DayView() {
     }
   }, [mood, note, mine, save, presence]);
 
+  /*
+    «Просмотрено»: the morning reminder asks about a partner's day only while you
+    have not opened it. Recorded once their day is actually in front of you.
+    Fails quietly before migration 0004 — nothing depends on it in the UI.
+  */
+  const theirsKey = theirs ? `${theirs.user_id}:${theirs.entry_date}` : null;
+  useEffect(() => {
+    if (!isUnlocked || !theirsKey) return;
+    supabase.rpc('bp_mark_day_viewed', { d: date }).then(() => undefined);
+  }, [isUnlocked, theirsKey, date]);
+
   const tint = mood !== null ? moodColor(mood) : null;
 
   return (

@@ -9,6 +9,7 @@ import { displayName } from '@/lib/words';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { usePresence } from '@/hooks/usePresence';
 import { Counters } from '@/components/Counters';
+import { PartnerRhythm } from '@/components/PartnerRhythm';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Segment } from '@/components/ui/Controls';
@@ -57,6 +58,8 @@ export default function CouplePage() {
       />
 
       <div className="mt-6 space-y-4">
+        {partner && <PartnerRhythm partner={partner} showClock={!!settings?.long_distance} />}
+
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>

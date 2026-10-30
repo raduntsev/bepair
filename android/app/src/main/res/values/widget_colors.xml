@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors src/app/globals.css. The mood spectrum is never used here as a UI colour:
+     it only reaches the widget as the actual colour of a day, drawn into the pair mark. -->
+<resources>
+    <color name="widget_bg">#FFFFFF</color>
+    <color name="widget_ink">#1A1A28</color>
+    <color name="widget_ink_soft">#4B4B63</color>
+    <color name="widget_ink_faint">#68687F</color>
+    <color name="widget_line">#E2E2EE</color>
+    <color name="widget_accent">#5B54E8</color>
+    <color name="widget_accent_ink">#FFFFFF</color>
+    <color name="widget_accent_soft">#EDECFD</color>
+    <color name="widget_accent_soft_ink">#3F38C4</color>
+    <color name="widget_partner">#D98324</color>
+    <color name="widget_partner_ink">#94500F</color>
+    <color name="widget_partner_soft">#FDF1E2</color>
+</resources>
