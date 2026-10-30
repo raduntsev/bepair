@@ -17,13 +17,15 @@ interface PartnerDayCardProps {
   showTime?: boolean;
   /* True right after your own mark unsealed this card in front of you. */
   justUnsealed?: boolean;
+  /* Presence only: the partner has marked this date, content still sealed. */
+  partnerMarked?: boolean;
 }
 
 type CardState = 'alone' | 'sealed' | 'waiting' | 'open';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, justUnsealed }: PartnerDayCardProps) {
+export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, justUnsealed, partnerMarked }: PartnerDayCardProps) {
   const reduce = useReducedMotion();
   const name = displayName(partner?.display_name);
   const state: CardState = !partner ? 'alone' : !isUnlocked ? 'sealed' : entry ? 'open' : 'waiting';
@@ -76,9 +78,11 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
               <div>
                 <h2 className="font-semibold">{name}</h2>
                 <p className="mt-1.5 text-sm text-ink-soft">
-                  {isToday
-                    ? 'День откроется, как только вы отметите свой. Так вы оба говорите первыми.'
-                    : 'Этот день остался закрытым: вы его не отметили.'}
+                  {!isToday
+                    ? 'Этот день остался закрытым: вы его не отметили.'
+                    : partnerMarked
+                      ? `${name} уже ${verb(partner?.gender, 'отметил')} свой день. Теперь ваша очередь: день откроется, как только вы отметите свой.`
+                      : 'День откроется, как только вы отметите свой. Так вы оба говорите первыми.'}
                 </p>
               </div>
             </div>

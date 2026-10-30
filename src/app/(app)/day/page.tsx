@@ -10,6 +10,7 @@ import { fmt, longDate, todayISO } from '@/lib/dates';
 import { MoodScale } from '@/components/MoodScale';
 import { PartnerDayCard } from '@/components/PartnerDayCard';
 import { Counters } from '@/components/Counters';
+import { DayPrompts } from '@/components/DayPrompts';
 import { DoneForMe, MyTasks } from '@/components/DayTasks';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Field';
@@ -180,6 +181,8 @@ function DayView() {
   }, [isUnlocked, theirsKey, date]);
 
   const tint = mood !== null ? moodColor(mood) : null;
+  /* Wait for presence before choosing whether prompts start open, so they do not jump. */
+  const partnerMarkedToday = !!partner && !presence.isLoading && presence.partnerMarked(date);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 pt-7 pb-8 md:px-8 md:pt-10">
@@ -257,6 +260,10 @@ function DayView() {
                   />
                 </div>
 
+                {!isClosed && !mine && !presence.isLoading && (
+                  <DayPrompts key={date} date={date} defaultOpen={partnerMarkedToday} />
+                )}
+
                 {!isClosed && (
                   <div className="mt-6 flex flex-wrap items-center gap-3">
                     <Button size="lg" loading={saving} disabled={mood === null || !isDirty} onClick={onSave}>
@@ -304,6 +311,7 @@ function DayView() {
                   isToday={isToday}
                   showTime={settings?.long_distance}
                   justUnsealed={justUnsealed}
+                  partnerMarked={partnerMarkedToday}
                 />
               </div>
 
