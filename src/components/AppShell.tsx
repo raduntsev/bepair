@@ -4,80 +4,71 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
 import { usePathname } from 'next/navigation';
-import {
-  Bell,
-  BookOpen,
-  CalendarDays,
-  Gift,
-  ListChecks,
-  Mail,
-  Menu,
-  Send,
-  Settings,
-  Sun,
-  Users,
-} from 'lucide-react';
+import { ArrowLeftRight, CalendarDays, Send, Sun, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Wordmark } from '@/components/PairMark';
+import { SectionTabs, type SubItem } from '@/components/SectionTabs';
 
-interface NavItem {
+interface Section {
   href: string;
   label: string;
   Icon: LucideIcon;
+  children?: SubItem[];
 }
 
-/* Five tabs fit 390px; nine would leave 43px each. Everything else lives under «Ещё». */
-const TABS: NavItem[] = [
-  { href: '/day', label: 'День', Icon: Sun },
-  { href: '/calendar', label: 'Календарь', Icon: CalendarDays },
-  { href: '/chronicle', label: 'Летопись', Icon: BookOpen },
-  { href: '/tasks', label: 'Задачи', Icon: ListChecks },
-  { href: '/more', label: 'Ещё', Icon: Menu },
-];
+/*
+  Four sections, not eleven destinations. Every screen the product had is still
+  here — the ones that used to sit in a flat list, or behind «Ещё», are now the
+  sub-tabs of the section they belong to, visible as soon as you open it.
 
-/* The desktop rail has room for every destination, so nothing hides behind «Ещё». */
-const RAIL_MAIN: NavItem[] = [
+  Grouping rule: «День» is today, «Вместе» is looking back, «Обмен» is what the
+  two of you pass between you, «Профиль» is everything that configures the pair.
+*/
+const SECTIONS: Section[] = [
   { href: '/day', label: 'День', Icon: Sun },
-  { href: '/calendar', label: 'Календарь', Icon: CalendarDays },
-  { href: '/chronicle', label: 'Летопись', Icon: BookOpen },
-  { href: '/tasks', label: 'Задачи', Icon: ListChecks },
-  { href: '/letters', label: 'Письма', Icon: Mail },
-  { href: '/store', label: 'Услуги', Icon: Gift },
+  {
+    href: '/calendar',
+    label: 'Вместе',
+    Icon: CalendarDays,
+    children: [
+      { href: '/calendar', label: 'Календарь' },
+      { href: '/chronicle', label: 'Летопись' },
+    ],
+  },
+  {
+    href: '/tasks',
+    label: 'Обмен',
+    Icon: ArrowLeftRight,
+    children: [
+      { href: '/tasks', label: 'Задачи' },
+      { href: '/store', label: 'Услуги' },
+      { href: '/letters', label: 'Письма' },
+    ],
+  },
+  {
+    href: '/couple',
+    label: 'Профиль',
+    Icon: UserRound,
+    children: [
+      { href: '/couple', label: 'Пара' },
+      { href: '/notifications', label: 'Уведомления' },
+      { href: '/settings', label: 'Настройки' },
+    ],
+  },
 ];
-const RAIL_SECONDARY: NavItem[] = [
-  { href: '/notifications', label: 'Уведомления', Icon: Bell },
-  { href: '/couple', label: 'Профиль пары', Icon: Users },
-  { href: '/settings', label: 'Настройки', Icon: Settings },
-];
-
-/* Under «Ещё» on a phone; the tab lights up for any of them. */
-const MORE_ROUTES = ['/more', '/letters', '/store', '/notifications', '/couple', '/settings'];
 
 function matches(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function RailLink({ item, active, badge }: { item: NavItem; active: boolean; badge?: number }) {
-  const { href, label, Icon } = item;
-  return (
-    <Link
-      href={href}
-      aria-current={active ? 'page' : undefined}
-      className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-150 ${
-        active ? 'bg-accent-soft text-accent-soft-ink' : 'text-ink-soft hover:bg-sunken hover:text-ink'
-      }`}
-    >
-      <Icon className="size-5 shrink-0" aria-hidden />
-      <span className="flex-1">{label}</span>
-      {badge ? (
-        <span className="rounded-full bg-accent px-1.5 py-0.5 text-[11px] leading-none font-semibold text-accent-ink">
-          {badge > 9 ? '9+' : badge}
-          <span className="sr-only"> новых</span>
-        </span>
-      ) : null}
-    </Link>
-  );
+/* A section owns its own route and every route under its sub-tabs. */
+function sectionRoutes(section: Section) {
+  return [section.href, ...(section.children ?? []).map((child) => child.href)];
+}
+
+function activeSection(pathname: string) {
+  return SECTIONS.find((section) => sectionRoutes(section).some((href) => matches(pathname, href)));
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -85,6 +76,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { unread } = useNotifications();
   /* The ping composer is a focused task: no tab bar under the thumb. */
   const focused = pathname === '/ping';
+  const current = activeSection(pathname);
+  const subTabs = focused ? undefined : current?.children;
 
   /* «Заходил(а)» in the partner's profile: on open and on coming back. Throttled in SQL. */
   useEffect(() => {
@@ -113,21 +106,61 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Send className="size-4.5" aria-hidden /> Весточка
         </Link>
 
-        {RAIL_MAIN.map((item) => (
-          <RailLink key={item.href} item={item} active={matches(pathname, item.href)} />
-        ))}
-        <div className="my-2 h-px bg-line" aria-hidden />
-        {RAIL_SECONDARY.map((item) => (
-          <RailLink
-            key={item.href}
-            item={item}
-            active={matches(pathname, item.href)}
-            badge={item.href === '/notifications' ? unread : undefined}
-          />
-        ))}
+        {SECTIONS.map((section) => {
+          const sectionActive = sectionRoutes(section).some((href) => matches(pathname, href));
+          return (
+            <div key={section.label} className="mb-1">
+              <Link
+                href={section.href}
+                aria-current={sectionActive && !section.children ? 'page' : undefined}
+                className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-150 ${
+                  sectionActive ? 'text-ink' : 'text-ink-soft hover:bg-sunken hover:text-ink'
+                }`}
+              >
+                <section.Icon className="size-5 shrink-0" aria-hidden />
+                <span className="flex-1">{section.label}</span>
+              </Link>
+
+              {section.children && sectionActive && (
+                <ul className="mt-0.5 ml-5 border-l border-line pl-3">
+                  {section.children.map((child) => {
+                    const childActive = matches(pathname, child.href);
+                    const badge = child.href === '/notifications' ? unread : 0;
+                    return (
+                      <li key={child.href}>
+                        <Link
+                          href={child.href}
+                          aria-current={childActive ? 'page' : undefined}
+                          className={`flex h-10 items-center gap-2 rounded-lg px-3 text-sm transition-colors duration-150 ${
+                            childActive
+                              ? 'bg-accent-soft font-medium text-accent-soft-ink'
+                              : 'text-ink-soft hover:bg-sunken hover:text-ink'
+                          }`}
+                        >
+                          <span className="flex-1">{child.label}</span>
+                          {badge > 0 && (
+                            <span className="rounded-full bg-accent px-1.5 py-0.5 text-[11px] leading-none font-semibold text-accent-ink">
+                              {badge > 9 ? '9+' : badge}
+                              <span className="sr-only"> новых</span>
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
-      <main className={`flex-1 md:min-w-0 md:pb-0 ${focused ? 'pb-8' : 'pb-28'}`}>{children}</main>
+      <div className="flex-1 md:min-w-0">
+        {subTabs && (
+          <SectionTabs items={subTabs} pathname={pathname} badges={{ '/notifications': unread }} />
+        )}
+        <main className={`md:pb-0 ${focused ? 'pb-8' : 'pb-28'}`}>{children}</main>
+      </div>
 
       {!focused && (
         <nav
@@ -135,12 +168,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="safe-b fixed inset-x-0 bottom-0 z-30 border-t border-line bg-rail/95 backdrop-blur-sm md:hidden"
         >
           <ul className="mx-auto flex max-w-lg">
-            {TABS.map(({ href, label, Icon }) => {
-              const active =
-                href === '/more' ? MORE_ROUTES.some((route) => matches(pathname, route)) : matches(pathname, href);
-              const badge = href === '/more' && unread > 0;
+            {SECTIONS.map((section) => {
+              const { href, label, Icon } = section;
+              const active = sectionRoutes(section).some((route) => matches(pathname, route));
+              const badge = sectionRoutes(section).includes('/notifications') && unread > 0;
               return (
-                <li key={href} className="flex-1">
+                <li key={label} className="flex-1">
                   <Link
                     href={href}
                     aria-current={active ? 'page' : undefined}
