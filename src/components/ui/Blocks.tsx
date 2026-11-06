@@ -102,7 +102,7 @@ export function EmptyState({
 }) {
   return (
     <section className="rounded-2xl border border-line bg-surface px-6 py-9 text-center">
-      <PairMark variant={variant} className="mx-auto h-14 w-24" />
+      <PairMark variant={variant} className="mx-auto size-16" />
       <h2 className="mt-4 font-semibold">{title}</h2>
       <p className="mx-auto mt-1.5 max-w-sm text-sm text-ink-soft">{children}</p>
       {action && <div className="mt-5 flex justify-center">{action}</div>}

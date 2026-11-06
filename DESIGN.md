@@ -70,19 +70,108 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
   incumbent app's failure was small controls; this is the rule that answers it.
   Pages clear the tab bar with `pb-28` plus `safe-b` for the home indicator.
 
+## HeroUI
+
+`@heroui/react` v3 is available as a component layer. It is built on Tailwind v4
+and React Aria, so it sits on the stack already here; it brings no runtime of its
+own and needs no provider. The product's hand-built components in
+`src/components/ui/` stay — HeroUI is for what they do not cover (date pickers,
+comboboxes, menus, the accessible overlay primitives), not a replacement.
+
+Every HeroUI colour is bridged to a `--c-*` token in `globals.css`. The bridge is
+unlayered on purpose, so it outranks HeroUI's own `@layer base` values, and each
+value points at a `--c-*` token rather than being restated per theme. That is
+what makes the `system` theme choice work: it removes `data-theme` entirely, so
+HeroUI's `[data-theme="dark"]` selector never matches and its components would
+otherwise sit light on a dark canvas.
+
+Three decisions the bridge records, because the palette has no free hue:
+
+- **`success` is the indigo accent, not green.** Green belongs to the mood
+  spectrum. A green control would read as a mood value. The consequence is that
+  `status="success"` and `status="accent"` now render identically — prefer
+  `accent` and treat `success` as an alias.
+- **`warning` is the partner amber**, the only warm hue in the system. Text on it
+  is the mood ink (6.51:1 light, 8.96:1 dark); the accent ink would be white in
+  the light theme and fail at 2.91:1. Amber already means *partner* here, so a
+  filled `warning` must not sit beside a pair mark.
+- **`danger` is the product's own red**, and its ink follows `--c-accent-ink`,
+  which flips white → near-black with the theme and clears AA at both ends
+  (5.43:1 light, 5.87:1 dark).
+
+Two geometry rules cannot be expressed as variables and are written against
+HeroUI's BEM classes, which is the mechanism its theming guide sanctions:
+
+- HeroUI derives the whole Tailwind `--radius-*` scale from its own `--radius`
+  and keys controls off `rounded-3xl`. `--radius-3xl` is pinned to `1rem` so
+  controls match the product's buttons; `.card` and `.alert` are then set to
+  `--radius-2xl` (1.75rem) because surfaces and controls both read from the 3xl
+  step upstream and cannot differ through variables alone.
+- HeroUI ships `md` buttons at 40px, shrinking to 36px from the `md:` breakpoint,
+  and inputs at 38px. All are under the 44px floor, so `.button--md`,
+  `.button--lg` and `.input` carry `min-block-size: 2.75rem`. `button--sm` is
+  left alone: reaching for it is an explicit choice to go below the floor.
+
+`--color-mood-ink` was added alongside the mood spectrum for text on any
+saturated fill. It mirrors `MOOD_INK` in `src/lib/mood.ts` and does not flip,
+because every saturated fill in the system stays light in both themes.
+
 ## The pair mark
 
-The one graphic device, taken from the calendar: an indigo **ring** is your
-day, an amber **disc** is your partner's. It is the app icon, the wordmark and
-the empty-state illustration (apart, overlapping, or a dotted promise). It never
-wears green or red.
+The one graphic device: a single **ring made of two halves**, indigo on the left
+for you and amber on the right for your partner, with the gaps at the top and
+the bottom. It is the app icon, the wordmark and the empty-state illustration,
+and it never wears green or red.
+
+This replaces the earlier mark — a separate ring and disc standing side by side,
+chosen when the direction was first set and rejected by the user on sight: two
+circles that merely sit next to each other read as a diagram, not as a mark. The
+replacement says what the ring and disc only labelled, because the product's
+thesis is reciprocity and an open circle states it: **until the second person
+marks their day, the circle is not closed.**
+
+Both halves are the same circle (`r=48`, circumference 301.6) drawn with a dash
+pattern, which is the whole reason the mark can move. A dash of `0.5` with a
+round cap is a dot; a dash of `124` is a half of the ring. So the three states
+are not three drawings — they are two elements at different dash lengths:
+
+| State | Dash | Reads as |
+| --- | --- | --- |
+| `apart` | `0.5 301.1`, offsets `0` / `-150.8` | two dots at opposite ends of the orbit |
+| `together` | `124 177.6`, offsets `61.75` / `-89.05` | the closed ring |
+| `quiet` | your half closed, theirs a dotted arc | the partner has not arrived |
+
+`quiet` draws the partner's half as its own `<path>`, because a repeating dash
+pattern cannot be dotted on one half of a circle and solid on the other. That
+one is a pose, not a frame of the animation.
+
+Geometry and motion live in `globals.css` under `.pair-mark`; a dash transition
+cannot be written as a utility class.
 
 ## Motion
 
-One authored moment: when your own mark unseals the partner's card in front of
+Two authored moments, and nothing else moves.
+
+**The card unseals.** When your own mark opens the partner's card in front of
 you, the card opens from the lock outward and their mood disc springs in. An
-already-open day plays nothing. Onboarding questions slide; everything else is
-plain state change. `prefers-reduced-motion` turns all of it off.
+already-open day plays nothing.
+
+**The mark closes.** Going from `apart` to `together`, each dot grows outward
+from its own centre over 820ms on `--ease-out-soft`, so both halves reach with
+both ends at once and meet at the top and the bottom. Nothing is added or
+removed; the browser interpolates the dash. Once closed, the ring turns once
+every 16 seconds — the two of you holding on and going round. The turn starts
+only after the ring has closed, and only while it is closed: an empty state does
+not spin, or the movement stops meaning anything.
+
+The turn is off wherever the mark is chrome rather than the subject (`spin={false}`
+on the wordmark in the rail). A logo revolving all day is noise, and it costs
+battery on the device this product is read on in bed.
+
+Onboarding questions slide; everything else is plain state change.
+`prefers-reduced-motion` turns all of it off — the global reduced-motion block
+already collapses both the dash transition and the turn, so the mark simply
+holds the right pose.
 
 ## The mood scale
 

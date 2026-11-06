@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-canvas px-5">
       <div className="max-w-sm text-center">
-        <PairMark variant="apart" className="mx-auto h-14 w-24" />
+        <PairMark variant="apart" className="mx-auto size-16" />
         <h1 className="mt-5 text-2xl font-semibold tracking-tight">Такой страницы нет</h1>
         <p className="mt-2 text-sm text-ink-soft">Возможно, ссылка устарела. Сегодняшний день на месте.</p>
         <Link

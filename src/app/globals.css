@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@heroui/styles";
 
 /*
   Bepair / Впаре — design tokens.
@@ -151,16 +152,181 @@
   --color-mood-4: #e4823c;
   --color-mood-5: #d2504b;
 
+  /*
+    Ink for text sitting *on* a saturated fill — mood, amber, anything filled.
+    Mirrors MOOD_INK in src/lib/mood.ts and is deliberately theme-independent:
+    every saturated fill in the system stays light in both themes.
+  */
+  --color-mood-ink: #101018;
+
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
   --radius-2xl: 1.75rem;
+  /*
+    HeroUI keys its controls off `rounded-3xl` and derives the whole radius
+    scale from its own `--radius`, which would put buttons at 48px. Pinned to
+    the control radius the product already uses.
+  */
+  --radius-3xl: 1rem;
 
   --shadow-card: var(--sh-card);
   --shadow-lift: var(--sh-lift);
   --shadow-rail: var(--sh-rail);
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+  HeroUI v3 → Bepair tokens.
+
+  HeroUI ships light values under `:root, [data-theme="light"]` and dark ones
+  under `.dark, [data-theme="dark"]`, both inside `@layer base`. This block is
+  unlayered, so it outranks every one of them, and each value points back at a
+  `--c-*` token above.
+
+  Pointing at `--c-*` rather than re-declaring per theme is what makes the
+  `system` theme work: that choice *removes* `data-theme` altogether, so
+  HeroUI's own dark selectors never match and its components would sit light on
+  a dark canvas. One block covers all three paths — attribute light, attribute
+  dark, and `prefers-color-scheme`.
+
+  The names here are HeroUI's; every value is already in the system. Nothing
+  below introduces a colour that globals.css does not already own.
+*/
+:root {
+  /* Geometry. 1rem is the button and input radius the product already uses. */
+  --radius: var(--radius-lg);
+  --field-radius: var(--radius-lg);
+  --border-width: 1px;
+  --field-border-width: 1px;
+
+  /* Ground and ink */
+  --background: var(--c-canvas);
+  --foreground: var(--c-ink);
+  --muted: var(--c-ink-faint);
+  --link: var(--c-ink);
+
+  /* Surfaces — cards, accordions, disclosure groups */
+  --surface: var(--c-surface);
+  --surface-foreground: var(--c-ink);
+  --surface-hover: var(--c-surface-sunken);
+  --surface-secondary: var(--c-surface-sunken);
+  --surface-secondary-foreground: var(--c-ink);
+  --surface-tertiary: var(--c-surface-sunken);
+  --surface-tertiary-foreground: var(--c-ink-soft);
+
+  /* Overlays — modals, popovers, tooltips, menus. These take the rail colour. */
+  --overlay: var(--c-rail);
+  --overlay-foreground: var(--c-ink);
+  --backdrop: var(--c-scrim);
+
+  /* Neutral control fill, matching the `secondary` and `ghost` buttons */
+  --default: var(--c-surface-sunken);
+  --default-foreground: var(--c-ink);
+  --default-hover: var(--c-border);
+  --default-soft: var(--c-surface-sunken);
+  --default-soft-foreground: var(--c-ink-soft);
+  --default-soft-hover: var(--c-border);
+
+  /* Accent — indigo. Primary actions, current selection, state indicators. */
+  --accent: var(--c-accent);
+  --accent-foreground: var(--c-accent-ink);
+  --accent-hover: var(--c-accent-hover);
+  --accent-soft: var(--c-accent-soft);
+  --accent-soft-foreground: var(--c-accent-soft-ink);
+  --accent-soft-hover: var(--c-accent-soft);
+  --focus: var(--c-accent);
+
+  /* Form fields — hairline border on a sunken ground, accent border on focus,
+     surface on focus. Same contract as src/components/ui/Field.tsx. */
+  --field-background: var(--c-surface-sunken);
+  --field-foreground: var(--c-ink);
+  --field-placeholder: var(--c-ink-faint);
+  --field-border: var(--c-border);
+  --field-border-hover: var(--c-border-strong);
+  --field-border-focus: var(--c-accent);
+  --field-hover: var(--c-surface-sunken);
+  --field-focus: var(--c-surface);
+
+  /* Lines */
+  --border: var(--c-border);
+  --border-secondary: var(--c-border-strong);
+  --border-tertiary: var(--c-border-strong);
+  --separator: var(--c-border);
+  --separator-secondary: var(--c-border-strong);
+  --separator-tertiary: var(--c-border-strong);
+
+  /* Segmented control */
+  --segment: var(--c-surface);
+  --segment-foreground: var(--c-ink);
+
+  /*
+    Status hues. DESIGN.md reserves green→red for the mood spectrum, so these
+    are remapped rather than inherited — HeroUI's defaults are a green
+    `success` and an amber `warning`, and a green control would read as a mood
+    value:
+
+      success → the indigo accent. The system owns no green outside mood.
+      warning → the partner amber, the only warm hue the palette has. Text on
+                it is the mood ink (6.51:1 light, 8.96:1 dark); the accent ink
+                would be white in the light theme and fail at 2.91:1.
+      danger  → the danger red the product already ships. Its ink follows the
+                accent ink, which flips white → near-black with the theme and
+                clears AA at both ends (5.43:1 light, 5.87:1 dark).
+
+    Amber already means "partner" in this product, so a filled `warning` must
+    not sit beside a pair mark. See DESIGN.md.
+  */
+  --success: var(--c-accent);
+  --success-foreground: var(--c-accent-ink);
+  --success-hover: var(--c-accent-hover);
+  --success-soft: var(--c-accent-soft);
+  --success-soft-foreground: var(--c-accent-soft-ink);
+  --success-soft-hover: var(--c-accent-soft);
+
+  --warning: var(--c-partner);
+  --warning-foreground: var(--color-mood-ink);
+  --warning-hover: var(--c-partner);
+  --warning-soft: var(--c-partner-soft);
+  --warning-soft-foreground: var(--c-partner-ink);
+  --warning-soft-hover: var(--c-partner-soft);
+
+  --danger: var(--c-danger);
+  --danger-foreground: var(--c-accent-ink);
+  --danger-hover: var(--c-danger);
+  --danger-soft: var(--c-danger-soft);
+  --danger-soft-foreground: var(--c-danger);
+  --danger-soft-hover: var(--c-danger-soft);
+
+  /* Shadows. Offset plus blur, per the card rule; both flip with the theme. */
+  --surface-shadow: var(--sh-card);
+  --overlay-shadow: var(--sh-lift);
+  --field-shadow: 0 0 0 0 transparent;
+}
+
+/*
+  Two things the variables cannot reach, written against HeroUI's BEM classes —
+  the mechanism its theming guide sanctions.
+*/
+
+/* Surfaces take the card radius (1.75rem); controls keep 1rem, set above.
+   Both read from `--radius-3xl` upstream, so they cannot differ via variables. */
+.card,
+.alert {
+  border-radius: var(--radius-2xl);
+}
+
+/* 44px is the floor for anything tappable (DESIGN.md). HeroUI ships `md`
+   buttons at 40px, shrinking to 36px from the `md:` breakpoint, `lg` at 44px
+   dropping to 40px, and inputs at 38px — all under the floor. `button--sm` is
+   left alone: reaching for it is an explicit choice to go below.
+   Same height as src/components/ui/Field.tsx and the `md` Button. */
+.button--md,
+.button--lg,
+.input {
+  block-size: auto;
+  min-block-size: 2.75rem;
 }
 
 @layer base {
@@ -199,6 +365,81 @@
 
   button:disabled {
     cursor: not-allowed;
+  }
+}
+
+@layer components {
+  /*
+    The pair mark. Both halves are one circle (r=48, circumference 301.6) drawn
+    with a dash pattern, so «apart» and «together» are the same two elements at
+    different dash lengths and the browser interpolates between them. See
+    src/components/PairMark.tsx.
+
+    The reduced-motion block further down already kills the transition and the
+    turn, so nothing extra is needed here.
+  */
+  .pair-mark__arc {
+    transition:
+      stroke-dasharray 820ms var(--ease-out-soft),
+      stroke-dashoffset 820ms var(--ease-out-soft),
+      stroke-width 820ms var(--ease-out-soft);
+  }
+
+  .pair-mark__spin {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .pair-mark__promise {
+    display: none;
+  }
+
+  /* Closed: two halves, gaps at the top and the bottom. */
+  .pair-mark--together .pair-mark__arc {
+    stroke-width: 13;
+    stroke-dasharray: 124 177.6;
+  }
+  .pair-mark--together .pair-mark__arc--partner {
+    stroke-dashoffset: 61.75;
+  }
+  .pair-mark--together .pair-mark__arc--you {
+    stroke-dashoffset: -89.05;
+  }
+  /* Starts only once the ring has closed, and takes 16s to come round: this is
+     a background state, not an attraction. */
+  .pair-mark--together.pair-mark--spin .pair-mark__spin {
+    animation: pair-mark-turn 16s linear 820ms infinite;
+  }
+
+  /* Apart: each half sits at the centre of where it will be, as a single dot. */
+  .pair-mark--apart .pair-mark__arc {
+    stroke-width: 22;
+    stroke-dasharray: 0.5 301.1;
+  }
+  .pair-mark--apart .pair-mark__arc--partner {
+    stroke-dashoffset: 0;
+  }
+  .pair-mark--apart .pair-mark__arc--you {
+    stroke-dashoffset: -150.8;
+  }
+
+  /* Quiet: your half is closed, theirs is still a dotted promise. */
+  .pair-mark--quiet .pair-mark__arc--you {
+    stroke-width: 13;
+    stroke-dasharray: 124 177.6;
+    stroke-dashoffset: -89.05;
+  }
+  .pair-mark--quiet .pair-mark__arc--partner {
+    display: none;
+  }
+  .pair-mark--quiet .pair-mark__promise {
+    display: block;
+  }
+}
+
+@keyframes pair-mark-turn {
+  to {
+    transform: rotate(360deg);
   }
 }
 
