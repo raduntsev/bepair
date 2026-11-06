@@ -24,7 +24,7 @@ export function Opening({ label = 'Открываем пространство�
   return (
     <Centered>
       <div role="status" className="flex flex-col items-center gap-4 text-ink-faint">
-        <PairMark className="h-12 w-20 animate-pulse" />
+        <PairMark className="size-14 animate-pulse" />
         <p className="text-sm">{label}</p>
       </div>
     </Centered>
@@ -60,7 +60,7 @@ export function LoginPanel({ intro }: { intro?: string }) {
   return (
     <Centered>
       <div className="mb-8 flex flex-col items-center text-center">
-        <PairMark className="mb-5 h-14 w-24" />
+        <PairMark className="mb-5 size-16" />
         <h1 className="text-3xl font-semibold tracking-tight">Впаре</h1>
         <p className="mt-2 text-sm text-ink-soft">{intro ?? 'Общее ежедневное пространство для двоих'}</p>
       </div>

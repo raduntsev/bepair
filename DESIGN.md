@@ -118,17 +118,60 @@ because every saturated fill in the system stays light in both themes.
 
 ## The pair mark
 
-The one graphic device, taken from the calendar: an indigo **ring** is your
-day, an amber **disc** is your partner's. It is the app icon, the wordmark and
-the empty-state illustration (apart, overlapping, or a dotted promise). It never
-wears green or red.
+The one graphic device: a single **ring made of two halves**, indigo on the left
+for you and amber on the right for your partner, with the gaps at the top and
+the bottom. It is the app icon, the wordmark and the empty-state illustration,
+and it never wears green or red.
+
+This replaces the earlier mark — a separate ring and disc standing side by side,
+chosen when the direction was first set and rejected by the user on sight: two
+circles that merely sit next to each other read as a diagram, not as a mark. The
+replacement says what the ring and disc only labelled, because the product's
+thesis is reciprocity and an open circle states it: **until the second person
+marks their day, the circle is not closed.**
+
+Both halves are the same circle (`r=48`, circumference 301.6) drawn with a dash
+pattern, which is the whole reason the mark can move. A dash of `0.5` with a
+round cap is a dot; a dash of `124` is a half of the ring. So the three states
+are not three drawings — they are two elements at different dash lengths:
+
+| State | Dash | Reads as |
+| --- | --- | --- |
+| `apart` | `0.5 301.1`, offsets `0` / `-150.8` | two dots at opposite ends of the orbit |
+| `together` | `124 177.6`, offsets `61.75` / `-89.05` | the closed ring |
+| `quiet` | your half closed, theirs a dotted arc | the partner has not arrived |
+
+`quiet` draws the partner's half as its own `<path>`, because a repeating dash
+pattern cannot be dotted on one half of a circle and solid on the other. That
+one is a pose, not a frame of the animation.
+
+Geometry and motion live in `globals.css` under `.pair-mark`; a dash transition
+cannot be written as a utility class.
 
 ## Motion
 
-One authored moment: when your own mark unseals the partner's card in front of
+Two authored moments, and nothing else moves.
+
+**The card unseals.** When your own mark opens the partner's card in front of
 you, the card opens from the lock outward and their mood disc springs in. An
-already-open day plays nothing. Onboarding questions slide; everything else is
-plain state change. `prefers-reduced-motion` turns all of it off.
+already-open day plays nothing.
+
+**The mark closes.** Going from `apart` to `together`, each dot grows outward
+from its own centre over 820ms on `--ease-out-soft`, so both halves reach with
+both ends at once and meet at the top and the bottom. Nothing is added or
+removed; the browser interpolates the dash. Once closed, the ring turns once
+every 16 seconds — the two of you holding on and going round. The turn starts
+only after the ring has closed, and only while it is closed: an empty state does
+not spin, or the movement stops meaning anything.
+
+The turn is off wherever the mark is chrome rather than the subject (`spin={false}`
+on the wordmark in the rail). A logo revolving all day is noise, and it costs
+battery on the device this product is read on in bed.
+
+Onboarding questions slide; everything else is plain state change.
+`prefers-reduced-motion` turns all of it off — the global reduced-motion block
+already collapses both the dash transition and the turn, so the mark simply
+holds the right pose.
 
 ## The mood scale
 

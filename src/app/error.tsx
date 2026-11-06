@@ -12,7 +12,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   return (
     <div className="flex min-h-dvh items-center justify-center bg-canvas px-5">
       <div role="alert" className="max-w-sm text-center">
-        <PairMark variant="quiet" className="mx-auto h-14 w-24" />
+        <PairMark variant="quiet" className="mx-auto size-16" />
         <h1 className="mt-5 text-2xl font-semibold tracking-tight">Экран не загрузился</h1>
         <p className="mt-2 text-sm text-ink-soft">Ваши дни и письма в порядке — сломалась только эта страница. Попробуйте открыть её ещё раз.</p>
         <button

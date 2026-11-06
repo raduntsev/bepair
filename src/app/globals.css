@@ -368,6 +368,81 @@
   }
 }
 
+@layer components {
+  /*
+    The pair mark. Both halves are one circle (r=48, circumference 301.6) drawn
+    with a dash pattern, so «apart» and «together» are the same two elements at
+    different dash lengths and the browser interpolates between them. See
+    src/components/PairMark.tsx.
+
+    The reduced-motion block further down already kills the transition and the
+    turn, so nothing extra is needed here.
+  */
+  .pair-mark__arc {
+    transition:
+      stroke-dasharray 820ms var(--ease-out-soft),
+      stroke-dashoffset 820ms var(--ease-out-soft),
+      stroke-width 820ms var(--ease-out-soft);
+  }
+
+  .pair-mark__spin {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .pair-mark__promise {
+    display: none;
+  }
+
+  /* Closed: two halves, gaps at the top and the bottom. */
+  .pair-mark--together .pair-mark__arc {
+    stroke-width: 13;
+    stroke-dasharray: 124 177.6;
+  }
+  .pair-mark--together .pair-mark__arc--partner {
+    stroke-dashoffset: 61.75;
+  }
+  .pair-mark--together .pair-mark__arc--you {
+    stroke-dashoffset: -89.05;
+  }
+  /* Starts only once the ring has closed, and takes 16s to come round: this is
+     a background state, not an attraction. */
+  .pair-mark--together.pair-mark--spin .pair-mark__spin {
+    animation: pair-mark-turn 16s linear 820ms infinite;
+  }
+
+  /* Apart: each half sits at the centre of where it will be, as a single dot. */
+  .pair-mark--apart .pair-mark__arc {
+    stroke-width: 22;
+    stroke-dasharray: 0.5 301.1;
+  }
+  .pair-mark--apart .pair-mark__arc--partner {
+    stroke-dashoffset: 0;
+  }
+  .pair-mark--apart .pair-mark__arc--you {
+    stroke-dashoffset: -150.8;
+  }
+
+  /* Quiet: your half is closed, theirs is still a dotted promise. */
+  .pair-mark--quiet .pair-mark__arc--you {
+    stroke-width: 13;
+    stroke-dasharray: 124 177.6;
+    stroke-dashoffset: -89.05;
+  }
+  .pair-mark--quiet .pair-mark__arc--partner {
+    display: none;
+  }
+  .pair-mark--quiet .pair-mark__promise {
+    display: block;
+  }
+}
+
+@keyframes pair-mark-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @layer utilities {
   /* Every tap target on a touch surface clears 44px; the incumbent app failed on this. */
   .tap {
