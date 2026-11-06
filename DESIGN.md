@@ -70,6 +70,52 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
   incumbent app's failure was small controls; this is the rule that answers it.
   Pages clear the tab bar with `pb-28` plus `safe-b` for the home indicator.
 
+## HeroUI
+
+`@heroui/react` v3 is available as a component layer. It is built on Tailwind v4
+and React Aria, so it sits on the stack already here; it brings no runtime of its
+own and needs no provider. The product's hand-built components in
+`src/components/ui/` stay — HeroUI is for what they do not cover (date pickers,
+comboboxes, menus, the accessible overlay primitives), not a replacement.
+
+Every HeroUI colour is bridged to a `--c-*` token in `globals.css`. The bridge is
+unlayered on purpose, so it outranks HeroUI's own `@layer base` values, and each
+value points at a `--c-*` token rather than being restated per theme. That is
+what makes the `system` theme choice work: it removes `data-theme` entirely, so
+HeroUI's `[data-theme="dark"]` selector never matches and its components would
+otherwise sit light on a dark canvas.
+
+Three decisions the bridge records, because the palette has no free hue:
+
+- **`success` is the indigo accent, not green.** Green belongs to the mood
+  spectrum. A green control would read as a mood value. The consequence is that
+  `status="success"` and `status="accent"` now render identically — prefer
+  `accent` and treat `success` as an alias.
+- **`warning` is the partner amber**, the only warm hue in the system. Text on it
+  is the mood ink (6.51:1 light, 8.96:1 dark); the accent ink would be white in
+  the light theme and fail at 2.91:1. Amber already means *partner* here, so a
+  filled `warning` must not sit beside a pair mark.
+- **`danger` is the product's own red**, and its ink follows `--c-accent-ink`,
+  which flips white → near-black with the theme and clears AA at both ends
+  (5.43:1 light, 5.87:1 dark).
+
+Two geometry rules cannot be expressed as variables and are written against
+HeroUI's BEM classes, which is the mechanism its theming guide sanctions:
+
+- HeroUI derives the whole Tailwind `--radius-*` scale from its own `--radius`
+  and keys controls off `rounded-3xl`. `--radius-3xl` is pinned to `1rem` so
+  controls match the product's buttons; `.card` and `.alert` are then set to
+  `--radius-2xl` (1.75rem) because surfaces and controls both read from the 3xl
+  step upstream and cannot differ through variables alone.
+- HeroUI ships `md` buttons at 40px, shrinking to 36px from the `md:` breakpoint,
+  and inputs at 38px. All are under the 44px floor, so `.button--md`,
+  `.button--lg` and `.input` carry `min-block-size: 2.75rem`. `button--sm` is
+  left alone: reaching for it is an explicit choice to go below the floor.
+
+`--color-mood-ink` was added alongside the mood spectrum for text on any
+saturated fill. It mirrors `MOOD_INK` in `src/lib/mood.ts` and does not flip,
+because every saturated fill in the system stays light in both themes.
+
 ## The pair mark
 
 The one graphic device, taken from the calendar: an indigo **ring** is your
