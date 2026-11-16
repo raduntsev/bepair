@@ -46,7 +46,7 @@ function TaskCard({
 
   if (editing) {
     return (
-      <li className="space-y-3 rounded-2xl border border-line bg-surface p-5 shadow-card">
+      <li className="space-y-3 rounded-2xl bg-surface p-5 shadow-card">
         <Input aria-label="Текст просьбы" value={draft} onChange={(event) => setDraft(event.target.value)} autoFocus />
         <Segment legend="Насколько это важно" options={WEIGHTS} value={weight} onChange={setWeight} />
         <div className="flex gap-2">
@@ -87,7 +87,7 @@ function TaskCard({
   const seen = verb(myGender, 'увидел');
 
   return (
-    <li className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+    <li className="rounded-2xl bg-surface p-5 shadow-card">
       <p className={`text-[15px] font-medium ${state === 'confirmed' ? 'text-ink-soft' : 'text-ink'}`}>{task.content}</p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-ink-faint">
@@ -184,7 +184,7 @@ export default function TasksPage() {
     <Page>
       <PageHeader title="Задачи" sub="Спокойный способ сказать, что сегодня было бы кстати." />
 
-      <section className="mb-8 rounded-2xl border border-line bg-surface p-5 shadow-card md:p-6">
+      <section className="mb-8 rounded-2xl bg-surface p-5 shadow-card md:p-6">
         <h2 className="text-lg font-semibold">О чём попросить</h2>
 
         <form

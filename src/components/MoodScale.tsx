@@ -20,7 +20,7 @@ export function MoodScale({ value, onChange, disabled = false }: MoodScaleProps)
       if (!track) return;
       const { left, width } = track.getBoundingClientRect();
       /* The handle is inset half its width at each end; map pointer x to that range. */
-      const inset = 36;
+      const inset = 26;
       const travel = width - inset * 2;
       if (travel <= 0) return;
       onChange(Math.min(1, Math.max(0, (clientX - left - inset) / travel)));
@@ -75,7 +75,7 @@ export function MoodScale({ value, onChange, disabled = false }: MoodScaleProps)
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onKeyDown={handleKeyDown}
-        className={`mood-track relative h-16 w-full rounded-full ${
+        className={`mood-track relative h-12 w-full rounded-full ${
           disabled ? 'cursor-default opacity-70' : 'cursor-pointer touch-none'
         }`}
       >
@@ -87,25 +87,25 @@ export function MoodScale({ value, onChange, disabled = false }: MoodScaleProps)
         */}
         <span
           aria-hidden
-          className={`pointer-events-none absolute top-1/2 size-[4.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-surface transition-[left] duration-75 ease-out ${
+          className={`pointer-events-none absolute top-1/2 size-[3.25rem] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white transition-[left] duration-75 ease-out ${
             isSet ? 'shadow-lift' : 'shadow-card'
           }`}
           style={{
-            left: `calc(2.25rem + ${(value ?? 0.5) * 100}% - ${(value ?? 0.5) * 4.5}rem)`,
+            left: `calc(1.625rem + ${(value ?? 0.5) * 100}% - ${(value ?? 0.5) * 3.25}rem)`,
             backgroundColor: isSet ? color : 'var(--c-surface)',
           }}
         >
           {!isSet && (
             <span className="absolute inset-0 flex items-center justify-center gap-[3px]">
-              <span className="h-5 w-px rounded-full bg-ink-faint" />
-              <span className="h-5 w-px rounded-full bg-ink-faint" />
-              <span className="h-5 w-px rounded-full bg-ink-faint" />
+              <span className="h-4 w-px rounded-full bg-ink-faint" />
+              <span className="h-4 w-px rounded-full bg-ink-faint" />
+              <span className="h-4 w-px rounded-full bg-ink-faint" />
             </span>
           )}
         </span>
       </div>
 
-      <div className="mt-5 flex min-h-6 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
+      <div className="mt-4 flex min-h-6 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-subhead">
         {isSet ? (
           <>
             <span className="flex items-center gap-2 font-medium text-ink">

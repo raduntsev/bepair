@@ -44,12 +44,12 @@ export default function PingPage() {
 
   if (sent) {
     return (
-      <div className="mx-auto w-full max-w-xl px-5 pt-7 md:pt-10">
+      <div className="mx-auto w-full max-w-xl px-4 pt-6 sm:px-6 md:pt-12">
         <motion.section
           initial={reduce ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface px-6 py-10 text-center shadow-card"
+          className="flex flex-col items-center gap-3 rounded-2xl bg-surface px-6 py-10 text-center shadow-card"
         >
           <motion.span
             initial={reduce ? false : { x: -24, y: 16, opacity: 0 }}
@@ -87,9 +87,9 @@ export default function PingPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl px-5 pt-7 md:pt-10">
+    <div className="mx-auto w-full max-w-xl px-4 pt-6 sm:px-6 md:pt-12">
       <header className="mb-4 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Весточка</h1>
+        <h1 className="text-large-title font-bold">Весточка</h1>
         <button
           type="button"
           onClick={close}
@@ -154,7 +154,7 @@ export default function PingPage() {
         )}
 
         {trackOpen && !draft.track && (
-          <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
+          <div className="space-y-3 rounded-2xl bg-surface p-4">
             <Input
               aria-label="Ссылка на трек"
               type="url"

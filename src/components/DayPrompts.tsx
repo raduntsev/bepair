@@ -22,7 +22,7 @@ export function DayPrompts({ date, defaultOpen = false }: { date: string; defaul
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="tap -ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-ink-soft transition-colors hover:text-ink"
+        className="tap -ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 text-subhead font-medium text-accent transition-opacity hover:opacity-80"
       >
         Не знаете, с чего начать?
         <ChevronDown
@@ -35,12 +35,12 @@ export function DayPrompts({ date, defaultOpen = false }: { date: string; defaul
         <div id={panelId}>
           <ul className="mt-2 space-y-2 border-l-2 border-line pl-4">
             {prompts.map((q) => (
-              <li key={q} className="text-sm text-ink-soft">
+              <li key={q} className="text-subhead text-ink-soft">
                 {q}
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-sm text-ink-faint">
+          <p className="mt-3 text-subhead text-ink-faint">
             Просто чтобы было от чего оттолкнуться. Отвечать не нужно, и партнёр не узнает, какие вопросы вы читали.
           </p>
         </div>

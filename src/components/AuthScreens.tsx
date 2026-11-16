@@ -17,7 +17,7 @@ export function Centered({ children }: { children: React.ReactNode }) {
 }
 
 export function Panel({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl border border-line bg-surface p-6 shadow-card md:p-7">{children}</div>;
+  return <div className="rounded-2xl bg-surface p-6 shadow-card md:p-7">{children}</div>;
 }
 
 export function Opening({ label = 'Открываем пространство…' }: { label?: string }) {

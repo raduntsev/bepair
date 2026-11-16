@@ -163,7 +163,7 @@ export default function StorePage() {
       />
 
       {composing ? (
-        <section className="mb-6 rounded-2xl border border-line bg-surface p-5 shadow-card md:p-6">
+        <section className="mb-6 rounded-2xl bg-surface p-5 shadow-card md:p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Что вы готовы сделать</h2>
             <button
@@ -216,7 +216,7 @@ export default function StorePage() {
             ) : (
               <ul className="space-y-3">
                 {theirs.map((item) => (
-                  <li key={item.id} className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+                  <li key={item.id} className="rounded-2xl bg-surface p-5 shadow-card">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-[15px] font-medium">{item.title}</p>
@@ -247,7 +247,7 @@ export default function StorePage() {
             ) : (
               <ul className="space-y-3">
                 {mine.map((item) => (
-                  <li key={item.id} className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+                  <li key={item.id} className="rounded-2xl bg-surface p-5 shadow-card">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-[15px] font-medium">{item.title}</p>

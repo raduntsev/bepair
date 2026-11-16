@@ -37,7 +37,7 @@ export function InviteCard({ compact = false }: { compact?: boolean }) {
   };
 
   return (
-    <section className="rounded-2xl border border-line bg-surface p-5 shadow-card md:p-6">
+    <section className="rounded-2xl bg-surface p-5 shadow-card md:p-6">
       <h2 className="font-semibold">Код приглашения</h2>
       <p className="mt-1.5 text-sm text-ink-soft">
         {compact

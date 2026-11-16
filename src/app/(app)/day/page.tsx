@@ -1,12 +1,11 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CalendarHeart, Check, ChevronLeft, Droplet, Mail } from 'lucide-react';
+import { CalendarHeart, Check, Droplet, ListChecks, Mail, Pencil } from 'lucide-react';
 import supabase from '@/lib/supabase';
-import { moodColor } from '@/lib/mood';
-import { fmt, longDate, todayISO } from '@/lib/dates';
+import { moodColor, moodLabel } from '@/lib/mood';
+import { fmt, longDate, plural, todayISO } from '@/lib/dates';
 import { MoodScale } from '@/components/MoodScale';
 import { PartnerDayCard } from '@/components/PartnerDayCard';
 import { Counters } from '@/components/Counters';
@@ -14,7 +13,7 @@ import { DayPrompts } from '@/components/DayPrompts';
 import { DoneForMe, MyTasks } from '@/components/DayTasks';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Field';
-import { Alert, Loading } from '@/components/ui/Blocks';
+import { Alert, LinkRow, Loading, PageHeader, RowGroup, RowIcon, SectionHeader, SwitchTrack } from '@/components/ui/Blocks';
 import { useCoupleDay } from '@/hooks/useCoupleDay';
 import { useTasks } from '@/hooks/useTasks';
 import { usePresence } from '@/hooks/usePresence';
@@ -23,6 +22,7 @@ import { useImportantDates, useShowMoon } from '@/hooks/useImportantDates';
 import { occursOn, withAnniversary, upcoming } from '@/lib/importantDates';
 import { moonAt } from '@/lib/moon';
 import { MoonGlyph } from '@/components/MoonGlyph';
+import { taskState } from '@/hooks/useTasks';
 
 export default function DayPage() {
   return (
@@ -76,22 +76,23 @@ function CycleRow({ userId }: { userId: string }) {
   };
 
   return (
-    <section className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-5 py-4 shadow-card md:px-6">
-      <Droplet className="size-5 shrink-0 text-ink-soft" aria-hidden />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">День цикла</p>
-        <p className="text-sm text-ink-faint">Видно только вам. Нужно для будущего разбора.</p>
-      </div>
-      <Button variant="secondary" disabled={marked === null} onClick={toggle} aria-pressed={!!marked}>
-        {marked ? (
-          <>
-            <Check className="size-4" aria-hidden /> Отмечен
-          </>
-        ) : (
-          'Отметить'
-        )}
-      </Button>
-    </section>
+    <li>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={!!marked}
+        disabled={marked === null}
+        onClick={toggle}
+        className="flex min-h-13 w-full items-center gap-3.5 px-4 py-2.5 text-left transition-colors enabled:hover:bg-sunken"
+      >
+        <RowIcon Icon={Droplet} tone="neutral" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-body">День цикла</span>
+          <span className="block text-footnote text-ink-faint">Видно только вам</span>
+        </span>
+        <SwitchTrack checked={!!marked} disabled={marked === null} />
+      </button>
+    </li>
   );
 }
 
@@ -101,7 +102,7 @@ function DatesChip({ date, isToday, togetherSince }: { date: string; isToday: bo
   const todays = upcoming(withAnniversary(items, togetherSince).filter((d) => occursOn(d, date)), date, 0);
   if (todays.length === 0) return null;
   return (
-    <p className="inline-flex min-h-11 items-center gap-2 rounded-full bg-accent-soft px-4 text-sm font-medium text-accent-soft-ink">
+    <p className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-full bg-accent-soft px-3.5 text-subhead font-medium text-accent-soft-ink">
       <CalendarHeart className="size-4" aria-hidden />
       {isToday ? 'Сегодня' : 'В этот день'}: {todays.map((o) => o.title).join(', ')}
     </p>
@@ -114,13 +115,16 @@ function MoonRow() {
   if (!showMoon) return null;
   const moon = moonAt(new Date());
   return (
-    <section className="order-3 flex items-center gap-3 rounded-2xl border border-line bg-surface px-5 py-4 shadow-card md:px-6">
-      <MoonGlyph phase={moon.phase} size={22} className="shrink-0 text-ink-soft" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">Луна: {moon.label}</p>
-        <p className="text-sm text-ink-faint">Освещено {Math.round(moon.lit * 100)}% · {moon.waxing ? 'растёт' : 'убывает'}</p>
-      </div>
-    </section>
+    <li className="flex min-h-13 items-center gap-3.5 px-4 py-2.5">
+      <span aria-hidden className="flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5rem] bg-ink-faint text-surface">
+        <MoonGlyph phase={moon.phase} size={18} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-body">Луна: {moon.label}</span>
+        <span className="block text-footnote text-ink-faint">{moon.waxing ? 'растёт' : 'убывает'}</span>
+      </span>
+      <span className="text-body text-ink-faint tabular-nums">{Math.round(moon.lit * 100)}%</span>
+    </li>
   );
 }
 
@@ -140,6 +144,7 @@ function DayView() {
   const [justSaved, setJustSaved] = useState(false);
   const [justUnsealed, setJustUnsealed] = useState(false);
   const [syncedFor, setSyncedFor] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
 
   /* Adopt the stored entry once per loaded day, without clobbering what is being typed. */
   const key = `${date}:${mine?.updated_at ?? 'none'}`;
@@ -164,6 +169,7 @@ function DayView() {
     setSaving(false);
     if (ok) {
       setJustSaved(true);
+      setEditing(false);
       if (first) setJustUnsealed(true);
       presence.reload();
     }
@@ -183,69 +189,56 @@ function DayView() {
   const tint = mood !== null ? moodColor(mood) : null;
   /* Wait for presence before choosing whether prompts start open, so they do not jump. */
   const partnerMarkedToday = !!partner && !presence.isLoading && presence.partnerMarked(date);
+  /* Once the day is marked it folds into one line; «Изменить» unfolds it again. */
+  const showEditor = !isClosed && (!mine || editing);
+  const showMoon = isToday;
+  const showCycle = isToday && !!profile?.cycle_tracking && !!user;
+
+  const letters = waitingLetters.sealed + waitingLetters.unread;
+  const lettersSub =
+    waitingLetters.sealed > 0
+      ? waitingLetters.sealed === 1
+        ? 'Письмо ждёт вас'
+        : `Ждут: ${waitingLetters.sealed}`
+      : waitingLetters.unread > 0
+        ? waitingLetters.unread === 1
+          ? 'Новое письмо'
+          : `Новых: ${waitingLetters.unread}`
+        : 'Написать или прочитать';
+  const asked = user ? tasks.filter((t) => t.user_id === user.id && taskState(t) === 'awaiting').length : 0;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-5 pt-7 pb-8 md:px-8 md:pt-10">
-      <header className="mb-7 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          {!isToday && (
-            <Link
-              href="/day"
-              className="tap -ml-2 mb-1 inline-flex items-center gap-1 rounded-lg px-2 text-sm font-medium text-ink-soft hover:text-ink"
-            >
-              <ChevronLeft className="size-4" aria-hidden /> К сегодняшнему дню
-            </Link>
-          )}
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{isToday ? 'Сегодня' : fmt(date, 'd MMMM')}</h1>
-          <p className="mt-1 text-sm text-ink-faint">{longDate(date)}</p>
-        </div>
+    <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-8 sm:px-6 md:pt-12">
+      <PageHeader
+        eyebrow={longDate(date)}
+        title={isToday ? 'Сегодня' : fmt(date, 'd MMMM')}
+        back={isToday ? undefined : { href: '/day', label: 'Сегодня' }}
+      />
+      <div className="-mt-4 mb-6">
         <DatesChip date={date} isToday={isToday} togetherSince={settings?.together_since ?? null} />
-        {isToday && waitingLetters.sealed + waitingLetters.unread > 0 && (
-          <Link
-            href="/letters"
-            className="tap inline-flex items-center gap-2 rounded-full bg-partner-soft px-4 text-sm font-medium text-partner-ink transition-colors hover:brightness-95"
-          >
-            <Mail className="size-4" aria-hidden />
-            {waitingLetters.sealed > 0
-              ? waitingLetters.sealed === 1
-                ? 'Письмо ждёт вас'
-                : `Писем ждут: ${waitingLetters.sealed}`
-              : waitingLetters.unread === 1
-                ? 'Новое письмо'
-                : `Новых писем: ${waitingLetters.unread}`}
-          </Link>
-        )}
-      </header>
+      </div>
 
       {isLoading ? (
         <Loading label="Загружаем день…" />
       ) : (
-        <>
-          <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
-            <div className="contents lg:flex lg:flex-col lg:gap-5">
-              <section
-                className="order-1 rounded-2xl border border-line p-5 shadow-card transition-colors duration-500 md:p-8"
-                style={{
-                  backgroundColor: tint
-                    ? `color-mix(in srgb, ${tint} 9%, var(--c-surface))`
-                    : 'var(--c-surface)',
-                }}
-              >
-                <h2 className="text-lg font-semibold">Как прошёл день</h2>
-                <p className="mt-1.5 mb-7 text-sm text-ink-soft">
-                  {!isClosed
-                    ? 'Единственное, что обязательно. Цветом, без оценок.'
-                    : mine
-                      ? 'Этот день уже закрыт — так и было задумано.'
-                      : 'Этот день остался неотмеченным. Задним числом его не заполнить.'}
-                </p>
+        <div className="flex flex-col gap-3">
+          {/* Your day — the one required thing, first and largest. */}
+          <section
+            className="rounded-2xl bg-surface p-5 shadow-card transition-colors duration-500"
+            style={{
+              backgroundColor: tint ? `color-mix(in srgb, ${tint} 8%, var(--c-surface))` : undefined,
+            }}
+          >
+            {showEditor ? (
+              <>
+                <h2 className="text-title-3 font-semibold">Как прошёл день?</h2>
+                <p className="mt-1 mb-6 text-subhead text-ink-faint">Единственное, что обязательно. Цветом, без оценок.</p>
 
-                <MoodScale value={mood} onChange={setMood} disabled={isClosed} />
+                <MoodScale value={mood} onChange={setMood} />
 
-                <div className="measure mt-8">
-                  <label htmlFor="note" className="mb-2 block text-sm font-medium">
+                <div className="mt-6">
+                  <label htmlFor="note" className="sr-only">
                     Заметка
-                    <span className="ml-2 font-normal text-ink-faint">по желанию</span>
                   </label>
                   <Textarea
                     id="note"
@@ -254,92 +247,149 @@ function DayView() {
                       setNote(event.target.value);
                       setJustSaved(false);
                     }}
-                    disabled={isClosed}
-                    rows={4}
-                    placeholder={isClosed ? 'Без заметки' : 'Что случилось, о чём думаете, чего хотелось бы завтра…'}
+                    rows={3}
+                    placeholder="Заметка, по желанию: что случилось, о чём думаете…"
                   />
                 </div>
 
-                {!isClosed && !mine && !presence.isLoading && (
-                  <DayPrompts key={date} date={date} defaultOpen={partnerMarkedToday} />
-                )}
+                {!mine && !presence.isLoading && <DayPrompts key={date} date={date} defaultOpen={partnerMarkedToday} />}
 
-                {!isClosed && (
-                  <div className="mt-6 flex flex-wrap items-center gap-3">
-                    <Button size="lg" loading={saving} disabled={mood === null || !isDirty} onClick={onSave}>
-                      {mine ? 'Сохранить' : 'Отметить день'}
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <Button size="lg" block loading={saving} disabled={mood === null || !isDirty} onClick={onSave}>
+                    {mine ? 'Сохранить' : 'Отметить день'}
+                  </Button>
+                  {mine && (
+                    <Button
+                      variant="ghost"
+                      block
+                      onClick={() => {
+                        setMood(mine.mood);
+                        setNote(mine.note ?? '');
+                        setEditing(false);
+                      }}
+                    >
+                      Отменить
                     </Button>
-                    {mood === null && <span className="text-sm text-ink-faint">Сначала выберите цвет дня</span>}
-                    <span role="status" aria-live="polite">
-                      {justSaved && !isDirty && (
-                        <span className="flex items-center gap-1.5 text-sm font-medium text-accent-soft-ink">
-                          <Check className="size-4" aria-hidden /> Сохранено
-                        </span>
-                      )}
+                  )}
+                </div>
+                {mood === null && <p className="mt-3 text-center text-footnote text-ink-faint">Сначала выберите цвет дня</p>}
+              </>
+            ) : mine ? (
+              <div>
+                <div className="flex items-center gap-3.5">
+                  <span
+                    aria-hidden
+                    className="size-11 shrink-0 rounded-full shadow-card"
+                    style={{ backgroundColor: moodColor(mine.mood) }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-footnote font-medium text-ink-faint">Ваш день</p>
+                    <h2 className="text-headline font-semibold first-letter:uppercase">{moodLabel(mine.mood)}</h2>
+                  </div>
+                  {!isClosed && (
+                    <Button
+                      variant="secondary"
+                      className="!h-9 !rounded-full !px-3.5"
+                      onClick={() => {
+                        setEditing(true);
+                        setJustSaved(false);
+                      }}
+                    >
+                      <Pencil className="size-3.5" aria-hidden /> Изменить
+                    </Button>
+                  )}
+                </div>
+                {mine.note ? (
+                  <p className="measure mt-3 line-clamp-4 text-body whitespace-pre-wrap text-ink-soft">{mine.note}</p>
+                ) : (
+                  <p className="mt-3 text-subhead text-ink-faint">Без заметки — только цвет.</p>
+                )}
+                <span role="status" aria-live="polite">
+                  {justSaved && (
+                    <span className="mt-2 flex items-center gap-1.5 text-footnote font-medium text-accent-soft-ink">
+                      <Check className="size-4" aria-hidden /> Сохранено
                     </span>
-                  </div>
-                )}
-
-                {error && (
-                  <div className="mt-4">
-                    <Alert>{error}</Alert>
-                  </div>
-                )}
-              </section>
-
-              {isToday && profile?.cycle_tracking && user && (
-                <div className="order-3">
-                  <CycleRow userId={user.id} />
-                </div>
-              )}
-
-              {isToday && <MoonRow />}
-
-              {isToday && user && (
-                <div className="order-4">
-                  <MyTasks tasks={tasks} userId={user.id} onComplete={complete} />
-                </div>
-              )}
-            </div>
-
-            <div className="contents lg:sticky lg:top-8 lg:flex lg:flex-col lg:gap-5">
-              <div className="order-2">
-                <PartnerDayCard
-                  partner={partner}
-                  entry={theirs}
-                  isUnlocked={isUnlocked}
-                  isToday={isToday}
-                  showTime={settings?.long_distance}
-                  justUnsealed={justUnsealed}
-                  partnerMarked={partnerMarkedToday}
-                />
+                  )}
+                </span>
               </div>
+            ) : (
+              <div>
+                <h2 className="text-headline font-semibold">Этот день остался неотмеченным</h2>
+                <p className="mt-1 text-subhead text-ink-faint">Задним числом его не заполнить — так и было задумано.</p>
+              </div>
+            )}
 
-              {isToday && user && (
-                <div className="order-5">
-                  <DoneForMe tasks={tasks} userId={user.id} partner={partner} myGender={profile?.gender} onAcknowledge={acknowledge} />
-                </div>
-              )}
-              {taskError && (
-                <div className="order-6">
-                  <Alert>{taskError}</Alert>
-                </div>
-              )}
-            </div>
-          </div>
+            {error && (
+              <div className="mt-4">
+                <Alert>{error}</Alert>
+              </div>
+            )}
+          </section>
+
+          <PartnerDayCard
+            partner={partner}
+            entry={theirs}
+            isUnlocked={isUnlocked}
+            isToday={isToday}
+            showTime={settings?.long_distance}
+            justUnsealed={justUnsealed}
+            partnerMarked={partnerMarkedToday}
+          />
+
+          {isToday && user && (
+            <>
+              <SectionHeader title="Между вами" />
+              <div className="flex flex-col gap-3">
+                <DoneForMe tasks={tasks} userId={user.id} partner={partner} myGender={profile?.gender} onAcknowledge={acknowledge} />
+                <MyTasks tasks={tasks} userId={user.id} onComplete={complete} />
+                <RowGroup label="Письма и просьбы">
+                  <LinkRow
+                    Icon={Mail}
+                    tone={letters > 0 ? 'partner' : 'accent'}
+                    title="Письма"
+                    sub={lettersSub}
+                    href="/letters"
+                    badge={letters || undefined}
+                  />
+                  <LinkRow
+                    Icon={ListChecks}
+                    title="Попросить о чём-то"
+                    sub={asked > 0 ? `${plural(asked, 'просьба ждёт', 'просьбы ждут', 'просьб ждут')}: ${asked}` : 'Без давления, просто чтобы не забыть'}
+                    href="/tasks"
+                  />
+                </RowGroup>
+                {taskError && <Alert>{taskError}</Alert>}
+              </div>
+            </>
+          )}
+
+          {(showCycle || showMoon) && <ForYou cycle={showCycle && user ? <CycleRow userId={user.id} /> : null} />}
 
           {isToday && mine && partner && (
-            <div className="mt-8">
-              <Counters
-                togetherSince={settings?.together_since ?? null}
-                showStreak={settings?.count_streak ?? true}
-                current={presence.current}
-                best={presence.best}
-              />
-            </div>
+            <Counters
+              togetherSince={settings?.together_since ?? null}
+              showStreak={settings?.count_streak ?? true}
+              current={presence.current}
+              best={presence.best}
+            />
           )}
-        </>
+        </div>
       )}
     </div>
+  );
+}
+
+/* Personal rows. Rendered only when there is something to show — the moon is opt-in. */
+function ForYou({ cycle }: { cycle: React.ReactNode }) {
+  const { showMoon } = useShowMoon();
+  if (!cycle && !showMoon) return null;
+  return (
+    <>
+      <SectionHeader title="Для себя" />
+      <RowGroup label="Для себя">
+        {cycle}
+        <MoonRow />
+      </RowGroup>
+    </>
   );
 }

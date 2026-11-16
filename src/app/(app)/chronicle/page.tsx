@@ -97,7 +97,7 @@ export default function ChroniclePage() {
                     const { letter } = entry;
                     const theirs = letter.author_id !== user?.id;
                     return (
-                      <li key={`l-${letter.id}`} className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+                      <li key={`l-${letter.id}`} className="rounded-2xl bg-surface p-5 shadow-card">
                         <KindLine Icon={Mail} label="Письмо" from={from(letter.author_id)} at={entry.at} theirs={theirs} />
                         {letter.sealed ? (
                           <p className="mt-2 flex items-center gap-2 text-[15px] text-ink-soft">
@@ -117,7 +117,7 @@ export default function ChroniclePage() {
                   const label = ping.photo_path ? 'Весточка со снимком' : ping.voice_path ? 'Голосовая весточка' : ping.track_url ? 'Весточка с музыкой' : 'Весточка';
                   const Icon = ping.photo_path ? ImageIcon : ping.voice_path ? Mic : ping.track_url ? Music : Send;
                   return (
-                    <li key={`p-${ping.id}`} className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+                    <li key={`p-${ping.id}`} className="overflow-hidden rounded-2xl bg-surface shadow-card">
                       {ping.photo_path && <StoredImage path={ping.photo_path} alt={ping.body || 'Снимок из весточки'} className="max-h-[28rem] w-full" />}
                       <div className="space-y-3 p-5">
                         <div className="flex items-start justify-between gap-3">

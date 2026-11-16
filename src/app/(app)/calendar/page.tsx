@@ -87,9 +87,9 @@ export default function CalendarPage() {
   const isCurrentMonth = isSameMonth(cursor, new Date());
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-7 md:px-8 md:py-10">
+    <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-8 sm:px-6 md:pt-12">
       <header className="mb-7">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Календарь</h1>
+        <h1 className="text-large-title font-bold">Календарь</h1>
         <p className="mt-1 text-sm text-ink-faint">Все ваши дни. Нажмите на день, чтобы открыть его.</p>
       </header>
 
@@ -99,7 +99,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-line bg-surface p-3 shadow-card md:p-6">
+      <div className="rounded-2xl bg-surface p-3 shadow-card md:p-6">
         <div className="mb-5 flex items-center justify-between">
           <button
             type="button"

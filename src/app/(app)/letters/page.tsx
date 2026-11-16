@@ -61,7 +61,7 @@ function Composer({
   };
 
   return (
-    <section className="mb-6 rounded-2xl border border-line bg-surface shadow-card">
+    <section className="mb-6 rounded-2xl bg-surface shadow-card">
       <div className="flex items-center justify-between px-5 pt-5 md:px-6">
         <h2 className="text-lg font-semibold">{initial ? 'Черновик' : 'Новое письмо'}</h2>
         <button
@@ -227,7 +227,7 @@ export default function LettersPage() {
             const unread = !mine && delivered && !letter.sealed && !letter.is_read;
 
             return (
-              <li key={letter.id} className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+              <li key={letter.id} className="overflow-hidden rounded-2xl bg-surface shadow-card">
                 <div className="flex flex-wrap items-center justify-between gap-3 p-5">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">

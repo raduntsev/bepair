@@ -40,7 +40,7 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
 
   const clock = showTime && partner ? timeIn(partner.timezone) : null;
   const clockLine = clock ? (
-    <p className="mt-3 flex items-center gap-1.5 text-sm text-ink-faint">
+    <p className="mt-3 flex items-center gap-1.5 text-subhead text-ink-faint">
       <Clock className="size-4" aria-hidden /> Сейчас у партнёра {clock}
     </p>
   ) : null;
@@ -52,13 +52,13 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
           <motion.section
             key="alone"
             exit={{ opacity: 0 }}
-            className="rounded-2xl border border-dashed border-line-strong bg-surface p-6"
+            className="rounded-2xl border border-dashed border-line-strong bg-surface p-5"
           >
-            <h2 className="font-semibold">Пока вы здесь один</h2>
-            <p className="mt-1.5 text-sm text-ink-soft">Позовите партнёра — тогда здесь появится его день.</p>
+            <h2 className="text-headline font-semibold">Пока вы здесь один</h2>
+            <p className="mt-1.5 text-subhead text-ink-soft">Позовите партнёра — тогда здесь появится его день.</p>
             <Link
               href="/settings"
-              className="tap mt-3 -ml-2 inline-flex items-center gap-2 rounded-lg px-2 text-sm font-medium text-accent hover:underline"
+              className="tap mt-3 -ml-2 inline-flex items-center gap-2 rounded-lg px-2 text-subhead font-medium text-accent hover:underline"
             >
               <UserPlus className="size-4" aria-hidden /> Позвать партнёра
             </Link>
@@ -69,15 +69,15 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
           <motion.section
             key="sealed"
             exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98, transition: { duration: 0.18 } }}
-            className="rounded-2xl border border-line bg-partner-soft p-6"
+            className="rounded-2xl bg-partner-soft p-5"
           >
             <div className="flex items-start gap-3">
               <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-partner shadow-card">
                 <Lock className="size-4.5" aria-hidden />
               </span>
               <div>
-                <h2 className="font-semibold">{name}</h2>
-                <p className="mt-1.5 text-sm text-ink-soft">
+                <h2 className="text-headline font-semibold">{name}</h2>
+                <p className="mt-1.5 text-subhead text-ink-soft">
                   {!isToday
                     ? 'Этот день остался закрытым: вы его не отметили.'
                     : partnerMarked
@@ -97,12 +97,12 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: EASE }}
-            className="rounded-2xl border border-line bg-surface p-6 shadow-card"
+            className="rounded-2xl bg-surface p-6 shadow-card"
           >
-            <h2 className="font-semibold">
+            <h2 className="text-headline font-semibold">
               {name} {isToday ? 'ещё не' : 'не'} {verb(partner?.gender, 'отметил')} {isToday ? 'день' : 'этот день'}
             </h2>
-            <p className="mt-1.5 text-sm text-ink-soft">
+            <p className="mt-1.5 text-subhead text-ink-soft">
               {isToday ? 'Вы узнаете об этом — приходить и проверять не нужно.' : 'Так бывает. Пустой день — тоже часть истории.'}
             </p>
             {clockLine}
@@ -115,9 +115,9 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
             initial={playReveal ? { clipPath: 'circle(0% at 44px 44px)' } : false}
             animate={{ clipPath: 'circle(150% at 44px 44px)' }}
             transition={{ duration: 0.75, ease: EASE }}
-            className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card"
+            className="overflow-hidden rounded-2xl bg-surface shadow-card"
           >
-            <div className="flex items-center gap-3 p-6 pb-4">
+            <div className="flex items-center gap-3 p-5 pb-3">
               <motion.span
                 initial={playReveal ? { scale: 0.4 } : false}
                 animate={{ scale: 1 }}
@@ -127,20 +127,20 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
                 aria-hidden
               />
               <div>
-                <h2 className="font-semibold">{name}</h2>
-                <p className="text-sm text-ink-soft">день {moodLabel(entry.mood)}</p>
+                <h2 className="text-headline font-semibold">{name}</h2>
+                <p className="text-subhead text-ink-soft">день {moodLabel(entry.mood)}</p>
               </div>
             </div>
             <motion.div
               initial={playReveal ? { opacity: 0, y: 8 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: playReveal ? 0.35 : 0, ease: EASE }}
-              className="px-6 pb-6"
+              className="px-5 pb-5"
             >
               {entry.note ? (
-                <p className="measure text-[15px] leading-relaxed whitespace-pre-wrap text-ink-soft">{entry.note}</p>
+                <p className="measure text-body whitespace-pre-wrap text-ink-soft">{entry.note}</p>
               ) : (
-                <p className="text-sm text-ink-faint">Без заметки — только цвет.</p>
+                <p className="text-subhead text-ink-faint">Без заметки — только цвет.</p>
               )}
               {clockLine}
             </motion.div>
