@@ -406,11 +406,12 @@
 
   body {
     /*
-      The platform's own face first: SF Pro on Apple devices (with real
-      Cyrillic), Onest everywhere else so Android and Windows still get a
-      considered grotesk instead of whatever the system falls back to.
+      The platform's own face first: SF Pro on Apple devices, reached only
+      through the system keywords. Never by name: on Windows a hand-installed
+      "SF Pro Text" is common, and those copies often carry an empty «ё»,
+      which rendered as a gap in the middle of words. Onest everywhere else.
     */
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-onest), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, var(--font-onest), ui-sans-serif, "Segoe UI", sans-serif;
     font-size: 1.0625rem;
     line-height: 1.5rem;
     letter-spacing: -0.008em;

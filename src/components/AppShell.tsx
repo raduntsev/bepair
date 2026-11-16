@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import supabase from '@/lib/supabase';
 import { usePathname } from 'next/navigation';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Island } from '@/components/Island';
 
@@ -15,6 +16,7 @@ import { Island } from '@/components/Island';
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { unread } = useNotifications();
+  const reduce = useReducedMotion();
 
   /* «Заходил(а)» in the partner's profile: on open and on coming back. Throttled in SQL. */
   useEffect(() => {
@@ -28,7 +30,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh">
-      <main className="island-clearance">{children}</main>
+      {/* Each screen arrives with a short fade and rise, so a change of section never cuts. */}
+      <motion.main
+        key={pathname}
+        initial={reduce ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        className="island-clearance"
+      >
+        {children}
+      </motion.main>
       <Island pathname={pathname} unread={unread} />
     </div>
   );

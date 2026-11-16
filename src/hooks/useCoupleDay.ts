@@ -47,10 +47,18 @@ export function useCoupleDay(date: string) {
       setError(null);
     }
     setIsLoading(false);
-  }, [user, spaceId, date]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the id: a re-issued user object is the same person
+  }, [user?.id, spaceId, date]);
+
+  /* The spinner only for a different day; a background re-read keeps what is on screen. */
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const loadKey = `${user?.id}:${spaceId}:${date}`;
+  if (loadedFor !== loadKey) {
+    setLoadedFor(loadKey);
+    setIsLoading(true);
+  }
 
   useEffect(() => {
-    setIsLoading(true);
     load();
   }, [load]);
 
