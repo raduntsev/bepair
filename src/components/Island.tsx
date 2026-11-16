@@ -53,17 +53,19 @@ export function currentDestination(pathname: string): Destination {
 }
 
 /*
-  Apple's sheet curve, slow enough to be seen: the shape takes a little over
-  half a second to grow and a little less to fold back. Content waits for the
-  shape on the way in and leaves before it on the way out.
+  Slow and even. The earlier curve front-loaded the motion — most of the
+  growth happened in the first tenth of a second and the rest was a tail, so
+  it read as a snap. An in-out curve spends its time evenly: the shape eases
+  out of rest, travels, and eases into place, a little under a second each way.
+  Content waits for the shape on the way in and leaves first on the way out.
 */
-const EASE = [0.32, 0.72, 0, 1] as const;
-const GROW = { duration: 0.56, ease: EASE };
-const FOLD = { duration: 0.46, ease: EASE };
+const EASE = [0.45, 0, 0.15, 1] as const;
+const GROW = { duration: 0.85, ease: EASE };
+const FOLD = { duration: 0.7, ease: EASE };
 const PILL_H = 52;
 const PANEL_MAX = 320;
-const HOVER_OPEN_MS = 140;
-const HOVER_CLOSE_MS = 380;
+const HOVER_OPEN_MS = 180;
+const HOVER_CLOSE_MS = 420;
 
 /* Tucks away on the way down, returns on the way up and near the top. */
 function useScrollTuck(disabled: boolean) {
@@ -192,8 +194,8 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
 
   const instant = { duration: 0 };
   /* Content timing hangs off the shape: in after it has grown, out before it folds. */
-  const pillFade = reduce ? instant : open ? { duration: 0.16, ease: EASE } : { duration: 0.3, delay: 0.2, ease: EASE };
-  const panelFade = reduce ? instant : open ? { duration: 0.34, delay: 0.16, ease: EASE } : { duration: 0.16, ease: EASE };
+  const pillFade = reduce ? instant : open ? { duration: 0.3, ease: EASE } : { duration: 0.45, delay: 0.35, ease: EASE };
+  const panelFade = reduce ? instant : open ? { duration: 0.5, delay: 0.32, ease: EASE } : { duration: 0.28, ease: EASE };
 
   return (
     <>
@@ -205,7 +207,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={reduce ? instant : { duration: 0.4, ease: EASE }}
+            transition={reduce ? instant : { duration: 0.6, ease: EASE }}
             onClick={() => close()}
             className="fixed inset-0 z-40"
             style={{ backgroundColor: 'var(--c-scrim)' }}

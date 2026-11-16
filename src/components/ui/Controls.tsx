@@ -35,6 +35,8 @@ interface SegmentOption<T extends string | number> {
   value: T;
   label: string;
   Icon?: LucideIcon;
+  /* A second, quieter line — what the choice is worth, not how to make it. */
+  detail?: string;
 }
 
 /*
@@ -55,7 +57,7 @@ export function Segment<T extends string | number>({
   const id = useId();
   return (
     <div role="radiogroup" aria-label={legend} className="flex w-full rounded-xl bg-sunken p-1">
-      {options.map(({ value: optionValue, label, Icon }) => {
+      {options.map(({ value: optionValue, label, Icon, detail }) => {
         const active = optionValue === value;
         return (
           <button
@@ -75,9 +77,16 @@ export function Segment<T extends string | number>({
                 className="absolute inset-0 rounded-[0.625rem] bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_1px_rgba(0,0,0,0.04)]"
               />
             )}
-            <span className="relative flex items-center gap-1.5">
-              {Icon && <Icon className="size-4" aria-hidden />}
-              {label}
+            <span className={`relative flex items-center gap-1.5 ${detail ? 'flex-col gap-0 py-1.5' : ''}`}>
+              <span className="flex items-center gap-1.5">
+                {Icon && <Icon className="size-4" aria-hidden />}
+                {label}
+              </span>
+              {detail && (
+                <span className={`text-footnote font-normal transition-colors duration-300 ${active ? 'text-accent' : 'text-ink-faint'}`}>
+                  {detail}
+                </span>
+              )}
             </span>
           </button>
         );
