@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, ImageIcon, Music, Send, Trash2, X } from 'lucide-react';
-import { displayName } from '@/lib/words';
 import { usePings, type PingDraft } from '@/hooks/usePings';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Button, LinkButton } from '@/components/ui/Button';
@@ -38,9 +37,8 @@ export default function PingPage() {
 
   const trackValid = /^https?:\/\/\S+\.\S+/.test(track.url.trim());
   const hasContent = draft.body.trim() || draft.photo || draft.voice || draft.track;
-  const name = displayName(partner?.display_name);
 
-  const close = () => (window.history.length > 1 ? router.back() : router.push('/chronicle'));
+  const close = () => (window.history.length > 1 ? router.back() : router.push('/messages'));
 
   if (sent) {
     return (
@@ -62,12 +60,9 @@ export default function PingPage() {
           <h1 role="status" className="text-lg font-semibold">
             Весточка ушла
           </h1>
-          <p className="max-w-xs text-sm text-ink-soft">
-            {name} получит уведомление на телефон. Запись уже лежит в летописи.
-          </p>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
-            <LinkButton href="/chronicle" variant="secondary">
-              <BookOpen className="size-4" aria-hidden /> Открыть летопись
+            <LinkButton href="/messages" variant="secondary">
+              <BookOpen className="size-4" aria-hidden /> В переписку
             </LinkButton>
             <Button
               variant="ghost"
@@ -99,9 +94,6 @@ export default function PingPage() {
           <X className="size-5" aria-hidden />
         </button>
       </header>
-      <p className="mb-5 text-sm text-ink-faint">
-        Короткое сообщение, которое сразу придёт {partner ? 'партнёру' : 'в летопись'} на телефон. Можно приложить снимок, трек или голос.
-      </p>
 
       {!partner && (
         <div className="mb-4">

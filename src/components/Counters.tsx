@@ -37,7 +37,6 @@ export function Counters({
         <Link href="/couple" className="rounded-2xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken">
           <p className="text-footnote font-medium text-accent">Вместе</p>
           <p className="mt-1 text-headline font-semibold">Сколько?</p>
-          <p className="text-footnote text-ink-faint">Укажите дату начала</p>
         </Link>
       )}
 
@@ -48,7 +47,7 @@ export function Counters({
           </p>
           <p className="mt-1 text-title-1 font-bold tabular-nums">{current}</p>
           <p className="text-footnote text-ink-faint">
-            {current === 0 ? 'начнётся, когда отметитесь оба' : best > current ? `рекорд — ${best} ${daysWord(best)}` : daysWord(current)}
+            {best > current ? `рекорд — ${best}` : daysWord(current)}
           </p>
         </section>
       )}

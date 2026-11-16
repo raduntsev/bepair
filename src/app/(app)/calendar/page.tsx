@@ -88,9 +88,8 @@ export default function CalendarPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-8 sm:px-6 md:pt-12">
-      <header className="mb-7">
+      <header className="mb-6">
         <h1 className="text-large-title font-bold">Календарь</h1>
-        <p className="mt-1 text-sm text-ink-faint">Все ваши дни. Нажмите на день, чтобы открыть его.</p>
       </header>
 
       {error && (

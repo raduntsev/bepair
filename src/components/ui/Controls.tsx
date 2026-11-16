@@ -1,5 +1,7 @@
 'use client';
 
+import { useId } from 'react';
+import { motion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import { SwitchTrack } from '@/components/ui/Blocks';
 
@@ -35,6 +37,10 @@ interface SegmentOption<T extends string | number> {
   Icon?: LucideIcon;
 }
 
+/*
+  Segmented control, after iOS: a grey track, the choice a white plate that
+  slides to where you tapped. The slide is the feedback — no caption needed.
+*/
 export function Segment<T extends string | number>({
   options,
   value,
@@ -46,22 +52,33 @@ export function Segment<T extends string | number>({
   onChange: (value: T) => void;
   legend?: string;
 }) {
+  const id = useId();
   return (
-    <div role="group" aria-label={legend} className="flex flex-wrap gap-2">
+    <div role="radiogroup" aria-label={legend} className="flex w-full rounded-xl bg-sunken p-1">
       {options.map(({ value: optionValue, label, Icon }) => {
         const active = optionValue === value;
         return (
           <button
             key={String(optionValue)}
             type="button"
+            role="radio"
+            aria-checked={active}
             onClick={() => onChange(optionValue)}
-            aria-pressed={active}
-            className={`tap flex items-center gap-2 rounded-full px-4 text-subhead font-medium transition-colors ${
-              active ? 'bg-ink text-surface' : 'bg-sunken text-ink-soft hover:text-ink'
+            className={`relative flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-[0.625rem] px-2 text-subhead font-medium transition-colors duration-300 ${
+              active ? 'text-ink' : 'text-ink-faint hover:text-ink'
             }`}
           >
-            {Icon && <Icon className="size-4" aria-hidden />}
-            {label}
+            {active && (
+              <motion.span
+                layoutId={`segment-${id}`}
+                transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+                className="absolute inset-0 rounded-[0.625rem] bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_1px_rgba(0,0,0,0.04)]"
+              />
+            )}
+            <span className="relative flex items-center gap-1.5">
+              {Icon && <Icon className="size-4" aria-hidden />}
+              {label}
+            </span>
           </button>
         );
       })}

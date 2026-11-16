@@ -32,11 +32,11 @@ export function taskState(task: Task): TaskState {
   return task.acknowledged_at ? 'confirmed' : 'done_unseen';
 }
 
+/* Three levels: enough to say «this matters», too few to turn a favour into a grade. */
 export const WEIGHTS = [
-  { value: 1, label: 'мелочь' },
-  { value: 2, label: 'обычная' },
-  { value: 3, label: 'важная' },
-  { value: 5, label: 'очень важная' },
+  { value: 1, label: 'Мелочь' },
+  { value: 2, label: 'Обычно' },
+  { value: 3, label: 'Важно' },
 ];
 
 /* A starter pack, so the first request never has to be typed from nothing. */

@@ -213,36 +213,53 @@
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
   /*
-    Type scale after Apple's text styles, sized for the web (17px body).
-    Only these steps exist; nothing in between.
+    Four sizes, no more: 28 title · 17 body · 15 secondary · 13 small.
+    Every named step — Apple-style and Tailwind's own — resolves to one of
+    them, so a stray `text-lg` or `text-xs` cannot add a fifth. Hierarchy
+    comes from weight and colour, not from yet another size.
   */
-  --text-large-title: 2.125rem;
-  --text-large-title--line-height: 2.5rem;
-  --text-large-title--letter-spacing: -0.022em;
-  --text-large-title--font-weight: 700;
+  --text-large-title: 1.75rem;
+  --text-large-title--line-height: 2.125rem;
+  --text-large-title--letter-spacing: -0.02em;
   --text-title-1: 1.75rem;
   --text-title-1--line-height: 2.125rem;
   --text-title-1--letter-spacing: -0.02em;
-  --text-title-2: 1.375rem;
-  --text-title-2--line-height: 1.75rem;
-  --text-title-2--letter-spacing: -0.016em;
-  --text-title-3: 1.25rem;
-  --text-title-3--line-height: 1.5625rem;
-  --text-title-3--letter-spacing: -0.012em;
+  --text-title-2: 1.75rem;
+  --text-title-2--line-height: 2.125rem;
+  --text-title-2--letter-spacing: -0.02em;
+  --text-title-3: 1.0625rem;
+  --text-title-3--line-height: 1.375rem;
   --text-headline: 1.0625rem;
   --text-headline--line-height: 1.375rem;
-  --text-headline--letter-spacing: -0.008em;
   --text-body: 1.0625rem;
   --text-body--line-height: 1.5rem;
-  --text-body--letter-spacing: -0.008em;
-  --text-callout: 1rem;
-  --text-callout--line-height: 1.3125rem;
+  --text-callout: 1.0625rem;
+  --text-callout--line-height: 1.5rem;
   --text-subhead: 0.9375rem;
   --text-subhead--line-height: 1.25rem;
   --text-footnote: 0.8125rem;
   --text-footnote--line-height: 1.125rem;
-  --text-caption: 0.75rem;
-  --text-caption--line-height: 1rem;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.125rem;
+
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.5rem;
+  --text-xl: 1.0625rem;
+  --text-xl--line-height: 1.5rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.125rem;
+  --text-3xl: 1.75rem;
+  --text-3xl--line-height: 2.125rem;
+  --text-4xl: 1.75rem;
+  --text-4xl--line-height: 2.125rem;
+  --text-5xl: 1.75rem;
+  --text-5xl--line-height: 2.125rem;
 }
 
 /*
@@ -512,6 +529,30 @@
   .pair-mark--quiet .pair-mark__promise {
     display: block;
   }
+}
+
+/* An unset control asking to be touched: a slow halo, not a bounce. */
+.mood-breathe {
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-accent) 55%, transparent);
+  animation: mood-breathe 2.4s cubic-bezier(0.32, 0.72, 0, 1) infinite;
+}
+
+@keyframes mood-breathe {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-accent) 50%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--c-accent) 0%, transparent);
+  }
+}
+
+/* The card that holds the next thing to do. A ring that settles in, then stays. */
+.focus-ring {
+  box-shadow:
+    0 0 0 2px var(--c-accent),
+    0 10px 30px -8px color-mix(in srgb, var(--c-accent) 35%, transparent);
+  transition: box-shadow 600ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @keyframes pair-mark-turn {

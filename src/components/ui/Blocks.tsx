@@ -39,7 +39,7 @@ export function PageHeader({
           <ChevronLeft className="size-6" strokeWidth={2.2} aria-hidden /> {back.label}
         </Link>
       )}
-      {eyebrow && <p className="mb-0.5 text-footnote font-semibold tracking-wide text-ink-faint uppercase">{eyebrow}</p>}
+      {eyebrow && <p className="mb-0.5 text-subhead font-medium text-ink-faint first-letter:uppercase">{eyebrow}</p>}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-large-title font-bold">{title}</h1>
@@ -112,7 +112,7 @@ export function EmptyState({
   variant = 'apart',
 }: {
   title: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   action?: React.ReactNode;
   variant?: 'apart' | 'together' | 'quiet';
 }) {
@@ -120,7 +120,7 @@ export function EmptyState({
     <section className="rounded-2xl bg-surface px-6 py-10 text-center shadow-card">
       <PairMark variant={variant} className="mx-auto size-16" />
       <h2 className="mt-4 text-headline font-semibold">{title}</h2>
-      <p className="mx-auto mt-1.5 max-w-sm text-subhead text-ink-faint">{children}</p>
+      {children && <p className="mx-auto mt-1.5 max-w-sm text-subhead text-ink-faint">{children}</p>}
       {action && <div className="mt-5 flex justify-center">{action}</div>}
     </section>
   );

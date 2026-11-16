@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Clock, Lock, UserPlus } from 'lucide-react';
+import { Clock, Lock, Reply, UserPlus } from 'lucide-react';
 import { moodColor, moodLabel } from '@/lib/mood';
 import { timeIn } from '@/lib/dates';
-import { displayName, verb } from '@/lib/words';
+import { displayName, genitive, verb } from '@/lib/words';
 import type { DayEntry } from '@/hooks/useCoupleDay';
 import type { Partner } from '@/hooks/useSpaceAuth';
 
@@ -41,7 +41,7 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
   const clock = showTime && partner ? timeIn(partner.timezone) : null;
   const clockLine = clock ? (
     <p className="mt-3 flex items-center gap-1.5 text-subhead text-ink-faint">
-      <Clock className="size-4" aria-hidden /> Сейчас у партнёра {clock}
+      <Clock className="size-4" aria-hidden /> {clock}
     </p>
   ) : null;
 
@@ -49,43 +49,48 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
     <div aria-live="polite">
       <AnimatePresence mode="wait" initial={false}>
         {state === 'alone' && (
-          <motion.section
-            key="alone"
-            exit={{ opacity: 0 }}
-            className="rounded-2xl border border-dashed border-line-strong bg-surface p-5"
-          >
-            <h2 className="text-headline font-semibold">Пока вы здесь один</h2>
-            <p className="mt-1.5 text-subhead text-ink-soft">Позовите партнёра — тогда здесь появится его день.</p>
+          <motion.section key="alone" exit={{ opacity: 0 }} className="rounded-2xl border-2 border-dashed border-line-strong p-5">
             <Link
-              href="/settings"
-              className="tap mt-3 -ml-2 inline-flex items-center gap-2 rounded-lg px-2 text-subhead font-medium text-accent hover:underline"
+              href="/couple"
+              className="tap -m-2 flex items-center gap-3.5 rounded-xl p-2 text-headline font-semibold text-accent transition-colors hover:bg-sunken"
             >
-              <UserPlus className="size-4" aria-hidden /> Позвать партнёра
+              <span className="flex size-11 items-center justify-center rounded-full bg-accent-soft">
+                <UserPlus className="size-5" aria-hidden />
+              </span>
+              Позвать партнёра
             </Link>
           </motion.section>
         )}
 
+        {/*
+          Sealed: their day is there, but behind frosted glass — you can see that
+          something waits without reading it. The lock and the blur say it; no sentence.
+        */}
         {state === 'sealed' && (
           <motion.section
             key="sealed"
-            exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98, transition: { duration: 0.18 } }}
-            className="rounded-2xl bg-partner-soft p-5"
+            exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98, transition: { duration: 0.25 } }}
+            className="relative overflow-hidden rounded-2xl bg-surface p-5 shadow-card"
           >
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-partner shadow-card">
+            <div className="flex items-center gap-3.5">
+              <span className="relative flex size-11 shrink-0 items-center justify-center rounded-full bg-sunken text-ink-faint">
                 <Lock className="size-4.5" aria-hidden />
+                {partnerMarked && isToday && (
+                  <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-partner ring-2 ring-surface">
+                    <span className="sr-only">уже отмечен</span>
+                  </span>
+                )}
               </span>
-              <div>
-                <h2 className="text-headline font-semibold">{name}</h2>
-                <p className="mt-1.5 text-subhead text-ink-soft">
-                  {!isToday
-                    ? 'Этот день остался закрытым: вы его не отметили.'
-                    : partnerMarked
-                      ? `${name} уже ${verb(partner?.gender, 'отметил')} свой день. Теперь ваша очередь: день откроется, как только вы отметите свой.`
-                      : 'День откроется, как только вы отметите свой. Так вы оба говорите первыми.'}
-                </p>
+              <div className="min-w-0 flex-1">
+                <p className="text-footnote text-ink-faint">День</p>
+                <h2 className="text-headline font-semibold">{genitive(name, partner?.gender ?? null)}</h2>
               </div>
             </div>
+            <div aria-hidden className="mt-4 space-y-2 blur-[3px] select-none">
+              <div className="h-3 w-11/12 rounded-full bg-sunken" />
+              <div className="h-3 w-3/4 rounded-full bg-sunken" />
+            </div>
+            <span className="sr-only">Откроется, когда вы отметите свой день.</span>
             {clockLine}
           </motion.section>
         )}
@@ -96,15 +101,18 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
             initial={reduce ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: EASE }}
-            className="rounded-2xl bg-surface p-6 shadow-card"
+            transition={{ duration: 0.35, ease: EASE }}
+            className="rounded-2xl bg-surface p-5 shadow-card"
           >
-            <h2 className="text-headline font-semibold">
-              {name} {isToday ? 'ещё не' : 'не'} {verb(partner?.gender, 'отметил')} {isToday ? 'день' : 'этот день'}
-            </h2>
-            <p className="mt-1.5 text-subhead text-ink-soft">
-              {isToday ? 'Вы узнаете об этом — приходить и проверять не нужно.' : 'Так бывает. Пустой день — тоже часть истории.'}
-            </p>
+            <div className="flex items-center gap-3.5">
+              <span aria-hidden className="size-11 shrink-0 rounded-full border-2 border-dashed border-line-strong" />
+              <div className="min-w-0 flex-1">
+                <p className="text-footnote text-ink-faint">{name}</p>
+                <h2 className="text-headline font-semibold text-ink-faint">
+                  {isToday ? 'Ещё не' : 'Не'} {verb(partner?.gender, 'отметил')}
+                </h2>
+              </div>
+            </div>
             {clockLine}
           </motion.section>
         )}
@@ -122,13 +130,13 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
                 initial={playReveal ? { scale: 0.4 } : false}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 320, damping: 18, delay: playReveal ? 0.1 : 0 }}
-                className="size-11 shrink-0 rounded-full border-2 border-surface shadow-card"
+                className="size-11 shrink-0 rounded-full shadow-card"
                 style={{ backgroundColor: moodColor(entry.mood) }}
                 aria-hidden
               />
               <div>
-                <h2 className="text-headline font-semibold">{name}</h2>
-                <p className="text-subhead text-ink-soft">день {moodLabel(entry.mood)}</p>
+                <p className="text-footnote text-ink-faint">{name}</p>
+                <h2 className="text-headline font-semibold first-letter:uppercase">{moodLabel(entry.mood)}</h2>
               </div>
             </div>
             <motion.div
@@ -137,10 +145,14 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
               transition={{ duration: 0.4, delay: playReveal ? 0.35 : 0, ease: EASE }}
               className="px-5 pb-5"
             >
-              {entry.note ? (
-                <p className="measure text-body whitespace-pre-wrap text-ink-soft">{entry.note}</p>
-              ) : (
-                <p className="text-subhead text-ink-faint">Без заметки — только цвет.</p>
+              {entry.note && <p className="measure mb-4 text-body whitespace-pre-wrap text-ink-soft">{entry.note}</p>}
+              {isToday && (
+                <Link
+                  href="/ping"
+                  className="inline-flex h-10 items-center gap-2 rounded-full bg-sunken px-4 text-subhead font-semibold text-accent transition-colors hover:bg-line"
+                >
+                  <Reply className="size-4" aria-hidden /> Ответить
+                </Link>
               )}
               {clockLine}
             </motion.div>

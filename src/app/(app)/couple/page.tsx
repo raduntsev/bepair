@@ -48,7 +48,7 @@ export default function CouplePage() {
 
   return (
     <Page>
-      <PageHeader title="Профиль пары" />
+      <PageHeader title={partner ? `Вы и ${name}` : 'Пара'} back={{ href: '/settings', label: 'Профиль' }} />
 
       <Counters
         togetherSince={settings?.together_since ?? null}
@@ -111,14 +111,11 @@ export default function CouplePage() {
             ].map(([label, value]) => (
               <div key={label as string} className="flex items-center justify-between gap-3 py-2.5">
                 <dt className="text-ink-soft">{label}</dt>
-                <dd className="font-medium tabular-nums">{value ?? '—'}</dd>
+                <dd className="font-medium tabular-nums">{value ?? 0}</dd>
               </div>
             ))}
           </dl>
         </Card>
-        <p className="text-sm text-ink-faint">
-          Здесь только то, что вы сделали вдвоём. Ни подписчиков, ни рейтингов, ни сравнения друг с другом.
-        </p>
 
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">

@@ -80,7 +80,7 @@ export function noticeHref(kind: NoticeKind, payload?: Record<string, unknown> |
     case 'remind_evening':
       return '/day';
     case 'ping':
-      return '/chronicle';
+      return '/messages';
     case 'day':
     case 'joined':
       return '/day';
@@ -89,7 +89,7 @@ export function noticeHref(kind: NoticeKind, payload?: Record<string, unknown> |
     case 'task_seen':
       return '/tasks';
     case 'letter':
-      return '/letters';
+      return '/messages';
     case 'service':
       return '/store';
     case 'paired_proposal':

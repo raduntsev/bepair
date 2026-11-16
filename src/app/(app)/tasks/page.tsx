@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Eye, Pencil, Plus, Star, X } from 'lucide-react';
+import { ArrowUp, Check, Eye, Pencil, Star, X } from 'lucide-react';
 import { points } from '@/lib/dates';
 import { displayName, verb } from '@/lib/words';
 import { STARTER_TEMPLATES, WEIGHTS, taskState, useTasks, type Task } from '@/hooks/useTasks';
@@ -9,7 +9,9 @@ import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Segment } from '@/components/ui/Controls';
-import { Alert, Chip, EmptyState, Loading, Page, PageHeader } from '@/components/ui/Blocks';
+import { Alert, Chip, Loading, Page, SectionHeader } from '@/components/ui/Blocks';
+import { AutoHeight } from '@/components/ui/AutoHeight';
+import { ExchangeHeader } from '@/components/ExchangeHeader';
 
 function TaskCard({
   task,
@@ -74,9 +76,7 @@ function TaskCard({
     asker's side it is them who has not seen it; from the doer's, the partner.
   */
   const chip =
-    state === 'awaiting' ? (
-      <Chip>Ждёт выполнения</Chip>
-    ) : state === 'done_unseen' ? (
+    state === 'awaiting' ? null : state === 'done_unseen' ? (
       <Chip tone="accent" Icon={Eye}>
         {asked ? 'Вы ещё не видели' : `${partnerName} ещё не ${verb(partnerGender, 'видел')}`}
       </Chip>
@@ -88,13 +88,11 @@ function TaskCard({
 
   return (
     <li className="rounded-2xl bg-surface p-5 shadow-card">
-      <p className={`text-[15px] font-medium ${state === 'confirmed' ? 'text-ink-soft' : 'text-ink'}`}>{task.content}</p>
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-ink-faint">
-          {asked ? 'вы попросили' : 'вас попросили'}, {points(task.points)}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <p className={`text-body font-medium ${state === 'confirmed' ? 'text-ink-faint' : 'text-ink'}`}>{task.content}</p>
         {chip}
       </div>
+      <p className="mt-1 text-footnote text-ink-faint">{points(task.points)}</p>
 
       {state !== 'confirmed' && (
         <div className="mt-4 flex flex-wrap gap-2 empty:hidden">
@@ -140,6 +138,7 @@ export default function TasksPage() {
   const [remember, setRemember] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showDone, setShowDone] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   const partnerName = displayName(partner?.display_name);
 
@@ -180,117 +179,131 @@ export default function TasksPage() {
     />
   );
 
+  const composerOpen = focused || content.trim().length > 0;
+  const incoming = [...forMe, ...doneForMeUnseen];
+
   return (
     <Page>
-      <PageHeader title="Задачи" sub="Спокойный способ сказать, что сегодня было бы кстати." />
+      <ExchangeHeader current="/tasks" />
 
-      <section className="mb-8 rounded-2xl bg-surface p-5 shadow-card md:p-6">
-        <h2 className="text-lg font-semibold">О чём попросить</h2>
+      {error && (
+        <div className="mb-4">
+          <Alert>{error}</Alert>
+        </div>
+      )}
 
+      {/* One field. Weight and templates unfold only once you start — nothing to read before then. */}
+      <section className={`mb-7 rounded-2xl bg-surface shadow-card transition-shadow duration-500 ${composerOpen ? 'ring-2 ring-accent' : ''}`}>
         <form
-          className="mt-4 space-y-4"
+          className="p-2"
           onSubmit={(event) => {
             event.preventDefault();
             submit();
           }}
         >
-          <Input
-            aria-label="Просьба"
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            placeholder="Например: заварить чай, пока я в душе"
-            disabled={!partner}
-          />
-
-          <fieldset>
-            <legend className="mb-2 text-sm font-medium">Насколько это важно</legend>
-            <Segment legend="Насколько это важно" options={WEIGHTS} value={weight} onChange={setWeight} />
-            <p className="mt-2 text-sm text-ink-faint">Вес просьбы — это баллы, которые партнёр получит за выполнение.</p>
-          </fieldset>
-
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
-            <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} className="size-4.5 accent-[var(--c-accent)]" />
-            Сохранить в подборку, чтобы не набирать снова
-          </label>
-
-          <Button type="submit" loading={busy} disabled={!content.trim() || !partner}>
-            <Plus className="size-4" aria-hidden /> Попросить
-          </Button>
-          {!partner && <p className="text-sm text-ink-faint">Попросить можно, когда партнёр присоединится.</p>}
-        </form>
-
-        <div className="mt-6 border-t border-line pt-5">
-          <h3 className="mb-3 text-sm font-medium text-ink-soft">Из подборки</h3>
-          <div className="flex flex-wrap gap-2">
-            {mineSaved.map((template) => (
-              <span key={template.id} className="inline-flex items-center rounded-full border border-accent/30 bg-accent-soft">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setContent(template.content);
-                    setWeight(template.points);
-                  }}
-                  className="tap inline-flex items-center gap-1.5 rounded-l-full pr-1 pl-4 text-sm text-accent-soft-ink"
-                >
-                  <Star className="size-3.5" aria-hidden /> {template.content}
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Убрать «${template.content}» из подборки`}
-                  onClick={() => removeTemplate(template.id)}
-                  className="tap flex items-center justify-center rounded-r-full pr-2 text-accent-soft-ink/70 hover:text-accent-soft-ink"
-                >
-                  <X className="size-3.5" aria-hidden />
-                </button>
-              </span>
-            ))}
-            {starters.map((template) => (
-              <button
-                key={template.content}
-                type="button"
-                onClick={() => {
-                  setContent(template.content);
-                  setWeight(template.points);
-                }}
-                className="tap rounded-full border border-line px-4 text-sm text-ink-soft transition-colors hover:border-line-strong hover:text-ink"
-              >
-                {template.content}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <Input
+              aria-label="О чём попросить"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder="Попросить о…"
+              disabled={!partner}
+              className="!bg-transparent focus:!shadow-none !border-transparent"
+            />
+            <Button type="submit" loading={busy} disabled={!content.trim() || !partner} aria-label="Попросить" className="!size-11 !rounded-full !px-0">
+              <ArrowUp className="size-5" strokeWidth={2.4} aria-hidden />
+            </Button>
           </div>
-        </div>
+
+          <AutoHeight>
+            {composerOpen ? (
+              <div className="space-y-3 px-2 pt-2 pb-2" onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}>
+                <Segment legend="Насколько это важно" options={WEIGHTS} value={weight} onChange={setWeight} />
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 text-subhead text-ink-soft">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(event) => setRemember(event.target.checked)}
+                    className="size-4.5 accent-[var(--c-accent)]"
+                  />
+                  <Star className="size-4" aria-hidden /> В подборку
+                </label>
+              </div>
+            ) : (
+              <ul className="-mx-2 flex gap-2 overflow-x-auto px-4 pt-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {[...mineSaved.map((t) => ({ key: t.id, content: t.content, points: t.points, saved: true })), ...starters.map((t) => ({ key: t.content, content: t.content, points: t.points, saved: false }))].map((t) => (
+                  <li key={t.key} className="shrink-0">
+                    <button
+                      type="button"
+                      disabled={!partner}
+                      onClick={() => {
+                        setContent(t.content);
+                        setWeight(Math.min(3, t.points));
+                      }}
+                      className="flex h-9 items-center gap-1.5 rounded-full bg-sunken px-3.5 text-subhead text-ink-soft transition-colors hover:text-ink disabled:opacity-40"
+                    >
+                      {t.saved && <Star className="size-3.5 text-accent" aria-hidden />}
+                      {t.content}
+                      {t.saved && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Убрать «${t.content}» из подборки`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            removeTemplate(t.key);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              removeTemplate(t.key);
+                            }
+                          }}
+                          className="-mr-1.5 ml-0.5 flex size-6 items-center justify-center rounded-full text-ink-faint hover:bg-line hover:text-ink"
+                        >
+                          <X className="size-3.5" aria-hidden />
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </AutoHeight>
+        </form>
       </section>
 
-      {error && <div className="mb-4"><Alert>{error}</Alert></div>}
-
       {isLoading ? (
-        <Loading label="Загружаем задачи…" />
-      ) : tasks.length === 0 ? (
-        <EmptyState title="Пока пусто">Просьба — это не список дел. Одна-две в день работают лучше десяти.</EmptyState>
-      ) : (
-        <div className="space-y-8">
-          {(forMe.length > 0 || doneForMeUnseen.length > 0) && (
+        <Loading label="Загружаем просьбы…" />
+      ) : tasks.length === 0 ? null : (
+        <div className="space-y-7">
+          {incoming.length > 0 && (
             <section>
-              <h2 className="mb-3 font-semibold">Вас попросили</h2>
-              <ul className="space-y-3">{[...forMe, ...doneForMeUnseen].map(card)}</ul>
+              <SectionHeader title="Вас попросили" />
+              <ul className="space-y-3">{incoming.map(card)}</ul>
             </section>
           )}
           {asked.length > 0 && (
             <section>
-              <h2 className="mb-3 font-semibold">Вы попросили</h2>
+              <SectionHeader title="Вы попросили" />
               <ul className="space-y-3">{asked.map(card)}</ul>
             </section>
           )}
           {finished.length > 0 && (
             <section>
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="font-semibold">Выполнено</h2>
-                {finished.length > 5 && (
-                  <Button variant="ghost" onClick={() => setShowDone(!showDone)}>
-                    {showDone ? 'Свернуть' : `Показать все ${finished.length}`}
-                  </Button>
-                )}
-              </div>
+              <SectionHeader
+                title="Выполнено"
+                action={
+                  finished.length > 5 && (
+                    <Button variant="ghost" className="!h-9 !px-3" onClick={() => setShowDone(!showDone)}>
+                      {showDone ? 'Свернуть' : `Все ${finished.length}`}
+                    </Button>
+                  )
+                }
+              />
               <ul className="space-y-3">{(showDone ? finished : finished.slice(0, 5)).map(card)}</ul>
             </section>
           )}
