@@ -24,6 +24,7 @@ import { occursOn, withAnniversary } from '@/lib/importantDates';
 import { PRINCIPAL_LABEL, phasesBetween, type Principal } from '@/lib/moon';
 import { ImportantDates } from '@/components/ImportantDates';
 import { MoonGlyph } from '@/components/MoonGlyph';
+import { TIME_TABS, TabbedHeader } from '@/components/TabbedHeader';
 
 const PRINCIPAL_PHASE: Record<Principal, number> = { new: 0, first: 0.25, full: 0.5, last: 0.75 };
 
@@ -88,9 +89,7 @@ export default function CalendarPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-8 sm:px-6 md:pt-12">
-      <header className="mb-6">
-        <h1 className="text-large-title font-bold">Календарь</h1>
-      </header>
+      <TabbedHeader id="time" title="Календарь" tabs={TIME_TABS} current="/calendar" />
 
       {error && (
         <div className="mb-4">

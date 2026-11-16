@@ -85,6 +85,14 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
   one feed, with what waits for you on top. Просьбы holds Просьбы and Услуги
   as two tabs under one balance. Профиль is the pair, notifications and all
   settings as one list. Old routes (`/letters`, `/chronicle`) redirect.
+- **Планёрка** lives under Календарь as a second tab («Календарь | Планёрки»):
+  a weekly session in three steps — Колесо (seven spheres, 1–10, radar against
+  last week), Вопросы (the couple's four questions, last answer one tap away),
+  Дела (whose: mine / partner's / общее; status; решение). «Заполняет: Я |
+  партнёр» lets one person type for the other; every row keeps both whose it is
+  and who entered it. Fields save themselves and follow the other phone live.
+  On the couple's chosen weekday a «Планёрка» card is «now» on Сегодня, right
+  after your own day.
 - **«Сегодня» shows the next thing, not everything.** Exactly one block is
   «now», in this order: your own day → a letter waiting → what the partner did
   for you → what you were asked. Blocks with nothing in them are not rendered.
