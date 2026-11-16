@@ -192,6 +192,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sessionRef.current = session;
         return;
       }
+      /*
+        supabase-js re-emits SIGNED_IN every time the tab becomes visible again.
+        For the same person nothing changed: re-reading would hand every hook a
+        new `user` object, and each screen would drop back to its loading state —
+        what looked like the site reloading itself.
+      */
+      if (event === 'SIGNED_IN' && session?.user && sessionRef.current?.user?.id === session.user.id) {
+        sessionRef.current = session;
+        return;
+      }
       load(session);
     });
     return () => subscription.unsubscribe();

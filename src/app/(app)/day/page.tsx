@@ -12,6 +12,8 @@ import { Counters } from '@/components/Counters';
 import { DayPrompts } from '@/components/DayPrompts';
 import { DoneForMe, MyTasks } from '@/components/DayTasks';
 import { Button } from '@/components/ui/Button';
+import { AutoHeight } from '@/components/ui/AutoHeight';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Textarea } from '@/components/ui/Field';
 import { Alert, LinkRow, Loading, PageHeader, RowGroup, RowIcon, SectionHeader, SwitchTrack } from '@/components/ui/Blocks';
 import { useCoupleDay } from '@/hooks/useCoupleDay';
@@ -221,109 +223,128 @@ function DayView() {
       {isLoading ? (
         <Loading label="Загружаем день…" />
       ) : (
-        <div className="flex flex-col gap-3">
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col gap-3"
+        >
           {/* Your day — the one required thing, first and largest. */}
           <section
-            className="rounded-2xl bg-surface p-5 shadow-card transition-colors duration-500"
+            className="rounded-2xl bg-surface shadow-card transition-colors duration-500"
             style={{
               backgroundColor: tint ? `color-mix(in srgb, ${tint} 8%, var(--c-surface))` : undefined,
             }}
           >
-            {showEditor ? (
-              <>
-                <h2 className="text-title-3 font-semibold">Как прошёл день?</h2>
-                <p className="mt-1 mb-6 text-subhead text-ink-faint">Единственное, что обязательно. Цветом, без оценок.</p>
+            {/* Editor ⇄ summary: the card's height springs, the content cross-fades. */}
+            <AutoHeight>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={showEditor ? 'editor' : mine ? 'summary' : 'closed'}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="p-5"
+                >
+                  {showEditor ? (
+                    <>
+                      <h2 className="text-title-3 font-semibold">Как прошёл день?</h2>
+                      <p className="mt-1 mb-6 text-subhead text-ink-faint">Единственное, что обязательно. Цветом, без оценок.</p>
 
-                <MoodScale value={mood} onChange={setMood} />
+                      <MoodScale value={mood} onChange={setMood} />
 
-                <div className="mt-6">
-                  <label htmlFor="note" className="sr-only">
-                    Заметка
-                  </label>
-                  <Textarea
-                    id="note"
-                    value={note}
-                    onChange={(event) => {
-                      setNote(event.target.value);
-                      setJustSaved(false);
-                    }}
-                    rows={3}
-                    placeholder="Заметка, по желанию: что случилось, о чём думаете…"
-                  />
-                </div>
+                      <div className="mt-6">
+                        <label htmlFor="note" className="sr-only">
+                          Заметка
+                        </label>
+                        <Textarea
+                          id="note"
+                          value={note}
+                          onChange={(event) => {
+                            setNote(event.target.value);
+                            setJustSaved(false);
+                          }}
+                          rows={3}
+                          placeholder="Заметка, по желанию: что случилось, о чём думаете…"
+                        />
+                      </div>
 
-                {!mine && !presence.isLoading && <DayPrompts key={date} date={date} defaultOpen={partnerMarkedToday} />}
+                      {!mine && !presence.isLoading && <DayPrompts key={date} date={date} defaultOpen={partnerMarkedToday} />}
 
-                <div className="mt-5 flex flex-wrap items-center gap-3">
-                  <Button size="lg" block loading={saving} disabled={mood === null || !isDirty} onClick={onSave}>
-                    {mine ? 'Сохранить' : 'Отметить день'}
-                  </Button>
-                  {mine && (
-                    <Button
-                      variant="ghost"
-                      block
-                      onClick={() => {
-                        setMood(mine.mood);
-                        setNote(mine.note ?? '');
-                        setEditing(false);
-                      }}
-                    >
-                      Отменить
-                    </Button>
+                      <div className="mt-5 flex flex-wrap items-center gap-3">
+                        <Button size="lg" block loading={saving} disabled={mood === null || !isDirty} onClick={onSave}>
+                          {mine ? 'Сохранить' : 'Отметить день'}
+                        </Button>
+                        {mine && (
+                          <Button
+                            variant="ghost"
+                            block
+                            onClick={() => {
+                              setMood(mine.mood);
+                              setNote(mine.note ?? '');
+                              setEditing(false);
+                            }}
+                          >
+                            Отменить
+                          </Button>
+                        )}
+                      </div>
+                      {mood === null && <p className="mt-3 text-center text-footnote text-ink-faint">Сначала выберите цвет дня</p>}
+                    </>
+                  ) : mine ? (
+                    <div>
+                      <div className="flex items-center gap-3.5">
+                        <span
+                          aria-hidden
+                          className="size-11 shrink-0 rounded-full shadow-card"
+                          style={{ backgroundColor: moodColor(mine.mood) }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-footnote font-medium text-ink-faint">Ваш день</p>
+                          <h2 className="text-headline font-semibold first-letter:uppercase">{moodLabel(mine.mood)}</h2>
+                        </div>
+                        {!isClosed && (
+                          <Button
+                            variant="secondary"
+                            className="!h-9 !rounded-full !px-3.5"
+                            onClick={() => {
+                              setEditing(true);
+                              setJustSaved(false);
+                            }}
+                          >
+                            <Pencil className="size-3.5" aria-hidden /> Изменить
+                          </Button>
+                        )}
+                      </div>
+                      {mine.note ? (
+                        <p className="measure mt-3 line-clamp-4 text-body whitespace-pre-wrap text-ink-soft">{mine.note}</p>
+                      ) : (
+                        <p className="mt-3 text-subhead text-ink-faint">Без заметки — только цвет.</p>
+                      )}
+                      <span role="status" aria-live="polite">
+                        {justSaved && (
+                          <span className="mt-2 flex items-center gap-1.5 text-footnote font-medium text-accent-soft-ink">
+                            <Check className="size-4" aria-hidden /> Сохранено
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <h2 className="text-headline font-semibold">Этот день остался неотмеченным</h2>
+                      <p className="mt-1 text-subhead text-ink-faint">Задним числом его не заполнить — так и было задумано.</p>
+                    </div>
                   )}
-                </div>
-                {mood === null && <p className="mt-3 text-center text-footnote text-ink-faint">Сначала выберите цвет дня</p>}
-              </>
-            ) : mine ? (
-              <div>
-                <div className="flex items-center gap-3.5">
-                  <span
-                    aria-hidden
-                    className="size-11 shrink-0 rounded-full shadow-card"
-                    style={{ backgroundColor: moodColor(mine.mood) }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-footnote font-medium text-ink-faint">Ваш день</p>
-                    <h2 className="text-headline font-semibold first-letter:uppercase">{moodLabel(mine.mood)}</h2>
-                  </div>
-                  {!isClosed && (
-                    <Button
-                      variant="secondary"
-                      className="!h-9 !rounded-full !px-3.5"
-                      onClick={() => {
-                        setEditing(true);
-                        setJustSaved(false);
-                      }}
-                    >
-                      <Pencil className="size-3.5" aria-hidden /> Изменить
-                    </Button>
-                  )}
-                </div>
-                {mine.note ? (
-                  <p className="measure mt-3 line-clamp-4 text-body whitespace-pre-wrap text-ink-soft">{mine.note}</p>
-                ) : (
-                  <p className="mt-3 text-subhead text-ink-faint">Без заметки — только цвет.</p>
-                )}
-                <span role="status" aria-live="polite">
-                  {justSaved && (
-                    <span className="mt-2 flex items-center gap-1.5 text-footnote font-medium text-accent-soft-ink">
-                      <Check className="size-4" aria-hidden /> Сохранено
-                    </span>
-                  )}
-                </span>
-              </div>
-            ) : (
-              <div>
-                <h2 className="text-headline font-semibold">Этот день остался неотмеченным</h2>
-                <p className="mt-1 text-subhead text-ink-faint">Задним числом его не заполнить — так и было задумано.</p>
-              </div>
-            )}
 
-            {error && (
-              <div className="mt-4">
-                <Alert>{error}</Alert>
-              </div>
-            )}
+                  {error && (
+                    <div className="mt-4">
+                      <Alert>{error}</Alert>
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </AutoHeight>
           </section>
 
           <PartnerDayCard
@@ -373,7 +394,7 @@ function DayView() {
               best={presence.best}
             />
           )}
-        </div>
+        </motion.div>
       )}
     </div>
   );
