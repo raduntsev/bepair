@@ -311,7 +311,7 @@ function DayView() {
                                 Отмена
                               </Button>
                             )}
-                            <Button size="lg" block loading={saving} disabled={mood === null || !isDirty} onClick={onSave}>
+                            <Button size="lg" className="min-w-0 flex-1" loading={saving} disabled={mood === null || !isDirty} onClick={onSave}>
                               {mine ? 'Сохранить' : 'Отметить день'}
                             </Button>
                           </motion.div>

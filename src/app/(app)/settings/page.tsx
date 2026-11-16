@@ -98,8 +98,8 @@ export default function SettingsPage() {
             <Segment
               legend="Как о вас писать"
               options={[
-                { value: 'f' as const, label: 'Она' },
-                { value: 'm' as const, label: 'Он' },
+                { value: 'f' as const, label: 'Я женщина' },
+                { value: 'm' as const, label: 'Я мужчина' },
               ]}
               value={profile?.gender ?? null}
               onChange={(gender) => updateProfile({ gender })}

@@ -2,8 +2,8 @@ name: Native apps
 
 # Builds the iOS and Android shells with their widgets.
 # Set the repository variable BEPAIR_URL (Settings → Secrets and variables →
-# Actions → Variables) to the Vercel address, and the APK from the Android job
-# opens your deployed app. Without it the build still runs, pointed at a placeholder.
+# Actions → Variables) to override the Vercel address; without it the build
+# points at the production deployment, bepair.vercel.app.
 
 on:
   push:
@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
 
 env:
-  BEPAIR_URL: ${{ vars.BEPAIR_URL || 'https://vpare.example' }}
+  BEPAIR_URL: ${{ vars.BEPAIR_URL || 'https://bepair.vercel.app' }}
 
 jobs:
   android:
