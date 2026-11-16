@@ -34,9 +34,9 @@ export function taskState(task: Task): TaskState {
 
 /* Three levels: enough to say «this matters», too few to turn a favour into a grade. */
 export const WEIGHTS = [
-  { value: 1, label: 'Мелочь' },
-  { value: 2, label: 'Обычно' },
-  { value: 3, label: 'Важно' },
+  { value: 1, label: 'Мелочь', detail: '+1 балл' },
+  { value: 2, label: 'Обычно', detail: '+2 балла' },
+  { value: 3, label: 'Важно', detail: '+3 балла' },
 ];
 
 /* A starter pack, so the first request never has to be typed from nothing. */

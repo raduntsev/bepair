@@ -228,13 +228,13 @@ export default function TasksPage() {
                     onChange={(event) => setRemember(event.target.checked)}
                     className="size-4.5 accent-[var(--c-accent)]"
                   />
-                  <Star className="size-4" aria-hidden /> В подборку
+                  В подборку
                 </label>
               </div>
             ) : (
-              <ul className="-mx-2 flex gap-2 overflow-x-auto px-4 pt-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <ul className="flex flex-wrap gap-2 px-2 pt-1 pb-2">
                 {[...mineSaved.map((t) => ({ key: t.id, content: t.content, points: t.points, saved: true })), ...starters.map((t) => ({ key: t.content, content: t.content, points: t.points, saved: false }))].map((t) => (
-                  <li key={t.key} className="shrink-0">
+                  <li key={t.key}>
                     <button
                       type="button"
                       disabled={!partner}

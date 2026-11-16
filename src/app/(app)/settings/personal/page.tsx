@@ -15,13 +15,15 @@ export default function PersonalSettingsPage() {
 
       <div className="space-y-4">
         <RowGroup label="Только для вас">
-          <SwitchRow
-            Icon={Droplet}
-            title="Отмечать дни цикла"
-            sub="Тихая строка на экране дня. Видно только вам, нужно для будущего разбора"
-            checked={profile?.cycle_tracking ?? false}
-            onChange={(next) => updateProfile({ cycle_tracking: next })}
-          />
+          {profile?.gender === 'f' && (
+            <SwitchRow
+              Icon={Droplet}
+              title="Отмечать дни цикла"
+              sub="Отметка в окне дня. Видно только вам"
+              checked={profile?.cycle_tracking ?? false}
+              onChange={(next) => updateProfile({ cycle_tracking: next })}
+            />
+          )}
           {showMoon !== null && (
             <SwitchRow
               Icon={Moon}

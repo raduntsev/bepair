@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { AutoHeight } from '@/components/ui/AutoHeight';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Textarea } from '@/components/ui/Field';
-import { Alert, Loading, PageHeader, RowGroup, RowIcon, SectionHeader, SwitchTrack } from '@/components/ui/Blocks';
+import { Alert, Loading, PageHeader, RowGroup, SectionHeader } from '@/components/ui/Blocks';
 import { useCoupleDay } from '@/hooks/useCoupleDay';
 import { useTasks } from '@/hooks/useTasks';
 import { usePresence } from '@/hooks/usePresence';
@@ -55,48 +55,41 @@ function useWaitingLetters(userId: string | undefined, isUnlocked: boolean) {
   return count;
 }
 
-/* Quiet by design: for later analysis, shown nowhere, in neutral ink — the spectrum is mood's alone. */
-function CycleRow({ userId }: { userId: string }) {
-  const today = todayISO();
-  const [marked, setMarked] = useState<boolean | null>(null);
+/*
+  Cycle day — private, for later analysis, in neutral ink (the spectrum is
+  mood's alone). It belongs to the day, so it is marked inside the day editor
+  and saved with it by the same button, never on its own.
+*/
+function useCycleMark(userId: string | null, day: string) {
+  const [stored, setStored] = useState<boolean | null>(null);
 
   useEffect(() => {
+    if (!userId) return;
+    let alive = true;
     supabase
       .from('cycle_days')
       .select('day')
       .eq('user_id', userId)
-      .eq('day', today)
+      .eq('day', day)
       .maybeSingle()
-      .then(({ data }) => setMarked(!!data));
-  }, [userId, today]);
+      .then(({ data }) => alive && setStored(!!data));
+    return () => {
+      alive = false;
+    };
+  }, [userId, day]);
 
-  const toggle = async () => {
-    const next = !marked;
-    setMarked(next);
-    const { error } = next
-      ? await supabase.from('cycle_days').insert({ user_id: userId, day: today })
-      : await supabase.from('cycle_days').delete().eq('user_id', userId).eq('day', today);
-    if (error) setMarked(!next);
-  };
-
-  return (
-    <li>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={!!marked}
-        disabled={marked === null}
-        onClick={toggle}
-        className="flex min-h-13 w-full items-center gap-3.5 px-4 py-2.5 text-left transition-colors enabled:hover:bg-sunken"
-      >
-        <RowIcon Icon={Droplet} tone="neutral" />
-        <span className="min-w-0 flex-1">
-          <span className="block text-body">День цикла</span>
-        </span>
-        <SwitchTrack checked={!!marked} disabled={marked === null} />
-      </button>
-    </li>
+  const persist = useCallback(
+    async (next: boolean) => {
+      if (!userId || stored === null || next === stored) return;
+      const { error } = next
+        ? await supabase.from('cycle_days').insert({ user_id: userId, day })
+        : await supabase.from('cycle_days').delete().eq('user_id', userId).eq('day', day);
+      if (!error) setStored(next);
+    },
+    [userId, day, stored],
   );
+
+  return { stored, persist };
 }
 
 /* Birthdays, anniversaries: shared by the couple, so shown on any day they fall on. */
@@ -148,6 +141,10 @@ function DayView() {
   const [justUnsealed, setJustUnsealed] = useState(false);
   const [syncedFor, setSyncedFor] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const cycleEnabled = !!user && !!profile?.cycle_tracking && profile?.gender === 'f' && date === todayISO();
+  const cycle = useCycleMark(cycleEnabled ? user!.id : null, date);
+  const [cycleDraft, setCycleDraft] = useState<boolean | null>(null);
+  const cycleValue = cycleDraft ?? cycle.stored ?? false;
 
   /* Adopt the stored entry once per loaded day, without clobbering what is being typed. */
   const key = `${date}:${mine?.updated_at ?? 'none'}`;
@@ -162,13 +159,15 @@ function DayView() {
     unmarked past date would let anyone backdate and unseal the partner's day.
   */
   const isClosed = !isToday;
-  const isDirty = mine === null ? mood !== null : mood !== mine.mood || note.trim() !== mine.note;
+  const cycleDirty = cycleDraft !== null && cycleDraft !== cycle.stored;
+  const isDirty = mine === null ? mood !== null : mood !== mine.mood || note.trim() !== mine.note || cycleDirty;
 
   const onSave = useCallback(async () => {
     if (mood === null) return;
     const first = mine === null;
     setSaving(true);
     const ok = await save(mood, note.trim());
+    if (ok && cycleDirty) await cycle.persist(cycleValue);
     setSaving(false);
     if (ok) {
       setJustSaved(true);
@@ -176,7 +175,7 @@ function DayView() {
       if (first) setJustUnsealed(true);
       presence.reload();
     }
-  }, [mood, note, mine, save, presence]);
+  }, [mood, note, mine, save, presence, cycleDirty, cycle, cycleValue]);
 
   /*
     «Просмотрено»: the morning reminder asks about a partner's day only while you
@@ -197,7 +196,8 @@ function DayView() {
   const showMoon = isToday;
   /* A question from today's set stands in for any instruction about what to write. */
   const notePrompt = promptsFor(date, 1)[0] ?? 'Заметка';
-  const showCycle = isToday && !!profile?.cycle_tracking && !!user;
+  /* Only for those who turned it on, and only for women — a man's profile never shows it. */
+  const showCycle = isToday && !!profile?.cycle_tracking && profile?.gender === 'f' && !!user;
 
   const letters = waitingLetters.sealed + waitingLetters.unread;
   const thanks = user ? tasks.filter((t) => t.user_id === user.id && taskState(t) === 'done_unseen').length : 0;
@@ -274,6 +274,20 @@ function DayView() {
                         />
                       </div>
 
+                      {showCycle && (
+                        <button
+                          type="button"
+                          aria-pressed={cycleValue}
+                          disabled={cycle.stored === null}
+                          onClick={() => setCycleDraft(!cycleValue)}
+                          className={`mt-3 inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-subhead font-medium transition-colors duration-300 ${
+                            cycleValue ? 'bg-ink text-surface' : 'bg-sunken text-ink-soft hover:text-ink'
+                          }`}
+                        >
+                          <Droplet className="size-4" aria-hidden /> День цикла
+                        </button>
+                      )}
+
                       {/* The button arrives with the colour: until then there is nothing to confirm. */}
                       <AutoHeight>
                         {(mood !== null || mine) && (
@@ -290,6 +304,7 @@ function DayView() {
                                 onClick={() => {
                                   setMood(mine.mood);
                                   setNote(mine.note ?? '');
+                                  setCycleDraft(null);
                                   setEditing(false);
                                 }}
                               >
@@ -313,7 +328,10 @@ function DayView() {
                         />
                         <div className="min-w-0 flex-1">
                           <p className="text-footnote text-ink-faint">Ваш день</p>
-                          <h2 className="text-headline font-semibold first-letter:uppercase">{moodLabel(mine.mood)}</h2>
+                          <h2 className="flex items-center gap-1.5 text-headline font-semibold">
+                            <span className="first-letter:uppercase">{moodLabel(mine.mood)}</span>
+                            {showCycle && cycle.stored && <Droplet className="size-4 text-ink-faint" aria-label="День цикла" />}
+                          </h2>
                         </div>
                         <span role="status" aria-live="polite" className="contents">
                           {justSaved && <Check className="size-5 text-accent" aria-label="Сохранено" />}
@@ -396,7 +414,7 @@ function DayView() {
             </>
           )}
 
-          {(showCycle || showMoon) && <ForYou cycle={showCycle && user ? <CycleRow userId={user.id} /> : null} />}
+          {showMoon && <ForYou />}
 
           {isToday && mine && partner && (
             <Counters
@@ -413,14 +431,13 @@ function DayView() {
 }
 
 /* Personal rows. Rendered only when there is something to show — the moon is opt-in. */
-function ForYou({ cycle }: { cycle: React.ReactNode }) {
+function ForYou() {
   const { showMoon } = useShowMoon();
-  if (!cycle && !showMoon) return null;
+  if (!showMoon) return null;
   return (
     <>
       <SectionHeader title="Для себя" />
       <RowGroup label="Для себя">
-        {cycle}
         <MoonRow />
       </RowGroup>
     </>
