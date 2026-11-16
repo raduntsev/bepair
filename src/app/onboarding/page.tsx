@@ -130,12 +130,12 @@ export default function OnboardingPage() {
         >
           <Input aria-label="Имя" autoComplete="given-name" autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="Имя" />
           <div>
-            <p className="mb-2 text-sm font-medium">Как о вас писать</p>
+            <p className="mb-2 text-sm font-medium">О себе</p>
             <Segment
               legend="Как о вас писать"
               options={[
-                { value: 'f' as const, label: 'Она отметила' },
-                { value: 'm' as const, label: 'Он отметил' },
+                { value: 'f' as const, label: 'Я женщина' },
+                { value: 'm' as const, label: 'Я мужчина' },
               ]}
               value={gender}
               onChange={setGender}
