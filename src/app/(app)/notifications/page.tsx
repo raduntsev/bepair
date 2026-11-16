@@ -43,9 +43,10 @@ export default function NotificationsPage() {
     <Page width="form">
       <PageHeader
         title="Уведомления"
+        back={{ href: '/settings', label: 'Профиль' }}
         action={
-          <LinkButton href="/notifications/settings" variant="secondary">
-            <Bell className="size-4" aria-hidden /> Что присылать
+          <LinkButton href="/notifications/settings" variant="ghost" aria-label="Что присылать">
+            <Bell className="size-5" aria-hidden />
           </LinkButton>
         }
       />
@@ -55,9 +56,7 @@ export default function NotificationsPage() {
       {isLoading ? (
         <Loading label="Загружаем уведомления…" />
       ) : notices.length === 0 ? (
-        <EmptyState title="Пока тихо" variant="quiet">
-          Здесь появится то, что случилось, пока вас не было.
-        </EmptyState>
+        <EmptyState title="Пока тихо" variant="quiet" />
       ) : (
         <ul className="space-y-2">
           {notices.map((notice) => {

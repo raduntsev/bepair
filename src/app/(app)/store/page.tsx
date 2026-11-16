@@ -4,12 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { points } from '@/lib/dates';
-import { displayName, verb } from '@/lib/words';
+import { displayName, genitive, verb } from '@/lib/words';
 import { flushPush } from '@/lib/push';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Field';
-import { Alert, Chip, EmptyState, Loading, Page, PageHeader } from '@/components/ui/Blocks';
+import { Alert, Chip, EmptyState, Loading, Page, SectionHeader } from '@/components/ui/Blocks';
+import { ExchangeHeader } from '@/components/ExchangeHeader';
 
 interface ShopItem {
   id: string;
@@ -151,21 +152,12 @@ export default function StorePage() {
 
   return (
     <Page>
-      <PageHeader
-        title="Услуги"
-        sub="То, что вы готовы сделать друг для друга."
-        action={
-          <div className="rounded-xl border border-line bg-surface px-4 py-2.5 shadow-card" role="status">
-            <span className="text-sm text-ink-faint">У вас</span> <span className="font-semibold tabular-nums">{balance}</span>{' '}
-            <span className="text-sm text-ink-soft">{points(balance).split(' ')[1]}</span>
-          </div>
-        }
-      />
+      <ExchangeHeader current="/store" balance={isLoading ? undefined : balance} />
 
       {composing ? (
         <section className="mb-6 rounded-2xl bg-surface p-5 shadow-card md:p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Что вы готовы сделать</h2>
+            <h2 className="text-headline font-semibold">Новая услуга</h2>
             <button
               type="button"
               onClick={() => setComposing(false)}
@@ -178,8 +170,8 @@ export default function StorePage() {
           <div className="space-y-4">
             <Input aria-label="Название" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Например: массаж плеч без разговоров" autoFocus />
             <Textarea aria-label="Описание" value={description} onChange={(event) => setDescription(event.target.value)} rows={3} placeholder="Подробности, если нужны" />
-            <label className="block text-sm">
-              <span className="mb-1.5 block font-medium">Сколько это стоит баллов</span>
+            <label className="flex items-center justify-between gap-3 text-subhead">
+              <span className="font-medium">Баллов</span>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -195,11 +187,7 @@ export default function StorePage() {
             </Button>
           </div>
         </section>
-      ) : (
-        <Button className="mb-6" onClick={() => setComposing(true)}>
-          <Plus className="size-4" aria-hidden /> Предложить услугу
-        </Button>
-      )}
+      ) : null}
 
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
 
@@ -208,11 +196,9 @@ export default function StorePage() {
       ) : (
         <div className="space-y-8">
           <section>
-            <h2 className="mb-3 font-semibold">Что {partner ? `предлагает ${name}` : 'предлагает партнёр'}</h2>
+            <SectionHeader title={partner ? `От ${genitive(name, partner.gender)}` : 'От партнёра'} />
             {theirs.length === 0 ? (
-              <EmptyState title="Пока пусто" variant="quiet">
-                Можно предложить партнёру то, что хотелось бы здесь видеть.
-              </EmptyState>
+              <EmptyState title="Пока пусто" variant="quiet" />
             ) : (
               <ul className="space-y-3">
                 {theirs.map((item) => (
@@ -221,19 +207,15 @@ export default function StorePage() {
                       <div className="min-w-0">
                         <p className="text-[15px] font-medium">{item.title}</p>
                         {item.description && <p className="mt-1 text-sm text-ink-soft">{item.description}</p>}
-                        <p className="mt-1 text-sm text-ink-faint">{points(item.cost_points)}</p>
                       </div>
                       {item.is_claimed ? (
                         <Chip>{item.claimed_by === user?.id ? 'Вы попросили' : 'Уже попросили'}</Chip>
                       ) : (
                         <Button disabled={balance < item.cost_points} loading={claiming === item.id} onClick={() => request(item)}>
-                          Попросить
+                          Попросить · {item.cost_points}
                         </Button>
                       )}
                     </div>
-                    {!item.is_claimed && balance < item.cost_points && (
-                      <p className="mt-3 text-sm text-ink-faint">Не хватает {points(item.cost_points - balance)}.</p>
-                    )}
                   </li>
                 ))}
               </ul>
@@ -241,10 +223,17 @@ export default function StorePage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-semibold">Что предлагаете вы</h2>
-            {mine.length === 0 ? (
-              <p className="text-sm text-ink-faint">Вы пока ничего не предложили.</p>
-            ) : (
+            <SectionHeader
+              title="От вас"
+              action={
+                !composing && (
+                  <Button variant="ghost" className="!h-9 !px-3" onClick={() => setComposing(true)}>
+                    <Plus className="size-4" aria-hidden /> Добавить
+                  </Button>
+                )
+              }
+            />
+            {mine.length === 0 ? null : (
               <ul className="space-y-3">
                 {mine.map((item) => (
                   <li key={item.id} className="rounded-2xl bg-surface p-5 shadow-card">

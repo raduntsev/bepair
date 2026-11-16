@@ -44,7 +44,7 @@ export default function PairedSettingsPage() {
 
   return (
     <Page width="form">
-      <PageHeader title="Парные настройки" back={{ href: '/settings', label: 'Настройки' }} />
+      <PageHeader title="Парные настройки" back={{ href: '/settings', label: 'Профиль' }} />
       <p className="mb-4 text-sm text-ink-faint">
         Парные настройки включаются у обоих или ни у кого. Изменение, которое предложил один, вступает в силу, когда согласится второй.
       </p>

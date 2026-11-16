@@ -112,8 +112,8 @@ export function DoneForMe({
   if (!partner || unseen.length === 0) return null;
 
   return (
-    <section className="overflow-hidden rounded-2xl bg-partner-soft">
-      <h3 className="px-4 pt-4 pb-1 text-headline font-semibold text-partner-ink">
+    <section className="overflow-hidden rounded-2xl bg-surface shadow-card">
+      <h3 className="px-4 pt-4 pb-1 text-headline font-semibold">
         {name} {verb(partner.gender, 'сделал')} для вас
       </h3>
       <ul>
@@ -121,7 +121,6 @@ export function DoneForMe({
           <li key={task.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
             <span className="min-w-0 flex-1">
               <span className="block text-body text-ink">{task.content}</span>
-              <span className="block text-footnote text-ink-faint">вы ещё не видели</span>
             </span>
             <Button
               className="!h-9 !rounded-full"

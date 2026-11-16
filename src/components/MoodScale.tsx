@@ -95,6 +95,10 @@ export function MoodScale({ value, onChange, disabled = false }: MoodScaleProps)
             backgroundColor: isSet ? color : 'var(--c-surface)',
           }}
         >
+          {!isSet && !disabled && (
+            /* Breathes until touched — the only cue the scale needs. */
+            <span className="mood-breathe absolute -inset-[3px] rounded-full" />
+          )}
           {!isSet && (
             <span className="absolute inset-0 flex items-center justify-center gap-[3px]">
               <span className="h-4 w-px rounded-full bg-ink-faint" />
@@ -105,27 +109,15 @@ export function MoodScale({ value, onChange, disabled = false }: MoodScaleProps)
         </span>
       </div>
 
-      <div className="mt-4 flex min-h-6 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-subhead">
-        {isSet ? (
+      {/* The value, never an instruction: the breathing handle already says «drag me». */}
+      <p className="mt-3 flex min-h-6 items-center gap-2 text-subhead font-medium text-ink" aria-hidden={!isSet}>
+        {isSet && (
           <>
-            <span className="flex items-center gap-2 font-medium text-ink">
-              <span
-                className="size-3.5 shrink-0 rounded-full"
-                style={{ backgroundColor: color }}
-                aria-hidden
-              />
-              {moodLabel(value)}
-            </span>
-            <span className="text-ink-faint">
-              {disabled ? 'день закрыт' : 'можно поправить до конца дня'}
-            </span>
+            <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+            <span className="first-letter:uppercase">{moodLabel(value)}</span>
           </>
-        ) : (
-          <span className="text-ink-soft">
-            Проведите по шкале — она примет цвет вашего дня
-          </span>
         )}
-      </div>
+      </p>
     </div>
   );
 }

@@ -100,7 +100,6 @@ export function PartnerRhythm({ partner, showClock }: { partner: Partner; showCl
         </ul>
       )}
 
-      <p className="mt-4 text-sm text-ink-faint">Это чтобы выбрать удобный момент, а не чтобы проверять.</p>
     </Card>
   );
 }

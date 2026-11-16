@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, Check, LayoutGrid, Lock, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import { Bell, Check, Heart, LayoutGrid, Lock, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import { displayName } from '@/lib/words';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Segment } from '@/components/ui/Controls';
-import { Card, LinkRow, Page, PageHeader, RowGroup } from '@/components/ui/Blocks';
+import { Card, LinkRow, Page, PageHeader, RowGroup, RowIcon, SectionHeader } from '@/components/ui/Blocks';
 import { InviteCard } from '@/components/InviteCard';
 
 type ThemeChoice = 'system' | 'light' | 'dark';
@@ -23,6 +24,7 @@ function readTheme(): ThemeChoice {
 
 export default function SettingsPage() {
   const { profile, partner, updateProfile, signOut } = useSpaceAuth();
+  const { unread } = useNotifications();
 
   const [name, setName] = useState(profile?.display_name ?? '');
   const [savedName, setSavedName] = useState(false);
@@ -42,58 +44,75 @@ export default function SettingsPage() {
     else document.documentElement.dataset.theme = choice;
   };
 
+  const saveName = async () => {
+    const next = name.trim();
+    if (!next || next === profile?.display_name) return;
+    if (await updateProfile({ display_name: next })) setSavedName(true);
+  };
+
+  /*
+    The profile is one list, in the order people look for things: who you are
+    together, what happened, then how the app behaves. No captions — each row
+    says what it is.
+  */
   return (
     <Page width="form">
-      <PageHeader title="Настройки" />
+      <PageHeader title="Профиль" />
 
-      <div className="space-y-4">
+      <div className="space-y-3">
+        <RowGroup label="Вы вдвоём">
+          <LinkRow href="/couple" Icon={Heart} tone="partner" title={partner ? `Вы и ${displayName(partner.display_name)}` : 'Пара'} />
+          <LinkRow href="/notifications" Icon={Bell} title="Уведомления" badge={unread || undefined} />
+        </RowGroup>
+
+        {!partner && <InviteCard />}
+
+        <SectionHeader title="Вы" />
         <Card>
-          <h2 className="font-semibold">Как вас зовут</h2>
-          <p className="mt-1.5 mb-4 text-sm text-ink-soft">Это имя видит партнёр.</p>
           <form
-            className="flex flex-wrap gap-2"
-            onSubmit={async (event) => {
+            className="flex items-center gap-3"
+            onSubmit={(event) => {
               event.preventDefault();
-              if (await updateProfile({ display_name: name.trim() })) setSavedName(true);
+              saveName();
             }}
           >
+            <RowIcon Icon={UserRound} />
             <Input
-              aria-label="Имя"
+              aria-label="Ваше имя"
               autoComplete="given-name"
               value={name}
               onChange={(event) => {
                 setName(event.target.value);
                 setSavedName(false);
               }}
+              onBlur={saveName}
               className="min-w-0 flex-1"
             />
-            <Button type="submit" variant="secondary" disabled={!name.trim() || name.trim() === profile?.display_name}>
-              {savedName && <Check className="size-4" aria-hidden />} {savedName ? 'Сохранено' : 'Сохранить'}
-            </Button>
+            <Check
+              className={`size-5 shrink-0 text-accent transition-opacity duration-500 ${savedName ? 'opacity-100' : 'opacity-0'}`}
+              aria-label={savedName ? 'Сохранено' : undefined}
+            />
           </form>
 
-          <div className="mt-5">
-            <p className="mb-2 text-sm font-medium">Как о вас писать</p>
+          <div className="mt-4">
             <Segment
               legend="Как о вас писать"
               options={[
-                { value: 'f' as const, label: 'Она отметила' },
-                { value: 'm' as const, label: 'Он отметил' },
+                { value: 'f' as const, label: 'Она' },
+                { value: 'm' as const, label: 'Он' },
               ]}
               value={profile?.gender ?? null}
               onChange={(gender) => updateProfile({ gender })}
             />
-            <p className="mt-2 text-sm text-ink-faint">Чтобы уведомления партнёру звучали по-человечески.</p>
           </div>
         </Card>
 
+        <SectionHeader title="Оформление" />
         <Card>
-          <h2 className="font-semibold">Тема</h2>
-          <p className="mt-1.5 mb-4 text-sm text-ink-soft">Вечером в темноте светлая тема бьёт по глазам — можно переключить.</p>
           <Segment
             legend="Тема"
             options={[
-              { value: 'system' as const, label: 'Как в системе', Icon: Monitor },
+              { value: 'system' as const, label: 'Авто', Icon: Monitor },
               { value: 'light' as const, label: 'Светлая', Icon: Sun },
               { value: 'dark' as const, label: 'Тёмная', Icon: Moon },
             ]}
@@ -102,31 +121,19 @@ export default function SettingsPage() {
           />
         </Card>
 
-        {partner ? (
-          <Card>
-            <h2 className="font-semibold">Пространство</h2>
-            <p className="mt-1.5 text-sm text-ink-soft">
-              В пространстве вас двое: вы и {displayName(partner.display_name)}. Больше двух в нём не бывает, поэтому код приглашения уже не нужен.
-            </p>
-          </Card>
-        ) : (
-          <InviteCard />
-        )}
-
-        <RowGroup label="Ещё настройки">
-          <LinkRow href="/settings/paired" Icon={Lock} title="Парные настройки" sub="Меняются только по согласию обоих" />
-          <LinkRow href="/settings/personal" Icon={UserRound} title="Личные и данные" sub="Цикл, выгрузка ваших данных" />
-          <LinkRow href="/notifications/settings" Icon={Bell} title="Уведомления" sub="Что присылать на это устройство" />
-          <LinkRow href="/settings/widgets" Icon={LayoutGrid} title="Виджеты" sub="День и пара на экране «Домой»" />
+        <SectionHeader title="Настройки" />
+        <RowGroup label="Настройки">
+          <LinkRow href="/settings/paired" Icon={Lock} title="Парные" />
+          <LinkRow href="/settings/personal" Icon={UserRound} title="Личные и данные" />
+          <LinkRow href="/notifications/settings" Icon={Bell} title="Что присылать" />
+          <LinkRow href="/settings/widgets" Icon={LayoutGrid} title="Виджеты" />
         </RowGroup>
 
-        <Card>
-          <h2 className="font-semibold">Аккаунт</h2>
-          <p className="mt-1.5 mb-4 text-sm text-ink-soft">Выход не удаляет ваши дни — они останутся на месте.</p>
-          <Button variant="danger" onClick={signOut}>
-            Выйти
+        <div className="pt-6">
+          <Button variant="danger" block onClick={signOut}>
+            <LogOut className="size-4" aria-hidden /> Выйти
           </Button>
-        </Card>
+        </div>
       </div>
     </Page>
   );

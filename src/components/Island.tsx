@@ -3,19 +3,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import {
-  BookOpen,
-  Bell,
-  CalendarDays,
-  ChevronUp,
-  Gift,
-  ListChecks,
-  Mail,
-  Send,
-  Settings,
-  Sun,
-  UserRound,
-} from 'lucide-react';
+import { CalendarDays, ChevronUp, ListChecks, MessageCircle, PenLine, Sun, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 /*
@@ -38,37 +26,44 @@ export interface Destination {
   href: string;
   label: string;
   Icon: LucideIcon;
+  /* Other routes that count as being «here». */
+  also?: string[];
 }
 
+/*
+  Five places, each one a different question: what is today, what did we say
+  to each other, what did we ask of each other, when, and who are we.
+*/
 export const DESTINATIONS: Destination[] = [
   { href: '/day', label: 'Сегодня', Icon: Sun },
+  { href: '/messages', label: 'Переписка', Icon: MessageCircle, also: ['/letters', '/chronicle', '/ping'] },
+  { href: '/tasks', label: 'Просьбы', Icon: ListChecks, also: ['/store'] },
   { href: '/calendar', label: 'Календарь', Icon: CalendarDays },
-  { href: '/chronicle', label: 'Летопись', Icon: BookOpen },
-  { href: '/tasks', label: 'Просьбы', Icon: ListChecks },
-  { href: '/store', label: 'Услуги', Icon: Gift },
-  { href: '/letters', label: 'Письма', Icon: Mail },
-  { href: '/couple', label: 'Пара', Icon: UserRound },
-  { href: '/notifications', label: 'Уведомления', Icon: Bell },
-  { href: '/settings', label: 'Настройки', Icon: Settings },
+  { href: '/settings', label: 'Профиль', Icon: UserRound, also: ['/couple', '/notifications'] },
 ];
 
-const PING: Destination = { href: '/ping', label: 'Весточка', Icon: Send };
+const COMPOSE = '/ping';
 
 function matches(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function currentDestination(pathname: string): Destination {
-  if (matches(pathname, PING.href)) return PING;
-  return DESTINATIONS.find((d) => matches(pathname, d.href)) ?? DESTINATIONS[0];
+  return DESTINATIONS.find((d) => [d.href, ...(d.also ?? [])].some((h) => matches(pathname, h))) ?? DESTINATIONS[0];
 }
 
-/* One spring for the shape. Soft enough to read as growth, damped so it never wobbles. */
-const SHAPE = { type: 'spring', stiffness: 260, damping: 30, mass: 1 } as const;
+/*
+  Apple's sheet curve, slow enough to be seen: the shape takes a little over
+  half a second to grow and a little less to fold back. Content waits for the
+  shape on the way in and leaves before it on the way out.
+*/
+const EASE = [0.32, 0.72, 0, 1] as const;
+const GROW = { duration: 0.56, ease: EASE };
+const FOLD = { duration: 0.46, ease: EASE };
 const PILL_H = 52;
-const PANEL_MAX = 376;
-const HOVER_OPEN_MS = 60;
-const HOVER_CLOSE_MS = 280;
+const PANEL_MAX = 320;
+const HOVER_OPEN_MS = 140;
+const HOVER_CLOSE_MS = 380;
 
 /* Tucks away on the way down, returns on the way up and near the top. */
 function useScrollTuck(disabled: boolean) {
@@ -190,12 +185,15 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
   };
 
   const pillW = pill?.w ?? 180;
-  const panelH = panel?.h ?? 360;
+  const panelH = panel?.h ?? 290;
   const shape = open
-    ? { width: panelWidth, height: panelH, borderRadius: 34 }
+    ? { width: panelWidth, height: panelH, borderRadius: 30 }
     : { width: pillW, height: PILL_H, borderRadius: PILL_H / 2 };
 
-  const fade = reduce ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const };
+  const instant = { duration: 0 };
+  /* Content timing hangs off the shape: in after it has grown, out before it folds. */
+  const pillFade = reduce ? instant : open ? { duration: 0.16, ease: EASE } : { duration: 0.3, delay: 0.2, ease: EASE };
+  const panelFade = reduce ? instant : open ? { duration: 0.34, delay: 0.16, ease: EASE } : { duration: 0.16, ease: EASE };
 
   return (
     <>
@@ -207,7 +205,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: reduce ? 0 : 0.25 }}
+            transition={reduce ? instant : { duration: 0.4, ease: EASE }}
             onClick={() => close()}
             className="fixed inset-0 z-40"
             style={{ backgroundColor: 'var(--c-scrim)' }}
@@ -217,13 +215,13 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
 
       <nav
         aria-label="Разделы"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex items-end justify-center gap-2"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
       >
         <motion.div
           initial={false}
           animate={{ ...shape, y: tucked ? 110 : 0, opacity: tucked ? 0 : 1 }}
-          transition={reduce ? { duration: 0 } : SHAPE}
+          transition={reduce ? instant : open ? GROW : FOLD}
           onPointerEnter={onPointerEnter}
           onPointerLeave={onPointerLeave}
           className="pointer-events-auto relative overflow-hidden bg-island text-island-ink"
@@ -233,8 +231,8 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
           <motion.div
             ref={pillRef}
             initial={false}
-            animate={{ opacity: open ? 0 : 1, scale: open ? 0.92 : 1, filter: open ? 'blur(6px)' : 'blur(0px)' }}
-            transition={fade}
+            animate={{ opacity: open ? 0 : 1, filter: open ? 'blur(4px)' : 'blur(0px)' }}
+            transition={pillFade}
             className="absolute bottom-0 left-1/2 -translate-x-1/2"
             style={{ pointerEvents: open ? 'none' : 'auto' }}
           >
@@ -269,51 +267,68 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
             ref={panelRef}
             id={panelId}
             initial={false}
-            animate={{ opacity: open ? 1 : 0, scale: open ? 1 : 0.94, filter: open ? 'blur(0px)' : 'blur(6px)' }}
-            transition={open && !reduce ? { ...fade, delay: 0.08 } : fade}
-            className="absolute bottom-0 left-1/2 origin-bottom -translate-x-1/2 p-3"
+            animate={{ opacity: open ? 1 : 0, y: open ? 0 : 10, filter: open ? 'blur(0px)' : 'blur(4px)' }}
+            transition={panelFade}
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 p-2"
             style={{ width: panelWidth, pointerEvents: open ? 'auto' : 'none' }}
             inert={!open}
           >
-            <p className="px-2 pt-1 pb-2 text-footnote font-semibold tracking-wide text-island-soft uppercase">Разделы</p>
-
-            <ul className="grid grid-cols-3 gap-1.5">
+            <ul className="flex flex-col gap-0.5">
               {DESTINATIONS.map(({ href, label, Icon }) => {
                 const active = here.href === href;
-                const badge = href === '/notifications' && unread > 0;
+                const badge = href === '/settings' && unread > 0;
                 return (
                   <li key={href}>
                     <Link
                       href={href}
                       onClick={() => active && close()}
                       aria-current={active ? 'page' : undefined}
-                      className={`relative flex h-[5.25rem] flex-col items-center justify-center gap-2 rounded-[1.25rem] px-1 text-caption font-medium transition-colors duration-200 ${
+                      className={`flex h-13 items-center gap-3.5 rounded-[1.375rem] pr-4 pl-1.5 text-body font-medium transition-colors duration-300 ${
                         active ? 'bg-island-ink text-island' : 'text-island-ink hover:bg-island-fill active:bg-island-fill'
                       }`}
                     >
-                      <span className="relative">
-                        <Icon className="size-6" strokeWidth={active ? 2.2 : 1.8} aria-hidden />
-                        {badge && (
-                          <span className="absolute -top-1 -right-2 flex min-w-4 items-center justify-center rounded-full bg-[#5856d6] px-1 text-[10px] leading-4 font-semibold text-white">
-                            {unread > 9 ? '9+' : unread}
-                            <span className="sr-only"> новых</span>
-                          </span>
-                        )}
+                      <span
+                        className={`flex size-10 items-center justify-center rounded-full ${active ? '' : 'bg-island-fill'}`}
+                      >
+                        <Icon className="size-5" strokeWidth={2} aria-hidden />
                       </span>
-                      <span className="w-full truncate text-center">{label}</span>
+                      <span className="flex-1">{label}</span>
+                      {badge && (
+                        <span className="min-w-6 rounded-full bg-[#5856d6] px-2 text-center text-footnote leading-6 font-semibold text-white">
+                          {unread > 9 ? '9+' : unread}
+                          <span className="sr-only"> новых</span>
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
               })}
             </ul>
-
-            <Link
-              href={PING.href}
-              className="mt-2 flex h-13 items-center justify-center gap-2 rounded-[1.25rem] bg-[#5856d6] text-headline font-semibold text-white transition-[filter] duration-200 hover:brightness-110"
-            >
-              <Send className="size-5" aria-hidden /> Отправить весточку
-            </Link>
           </motion.div>
+        </motion.div>
+
+        {/* Writing to the partner is the most frequent thing after the day itself: one tap, always. */}
+        <motion.div
+          initial={false}
+          animate={{
+            opacity: open || tucked ? 0 : 1,
+            scale: open ? 0.6 : 1,
+            y: tucked ? 110 : 0,
+            width: open ? 0 : PILL_H,
+            marginLeft: open ? -8 : 0,
+          }}
+          transition={reduce ? instant : open ? FOLD : GROW}
+          className="pointer-events-auto"
+          inert={open}
+        >
+          <Link
+            href={COMPOSE}
+            aria-label="Написать партнёру"
+            className="flex size-13 items-center justify-center rounded-full bg-[#5856d6] text-white transition-[filter] duration-300 hover:brightness-110"
+            style={{ boxShadow: 'var(--sh-island)' }}
+          >
+            <PenLine className="size-5" strokeWidth={2.2} aria-hidden />
+          </Link>
         </motion.div>
       </nav>
     </>

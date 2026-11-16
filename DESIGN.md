@@ -61,25 +61,33 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
   dark). `rounded-2xl` (22px), `bg-surface`, `shadow-card`, **no border** — the
   ground separates them. Lists use `RowGroup` + `LinkRow`/`SwitchRow`: inset
   grouped, 30px tinted icon tile, hairline separators that start at the text.
-- **Type follows Apple's text styles**, as utilities: `text-large-title` (34),
-  `text-title-1/2/3`, `text-headline`, `text-body` (17), `text-callout`,
-  `text-subhead`, `text-footnote`, `text-caption`. No sizes in between. The
-  font stack leads with the platform face (SF Pro on Apple), Onest elsewhere.
+- **Four type sizes, no more:** 28 (title), 17 (body and headings), 15
+  (secondary), 13 (small). Every Apple-style and Tailwind size token resolves
+  to one of them in `globals.css`, so a stray `text-lg` cannot add a fifth.
+  Hierarchy comes from weight and colour. **Never all caps** — sentence case
+  everywhere, including dates and section labels.
+- **No instructional copy.** No subtitles that explain a screen, no «сначала
+  сделайте…», no captions under controls. What to do next is shown, not told:
+  the one block that needs you wears `.focus-ring` (accent ring + glow), an
+  untouched control breathes (`.mood-breathe`), and a confirm button appears
+  only once there is something to confirm. Status (a value, a time, a name)
+  is fine; instructions are not.
 - **Buttons:** filled (primary), grey tinted (secondary, accent text, no
   border), plain (ghost). Pressing dims to 70% instead of recolouring.
 - **Navigation is the island** (`src/components/Island.tsx`) on every
-  breakpoint: a black capsule at the bottom showing only where you are. Tap
-  grows it in place into a compact panel (never full screen) with all nine
-  destinations on a 3×3 grid and one filled action, «Отправить весточку».
-  Closes on choice, Esc, or a tap on the scrim. Scrolling down tucks it away,
-  scrolling up returns it. It stays black in both themes; in dark it gets a
-  1px light ring so it isn't a hole. No rail, no tab bar, no sub-tabs.
-- **«Сегодня» is the home screen and holds the day in one column**:
-  your day (editor until marked, then a one-line summary with «Изменить») →
-  partner's day → «Между вами» (what the partner did for you, what you were
-  asked, letters and requests as rows — each block appears only when it has
-  content) → «Для себя» (cycle, moon, only if enabled) → two small counter
-  tiles. Empty blocks are omitted, never shown as empty boxes.
+  breakpoint: a black capsule at the bottom showing where you are, and beside
+  it a round accent button that writes to the partner. With a mouse the
+  capsule opens on hover; on touch, on tap, over a scrim. It grows into a
+  compact list of the five sections — Сегодня · Переписка · Просьбы ·
+  Календарь · Профиль — on Apple's sheet curve (0.56 s in, 0.46 s out);
+  content waits for the shape on the way in and leaves first on the way out.
+- **Five sections, each one question.** Переписка is letters and notes in
+  one feed, with what waits for you on top. Просьбы holds Просьбы and Услуги
+  as two tabs under one balance. Профиль is the pair, notifications and all
+  settings as one list. Old routes (`/letters`, `/chronicle`) redirect.
+- **«Сегодня» shows the next thing, not everything.** Exactly one block is
+  «now», in this order: your own day → a letter waiting → what the partner did
+  for you → what you were asked. Blocks with nothing in them are not rendered.
 - **44px is the floor for anything tappable.** Use the `.tap` utility. Pages
   clear the island with `.island-clearance` (applied once in `AppShell`).
 

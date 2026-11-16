@@ -11,8 +11,7 @@ export default function PersonalSettingsPage() {
   const { showMoon, setShowMoon } = useShowMoon();
   return (
     <Page width="form">
-      <PageHeader title="Личные и данные" back={{ href: '/settings', label: 'Настройки' }} />
-      <p className="mb-4 text-sm text-ink-faint">Личные настройки видите только вы. Партнёр о них не узнаёт.</p>
+      <PageHeader title="Личные и данные" back={{ href: '/settings', label: 'Профиль' }} />
 
       <div className="space-y-4">
         <RowGroup label="Только для вас">

@@ -61,7 +61,7 @@ export default function WidgetSettingsPage() {
 
   return (
     <Page width="form">
-      <PageHeader title="Виджеты" back={{ href: '/settings', label: 'Настройки' }} />
+      <PageHeader title="Виджеты" back={{ href: '/settings', label: 'Профиль' }} />
 
       <div className="space-y-4">
         {native && steps ? (
@@ -72,7 +72,6 @@ export default function WidgetSettingsPage() {
                 <li key={step}>{step}</li>
               ))}
             </ol>
-            <p className="mt-3 text-sm text-ink-faint">Виджет обновляется сам каждые 15–30 минут и сразу, когда вы что-то делаете в приложении.</p>
           </Card>
         ) : (
           <Card>
@@ -131,7 +130,6 @@ export default function WidgetSettingsPage() {
                 </li>
               ))}
             </ul>
-            <p className="mt-2 text-sm text-ink-faint">Потеряли телефон — отключите его здесь, и виджет на нём перестанет показывать ваш день.</p>
           </Card>
         )}
       </div>
