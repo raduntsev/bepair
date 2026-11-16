@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- «Пара», 4×2, after an iOS medium widget: today on the left; two neutral tiles
-     (days together, the run) and two capsule actions on the right. -->
+<!-- «Пара», 4×2, after an iOS medium widget: today on the left; on the right the
+     run (days in a row both marked) and one capsule action, «Весточка». -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -77,7 +77,7 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_marginStart="12dp"
-        android:layout_weight="0.9"
+        android:layout_weight="0.7"
         android:orientation="vertical">
 
         <LinearLayout
@@ -86,8 +86,10 @@
             android:layout_weight="1"
             android:orientation="horizontal">
 
+            <!-- Kept for the renderer, never shown: the medium widget carries the run, not the total. -->
             <LinearLayout
                 android:id="@+id/widget_together"
+                android:visibility="gone"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -119,7 +121,6 @@
                 android:id="@+id/widget_streak"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:background="@drawable/widget_counter_streak"
                 android:gravity="center"
@@ -154,6 +155,7 @@
 
             <TextView
                 android:id="@+id/widget_action_day"
+                android:visibility="gone"
                 android:layout_width="0dp"
                 android:layout_height="36dp"
                 android:layout_weight="1"
@@ -168,9 +170,10 @@
             <TextView
                 android:id="@+id/widget_action_ping"
                 android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="6dp"
+                android:layout_height="40dp"
                 android:layout_weight="1"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:background="@drawable/widget_button_soft"
                 android:gravity="center"
                 android:maxLines="1"

@@ -65,13 +65,8 @@ public final class WidgetRenderer {
         }
 
         if (couple) {
-            if (s != null && s.togetherDays > 0) {
-                views.setViewVisibility(R.id.widget_together, View.VISIBLE);
-                views.setTextViewText(R.id.widget_together_days, String.valueOf(s.togetherDays));
-                views.setTextViewText(R.id.widget_together_label, s.togetherLabel);
-            } else {
-                views.setViewVisibility(R.id.widget_together, View.GONE);
-            }
+            /* Days together live in the app; the widget keeps only the run and one action. */
+            views.setViewVisibility(R.id.widget_together, View.GONE);
 
             if (s != null && s.streakEnabled) {
                 views.setViewVisibility(R.id.widget_streak, View.VISIBLE);
@@ -86,11 +81,9 @@ public final class WidgetRenderer {
             if (waiting != null) views.setTextViewText(R.id.widget_waiting, waiting);
 
             /* Once today is marked, the button is a way back to the day, not a request to mark it. */
-            views.setTextViewText(R.id.widget_action_day, s != null && s.meMarked ? "Мой день" : context.getString(R.string.widget_action_day));
-            views.setOnClickPendingIntent(R.id.widget_action_day, open(context, "day", 11));
+            views.setViewVisibility(R.id.widget_action_day, View.GONE);
             views.setOnClickPendingIntent(R.id.widget_action_ping, open(context, "ping", 12));
             views.setOnClickPendingIntent(R.id.widget_today, open(context, "day", 13));
-            views.setOnClickPendingIntent(R.id.widget_together, open(context, "couple", 14));
             views.setOnClickPendingIntent(R.id.widget_streak, open(context, "couple", 15));
         } else {
             views.setOnClickPendingIntent(R.id.widget_root, open(context, "day", 10));
