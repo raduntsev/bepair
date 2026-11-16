@@ -7,23 +7,25 @@ import { Loader2 } from 'lucide-react';
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'md' | 'lg';
 
+/*
+  Apple's button set: filled (primary), gray (secondary — a tinted fill, no
+  border), plain (ghost — accent text only), and a tinted destructive.
+  Pressing dims instead of recolouring, as on iOS.
+*/
 const VARIANTS: Record<Variant, string> = {
-  primary:
-    'bg-accent text-accent-ink hover:bg-accent-hover active:bg-accent-hover shadow-card disabled:bg-line-strong disabled:text-ink-faint disabled:shadow-none',
-  secondary:
-    'bg-surface text-ink border border-line hover:border-line-strong hover:bg-sunken active:bg-sunken disabled:text-ink-faint',
-  ghost: 'bg-transparent text-ink-soft hover:bg-sunken hover:text-ink active:bg-sunken disabled:text-ink-faint',
-  danger:
-    'bg-danger-soft text-danger border border-transparent hover:border-danger/30 active:bg-danger-soft disabled:text-ink-faint',
+  primary: 'bg-accent text-accent-ink hover:bg-accent-hover disabled:bg-sunken disabled:text-ink-faint',
+  secondary: 'bg-sunken text-accent hover:bg-line disabled:text-ink-faint',
+  ghost: 'bg-transparent text-accent hover:bg-sunken disabled:text-ink-faint',
+  danger: 'bg-danger-soft text-danger hover:brightness-95 disabled:text-ink-faint',
 };
 
 const SIZES: Record<Size, string> = {
-  md: 'h-11 px-4 text-sm rounded-lg gap-2',
-  lg: 'h-13 px-6 text-base rounded-xl gap-2.5',
+  md: 'h-11 px-4 text-subhead rounded-xl gap-2',
+  lg: 'h-[3.25rem] px-6 text-headline rounded-[0.875rem] gap-2.5',
 };
 
 export function buttonClass(variant: Variant = 'primary', size: Size = 'md', block = false) {
-  return `inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed ${VARIANTS[variant]} ${SIZES[size]} ${block ? 'w-full' : ''}`;
+  return `inline-flex shrink-0 items-center justify-center font-semibold whitespace-nowrap transition-[background-color,opacity,filter] duration-150 active:opacity-70 disabled:cursor-not-allowed disabled:active:opacity-100 ${VARIANTS[variant]} ${SIZES[size]} ${block ? 'w-full' : ''}`;
 }
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {

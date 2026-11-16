@@ -52,7 +52,7 @@ export function ReminderSettings({
   onChange: (patch: Partial<Reminders>) => void;
 }) {
   return (
-    <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+    <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-card">
       <ReminderRow
         Icon={Sunrise}
         title="Утром"

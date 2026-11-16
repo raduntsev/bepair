@@ -1,6 +1,7 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
+import { SwitchTrack } from '@/components/ui/Blocks';
 
 interface ToggleProps {
   checked: boolean;
@@ -10,7 +11,7 @@ interface ToggleProps {
   id?: string;
 }
 
-/* A switch, announced as one. 44px tall hit area around a 28px track. */
+/* A switch, announced as one. 44px tall hit area around a 31px track. */
 export function Toggle({ checked, onChange, label, disabled, id }: ToggleProps) {
   return (
     <button
@@ -23,17 +24,7 @@ export function Toggle({ checked, onChange, label, disabled, id }: ToggleProps) 
       onClick={() => onChange(!checked)}
       className="tap group relative inline-flex shrink-0 items-center justify-center disabled:opacity-50"
     >
-      <span
-        className={`relative h-7 w-12 rounded-full transition-colors duration-200 ${
-          checked ? 'bg-accent' : 'bg-line-strong'
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 size-6 rounded-full bg-surface shadow-card transition-transform duration-200 ease-out-soft ${
-            checked ? 'translate-x-5' : ''
-          }`}
-        />
-      </span>
+      <SwitchTrack checked={checked} />
     </button>
   );
 }
@@ -65,10 +56,8 @@ export function Segment<T extends string | number>({
             type="button"
             onClick={() => onChange(optionValue)}
             aria-pressed={active}
-            className={`tap flex items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors ${
-              active
-                ? 'border-accent bg-accent-soft text-accent-soft-ink'
-                : 'border-line text-ink-soft hover:border-line-strong hover:text-ink'
+            className={`tap flex items-center gap-2 rounded-full px-4 text-subhead font-medium transition-colors ${
+              active ? 'bg-ink text-surface' : 'bg-sunken text-ink-soft hover:text-ink'
             }`}
           >
             {Icon && <Icon className="size-4" aria-hidden />}

@@ -45,7 +45,7 @@ function WebPushCard() {
   };
 
   return (
-    <section className="rounded-2xl border border-line bg-surface p-5 shadow-card md:p-6">
+    <section className="rounded-2xl bg-surface p-5 shadow-card md:p-6">
       <div className="flex items-start gap-3">
         <BellRing className="mt-0.5 size-5 shrink-0 text-ink-soft" aria-hidden />
         <div className="min-w-0 flex-1">
@@ -114,7 +114,7 @@ function NativePushCard() {
   };
 
   return (
-    <section className="rounded-2xl border border-line bg-surface p-5 shadow-card md:p-6">
+    <section className="rounded-2xl bg-surface p-5 shadow-card md:p-6">
       <div className="flex items-start gap-3">
         <BellRing className="mt-0.5 size-5 shrink-0 text-ink-soft" aria-hidden />
         <div className="min-w-0 flex-1">

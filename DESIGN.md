@@ -57,18 +57,31 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
 
 ## Layout and components
 
-- **Rounded cards on a cool near-white ground.** `rounded-2xl`, hairline
-  `border-line`, `shadow-card`. Shadows always carry offset plus blur.
-- **Navigation is a persistent rail** on `md+` and a **bottom tab bar** below it.
-  Five tabs on a phone — День · Календарь · Летопись · Задачи · Ещё — because
-  nine destinations at 390px leave 43px each. «Ещё» lists Письма, Услуги,
-  Уведомления, Профиль пары, Настройки, so settings (invite, sign-out) stay
-  reachable. The desktop rail has room for everything and shows it all, plus a
-  primary «Весточка» action. The ping composer hides the tab bar: it is a
-  focused task.
-- **44px is the floor for anything tappable.** Use the `.tap` utility. The
-  incumbent app's failure was small controls; this is the rule that answers it.
-  Pages clear the tab bar with `pb-28` plus `safe-b` for the home indicator.
+- **Apple-style grouped cards on a grey ground** (`#F2F2F7` / pure black in
+  dark). `rounded-2xl` (22px), `bg-surface`, `shadow-card`, **no border** — the
+  ground separates them. Lists use `RowGroup` + `LinkRow`/`SwitchRow`: inset
+  grouped, 30px tinted icon tile, hairline separators that start at the text.
+- **Type follows Apple's text styles**, as utilities: `text-large-title` (34),
+  `text-title-1/2/3`, `text-headline`, `text-body` (17), `text-callout`,
+  `text-subhead`, `text-footnote`, `text-caption`. No sizes in between. The
+  font stack leads with the platform face (SF Pro on Apple), Onest elsewhere.
+- **Buttons:** filled (primary), grey tinted (secondary, accent text, no
+  border), plain (ghost). Pressing dims to 70% instead of recolouring.
+- **Navigation is the island** (`src/components/Island.tsx`) on every
+  breakpoint: a black capsule at the bottom showing only where you are. Tap
+  grows it in place into a compact panel (never full screen) with all nine
+  destinations on a 3×3 grid and one filled action, «Отправить весточку».
+  Closes on choice, Esc, or a tap on the scrim. Scrolling down tucks it away,
+  scrolling up returns it. It stays black in both themes; in dark it gets a
+  1px light ring so it isn't a hole. No rail, no tab bar, no sub-tabs.
+- **«Сегодня» is the home screen and holds the day in one column**:
+  your day (editor until marked, then a one-line summary with «Изменить») →
+  partner's day → «Между вами» (what the partner did for you, what you were
+  asked, letters and requests as rows — each block appears only when it has
+  content) → «Для себя» (cycle, moon, only if enabled) → two small counter
+  tiles. Empty blocks are omitted, never shown as empty boxes.
+- **44px is the floor for anything tappable.** Use the `.tap` utility. Pages
+  clear the island with `.island-clearance` (applied once in `AppShell`).
 
 ## HeroUI
 

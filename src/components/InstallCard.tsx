@@ -39,7 +39,7 @@ export function InstallCard() {
   if (mode === 'hidden') return null;
 
   return (
-    <section className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-5 shadow-card">
+    <section className="flex items-start gap-3 rounded-2xl bg-surface p-5 shadow-card">
       <Smartphone className="mt-0.5 size-5 shrink-0 text-ink-soft" aria-hidden />
       <div className="min-w-0 flex-1">
         <h2 className="font-semibold">Впаре на экране «Домой»</h2>
