@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
-import { Flame } from 'lucide-react';
 import { daysWord, fmt, plural, todayISO } from '@/lib/dates';
 
 /*
@@ -42,9 +41,7 @@ export function Counters({
 
       {showStreak && (
         <section className="rounded-2xl bg-surface p-4 shadow-card">
-          <p className="flex items-center gap-1 text-footnote font-medium text-partner-ink">
-            <Flame className="size-3.5" aria-hidden /> Подряд оба
-          </p>
+          <p className="text-footnote font-medium text-partner-ink">Подряд оба</p>
           <p className="mt-1 text-title-1 font-bold tabular-nums">{current}</p>
           <p className="text-footnote text-ink-faint">
             {best > current ? `рекорд — ${best}` : daysWord(current)}

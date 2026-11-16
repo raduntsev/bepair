@@ -1,5 +1,5 @@
 import supabase from './supabase';
-import { isNative, nativePlatform } from './native';
+import { WidgetBridge, isNative, nativePlatform } from './native';
 
 /*
   Native push inside the iOS/Android shell. Web push does not work in an app's
@@ -7,10 +7,25 @@ import { isNative, nativePlatform } from './native';
   FCM (Android) and stores the device token next to web subscriptions.
 */
 
-export type NativePushResult = 'subscribed' | 'denied' | 'failed';
+export type NativePushResult = 'subscribed' | 'denied' | 'failed' | 'unavailable';
 
-export async function nativePushStatus(): Promise<'on' | 'off' | 'denied'> {
+/*
+  Android only: ask the shell first whether it has a Firebase project. An APK
+  built without one dies inside PushNotifications.register() — natively, past
+  any try/catch. An older shell without the check is treated as «no».
+*/
+export async function nativePushAvailable() {
+  if (nativePlatform() !== 'android') return true;
+  try {
+    return (await WidgetBridge.pushAvailable()).available;
+  } catch {
+    return false;
+  }
+}
+
+export async function nativePushStatus(): Promise<'on' | 'off' | 'denied' | 'unavailable'> {
   if (!isNative()) return 'off';
+  if (!(await nativePushAvailable())) return 'unavailable';
   const { PushNotifications } = await import('@capacitor/push-notifications');
   const permission = await PushNotifications.checkPermissions();
   if (permission.receive === 'denied') return 'denied';
@@ -23,6 +38,7 @@ export async function nativePushStatus(): Promise<'on' | 'off' | 'denied'> {
 }
 
 export async function subscribeNativePush(userId: string): Promise<NativePushResult> {
+  if (!(await nativePushAvailable())) return 'unavailable';
   const { PushNotifications } = await import('@capacitor/push-notifications');
   let permission = await PushNotifications.checkPermissions();
   if (permission.receive === 'prompt' || permission.receive === 'prompt-with-rationale') {

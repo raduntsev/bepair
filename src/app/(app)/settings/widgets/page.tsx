@@ -1,10 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { EyeOff, Smartphone, Trash2 } from 'lucide-react';
+import { EyeOff, LockKeyhole, Smartphone, Trash2 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { relativeStamp } from '@/lib/dates';
-import { clearWidgets, isNative, nativePlatform, refreshWidgets } from '@/lib/native';
+import { WidgetBridge, clearWidgets, isNative, nativePlatform, refreshWidgets } from '@/lib/native';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Button } from '@/components/ui/Button';
 import { Card, Page, PageHeader, RowGroup, SwitchRow } from '@/components/ui/Blocks';
@@ -37,6 +37,8 @@ export default function WidgetSettingsPage() {
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [native, setNative] = useState(false);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'web'>('web');
+  /* null: this shell has no lock-screen line (iPhone, the browser, or an older APK). */
+  const [lock, setLock] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('widget_tokens').select('id, platform, created_at, last_used_at').order('created_at', { ascending: false });
@@ -47,6 +49,11 @@ export default function WidgetSettingsPage() {
     setNative(isNative());
     setPlatform(nativePlatform());
     load();
+    if (nativePlatform() === 'android') {
+      WidgetBridge.lockStatus()
+        .then(({ enabled, permitted }) => setLock(enabled && permitted))
+        .catch(() => setLock(null));
+    }
   }, [load]);
 
   const revoke = async (id?: string) => {
@@ -64,6 +71,26 @@ export default function WidgetSettingsPage() {
       <PageHeader title="Виджеты" back={{ href: '/settings', label: 'Профиль' }} />
 
       <div className="space-y-4">
+        {lock !== null && (
+          <RowGroup label="Экран блокировки">
+            <SwitchRow
+              Icon={LockKeyhole}
+              title="Статус дня на экране блокировки"
+              sub="Тихая строка: отмечен ли день, ждёт ли письмо"
+              checked={lock}
+              onChange={async (next) => {
+                setLock(next);
+                try {
+                  const { enabled } = await WidgetBridge.setLockStatus({ enabled: next });
+                  setLock(enabled);
+                } catch {
+                  setLock(!next);
+                }
+              }}
+            />
+          </RowGroup>
+        )}
+
         {native && steps ? (
           <Card>
             <h2 className="font-semibold">Как добавить</h2>

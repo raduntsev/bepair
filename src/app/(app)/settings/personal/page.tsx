@@ -28,7 +28,7 @@ export default function PersonalSettingsPage() {
             <SwitchRow
               Icon={Moon}
               title="Показывать фазу луны"
-              sub="На экране дня и главные фазы в календаре. Видно только вам"
+              sub="Главные фазы в календаре. Видно только вам"
               checked={showMoon}
               onChange={setShowMoon}
             />

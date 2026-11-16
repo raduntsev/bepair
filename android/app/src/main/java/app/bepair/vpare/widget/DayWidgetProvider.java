@@ -20,6 +20,6 @@ public class DayWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onDisabled(Context context) {
-        if (!WidgetRenderer.hasAnyWidget(context)) WidgetRefreshWorker.cancel(context);
+        if (!WidgetRenderer.needsRefresh(context)) WidgetRefreshWorker.cancel(context);
     }
 }

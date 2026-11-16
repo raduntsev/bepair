@@ -12,6 +12,7 @@ public final class WidgetStore {
     private static final String KEY_TOKEN = "token";
     private static final String KEY_API = "api";
     private static final String KEY_SNAPSHOT = "snapshot";
+    private static final String KEY_LOCK = "lock_status";
 
     private WidgetStore() {}
 
@@ -23,8 +24,17 @@ public final class WidgetStore {
         prefs(context).edit().putString(KEY_TOKEN, token).putString(KEY_API, api).remove(KEY_SNAPSHOT).apply();
     }
 
+    /* Forgets the key and the snapshot; the lock-screen choice is the person's and survives sign-out. */
     public static void clear(Context context) {
-        prefs(context).edit().clear().apply();
+        prefs(context).edit().remove(KEY_TOKEN).remove(KEY_API).remove(KEY_SNAPSHOT).apply();
+    }
+
+    public static boolean lockStatus(Context context) {
+        return prefs(context).getBoolean(KEY_LOCK, false);
+    }
+
+    public static void setLockStatus(Context context, boolean enabled) {
+        prefs(context).edit().putBoolean(KEY_LOCK, enabled).apply();
     }
 
     public static String token(Context context) {

@@ -58,9 +58,9 @@ export function LetterComposer({
   };
 
   return (
-    <section className="mb-6 rounded-2xl bg-surface shadow-card">
+    <section className="rounded-2xl bg-surface shadow-card">
       <div className="flex items-center justify-between px-5 pt-5 md:px-6">
-        <h2 className="text-lg font-semibold">{initial ? 'Черновик' : 'Новое письмо'}</h2>
+        <h1 className="text-large-title font-bold">{initial ? 'Черновик' : 'Письмо'}</h1>
         <button
           type="button"
           onClick={onClose}
