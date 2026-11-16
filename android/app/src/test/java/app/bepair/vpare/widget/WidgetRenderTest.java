@@ -96,9 +96,10 @@ public class WidgetRenderTest {
         preview(day, false, "day-sealed");
 
         View couple = inflate(true);
-        assertEquals("497", text(couple, R.id.widget_together_days));
+        assertEquals(View.GONE, couple.findViewById(R.id.widget_together).getVisibility());
         assertEquals("Письмо ждёт, просьб: 2", text(couple, R.id.widget_waiting));
-        assertEquals("Отметить", text(couple, R.id.widget_action_day));
+        assertEquals(View.GONE, couple.findViewById(R.id.widget_action_day).getVisibility());
+        assertEquals(View.VISIBLE, couple.findViewById(R.id.widget_action_ping).getVisibility());
         preview(couple, true, "couple-sealed");
     }
 
@@ -108,14 +109,13 @@ public class WidgetRenderTest {
         View couple = inflate(true);
         assertEquals("Аня: день спокойный", text(couple, R.id.widget_headline));
         assertEquals("12", text(couple, R.id.widget_streak_days));
-        assertEquals("Мой день", text(couple, R.id.widget_action_day));
         assertEquals(View.GONE, couple.findViewById(R.id.widget_waiting).getVisibility());
         preview(inflate(false), false, "day-open");
         preview(couple, true, "couple-open");
     }
 
     @Test
-    public void streakOffAndNoDateHideTheirBlocks() {
+    public void streakOffHidesItsBlock() {
         use(WAITING);
         View couple = inflate(true);
         assertEquals(View.GONE, couple.findViewById(R.id.widget_together).getVisibility());

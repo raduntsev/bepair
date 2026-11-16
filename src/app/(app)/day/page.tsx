@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CalendarHeart, Check, ChevronRight, Droplet, Lock, Mail, Pencil } from 'lucide-react';
+import { CalendarHeart, Check, ChevronRight, Droplet, ListTodo, Lock, Mail, Pencil, Users } from 'lucide-react';
 import Link from 'next/link';
 import { displayName, genitive } from '@/lib/words';
 import { promptsFor } from '@/lib/dayPrompts';
@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/Field';
 import { Alert, Loading, PageHeader, SectionHeader } from '@/components/ui/Blocks';
 import { useCoupleDay } from '@/hooks/useCoupleDay';
 import { useTasks } from '@/hooks/useTasks';
+import { usePlanerka } from '@/hooks/usePlanerka';
 import { usePresence } from '@/hooks/usePresence';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { useImportantDates } from '@/hooks/useImportantDates';
@@ -110,6 +111,7 @@ function DayView() {
 
   const { partner, mine, theirs, isLoading, error, save, isUnlocked, isToday } = useCoupleDay(date);
   const { tasks, complete, acknowledge, error: taskError } = useTasks();
+  const planerka = usePlanerka();
   const presence = usePresence();
   const waitingLetters = useWaitingLetters(user?.id, isUnlocked);
 
@@ -187,10 +189,30 @@ function DayView() {
     for you, then what you were asked. That block wears the accent ring; nothing
     else on the screen does. The order is the instruction — no captions.
   */
-  const focus: 'day' | 'letter' | 'thanks' | 'asked' | null =
-    showEditor && !mine ? 'day' : !isToday ? null : letters > 0 ? 'letter' : thanks > 0 ? 'thanks' : askedOfMe > 0 ? 'asked' : null;
+  /* The couple's planerka day: the session waits here, after your own day. */
+  const planerkaDay = isToday && new Date().getDay() === planerka.settings.weekday;
+  const planerkaStarted = planerka.planerkas.some((p) => p.held_on === date);
+  const myOpenTodos = user
+    ? planerka.todos.filter((t) => t.status !== 'done' && (t.owner_id === user.id || t.owner_id === null)).length
+    : 0;
+
+  const focus: 'day' | 'planerka' | 'letter' | 'thanks' | 'asked' | null =
+    showEditor && !mine
+      ? 'day'
+      : !isToday
+        ? null
+        : planerkaDay
+          ? 'planerka'
+          : letters > 0
+            ? 'letter'
+            : thanks > 0
+              ? 'thanks'
+              : askedOfMe > 0
+                ? 'asked'
+                : null;
   const ring = (key: typeof focus) => (focus === key ? 'focus-ring' : '');
-  const between = isToday && !!user && (letters > 0 || thanks > 0 || askedOfMe > 0 || !!taskError);
+  const between =
+    isToday && !!user && (planerkaDay || myOpenTodos > 0 || letters > 0 || thanks > 0 || askedOfMe > 0 || !!taskError);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-8 sm:px-6 md:pt-12">
@@ -361,6 +383,36 @@ function DayView() {
             <>
               <SectionHeader title="Между вами" />
               <div className="flex flex-col gap-3">
+                {planerkaDay && (
+                  <Link
+                    href={`/planerka/session?d=${date}`}
+                    className={`flex items-center gap-3.5 rounded-2xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken ${ring('planerka')}`}
+                  >
+                    <span aria-hidden className="flex size-10 items-center justify-center rounded-full bg-accent text-accent-ink">
+                      <Users className="size-4.5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-body font-semibold">{planerkaStarted ? 'Продолжить планёрку' : 'Планёрка'}</span>
+                      <span className="block text-footnote text-ink-faint">{planerka.settings.at_time}</span>
+                    </span>
+                    <ChevronRight className="size-5 text-line-strong" aria-hidden />
+                  </Link>
+                )}
+                {!planerkaDay && myOpenTodos > 0 && (
+                  <Link
+                    href="/planerka"
+                    className="flex items-center gap-3.5 rounded-2xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken"
+                  >
+                    <span aria-hidden className="flex size-10 items-center justify-center rounded-full bg-sunken text-ink-soft">
+                      <ListTodo className="size-4.5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-body font-semibold">Дела с планёрки</span>
+                    </span>
+                    <span className="min-w-6 rounded-full bg-sunken px-2 text-center text-footnote leading-6 font-semibold text-ink-soft">{myOpenTodos}</span>
+                    <ChevronRight className="size-5 text-line-strong" aria-hidden />
+                  </Link>
+                )}
                 {letters > 0 && (
                   <Link
                     href="/messages"
