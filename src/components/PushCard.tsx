@@ -98,7 +98,7 @@ function WebPushCard() {
 /* Inside the iOS/Android app: APNs or FCM instead of web push. */
 function NativePushCard() {
   const { user } = useSpaceAuth();
-  const [status, setStatus] = useState<'checking' | 'on' | 'off' | 'denied'>('checking');
+  const [status, setStatus] = useState<'checking' | 'on' | 'off' | 'denied' | 'unavailable'>('checking');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -111,6 +111,7 @@ function NativePushCard() {
     on: 'Уведомления приходят на этот телефон. Весточки — сразу, остальное — по настройкам ниже.',
     off: 'Включите, чтобы весточки и новости партнёра приходили, даже когда приложение закрыто.',
     denied: 'Уведомления для Впаре выключены в настройках телефона. Включите их там и вернитесь сюда.',
+    unavailable: 'В этой сборке приложения push пока не подключён. Уведомления приходят в браузере на этом телефоне, а статус дня можно вывести на экран блокировки в разделе «Виджеты».',
   };
 
   return (
@@ -139,6 +140,7 @@ function NativePushCard() {
                     const result = await subscribeNativePush(user.id);
                     if (result === 'subscribed') setStatus('on');
                     else if (result === 'denied') setStatus('denied');
+                    else if (result === 'unavailable') setStatus('unavailable');
                     else setFailed(true);
                   }
                   setBusy(false);

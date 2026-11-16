@@ -91,6 +91,8 @@ Import репозитория → Framework: Next.js → Environment Variables: 
 | **День** | экран блокировки iPhone | Одна-две строки или одна строка над часами |
 | **Серия** | экран блокировки iPhone | Число дней подряд в круге |
 
+**Экран блокировки (Android):** тихое постоянное уведомление «Статус дня» с той же фразой, что на виджете. Включается в Профиль → Виджеты, без звука и вибрации, обновляется вместе с виджетами.
+
 Правило «сначала свой день» действует и тут: пока вы не отметили свой, у партнёра на виджете видно только «отмечено» и замочек — без цвета и слова. В настройках → «Виджеты» можно скрыть настроение совсем (для экрана, который видят другие) и отключить потерянный телефон.
 
 Как это работает: при первом входе в нативном приложении оно получает свой ключ виджета (только чтение, хранится хэшем в `widget_tokens`). Виджет раз в 15–30 минут спрашивает `/api/widget` и обновляется сразу, когда вы что-то делаете в приложении.
@@ -107,7 +109,7 @@ Import репозитория → Framework: Next.js → Environment Variables: 
 
 Собрать локально: Android Studio → Open → папка `android` (перед этим `BEPAIR_URL=https://… npx cap sync android`).
 
-Push на Android: создать проект в [Firebase](https://console.firebase.google.com), добавить Android-приложение `app.bepair.vpare`, положить `google-services.json` в `android/app/`. Для сервера: Firebase → Project settings → Service accounts → Generate new private key, содержимое JSON положить в переменную Vercel `FCM_SERVICE_ACCOUNT`.
+Push на Android: без `google-services.json` приложение не регистрируется в FCM (иначе Android закрыл бы его) и пишет, что push в этой сборке не подключён. Чтобы подключить: создать проект в [Firebase](https://console.firebase.google.com), добавить Android-приложение `app.bepair.vpare`, положить `google-services.json` в `android/app/`. Для сервера: Firebase → Project settings → Service accounts → Generate new private key, содержимое JSON положить в переменную Vercel `FCM_SERVICE_ACCOUNT`.
 
 ### iPhone
 

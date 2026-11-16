@@ -1,27 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- «День», 2×2: your ring, your partner's disc, one sentence about today. -->
+<!-- «День», 2×2, after an iOS small widget: the two days as discs at the top,
+     the one sentence about today at the bottom in large type. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:orientation="vertical"
-    android:padding="14dp">
-
-    <TextView
-        android:id="@+id/widget_date"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:textColor="@color/widget_ink_faint"
-        android:textSize="12sp" />
+    android:padding="16dp">
 
     <ImageView
         android:id="@+id/widget_mark"
         android:layout_width="72dp"
-        android:layout_height="42dp"
-        android:layout_marginTop="6dp"
+        android:layout_height="36dp"
         android:importantForAccessibility="no"
         android:scaleType="fitStart" />
 
@@ -31,22 +22,34 @@
         android:layout_weight="1" />
 
     <TextView
+        android:id="@+id/widget_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:fontFamily="sans-serif-medium"
+        android:textColor="@color/widget_accent"
+        android:textSize="12sp" />
+
+    <TextView
         android:id="@+id/widget_headline"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
         android:maxLines="2"
         android:ellipsize="end"
+        android:fontFamily="sans-serif-medium"
+        android:lineSpacingMultiplier="0.95"
         android:textColor="@color/widget_ink"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:textSize="16sp" />
 
     <TextView
         android:id="@+id/widget_sub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
-        android:maxLines="2"
+        android:maxLines="1"
         android:ellipsize="end"
-        android:textColor="@color/widget_ink_soft"
-        android:textSize="12sp" />
+        android:textColor="@color/widget_ink_faint"
+        android:textSize="13sp" />
 </LinearLayout>

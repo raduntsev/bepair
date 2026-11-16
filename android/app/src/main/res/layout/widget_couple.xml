@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- «Пара», 4×2: today on the left; days together, the run, and two actions on the right. -->
+<!-- «Пара», 4×2, after an iOS medium widget: today on the left; two neutral tiles
+     (days together, the run) and two capsule actions on the right. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:orientation="horizontal"
-    android:padding="14dp">
+    android:padding="16dp">
 
     <LinearLayout
         android:id="@+id/widget_today"
@@ -15,20 +16,10 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/widget_date"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:textColor="@color/widget_ink_faint"
-            android:textSize="12sp" />
-
         <ImageView
             android:id="@+id/widget_mark"
             android:layout_width="72dp"
-            android:layout_height="42dp"
-            android:layout_marginTop="6dp"
+            android:layout_height="36dp"
             android:importantForAccessibility="no"
             android:scaleType="fitStart" />
 
@@ -38,24 +29,36 @@
             android:layout_weight="1" />
 
         <TextView
+            android:id="@+id/widget_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/widget_accent"
+            android:textSize="12sp" />
+
+        <TextView
             android:id="@+id/widget_headline"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
             android:maxLines="2"
             android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:lineSpacingMultiplier="0.95"
             android:textColor="@color/widget_ink"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/widget_sub"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:maxLines="2"
+            android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="@color/widget_ink_soft"
-            android:textSize="12sp" />
+            android:textColor="@color/widget_ink_faint"
+            android:textSize="13sp" />
 
         <TextView
             android:id="@+id/widget_waiting"
@@ -64,8 +67,9 @@
             android:layout_marginTop="2dp"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="@color/widget_partner_ink"
-            android:textSize="12sp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/widget_accent"
+            android:textSize="13sp"
             android:visibility="gone" />
     </LinearLayout>
 
@@ -96,9 +100,9 @@
                     android:id="@+id/widget_together_days"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/widget_accent_soft_ink"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="@color/widget_ink"
+                    android:textSize="24sp" />
 
                 <TextView
                     android:id="@+id/widget_together_label"
@@ -107,8 +111,8 @@
                     android:gravity="center"
                     android:lineSpacingMultiplier="0.9"
                     android:maxLines="2"
-                    android:textColor="@color/widget_accent_soft_ink"
-                    android:textSize="10sp" />
+                    android:textColor="@color/widget_ink_faint"
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -126,9 +130,9 @@
                     android:id="@+id/widget_streak_days"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/widget_partner_ink"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="@color/widget_ink"
+                    android:textSize="24sp" />
 
                 <TextView
                     android:id="@+id/widget_streak_label"
@@ -137,8 +141,8 @@
                     android:gravity="center"
                     android:lineSpacingMultiplier="0.9"
                     android:maxLines="2"
-                    android:textColor="@color/widget_partner_ink"
-                    android:textSize="10sp" />
+                    android:textColor="@color/widget_ink_faint"
+                    android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -151,29 +155,29 @@
             <TextView
                 android:id="@+id/widget_action_day"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
+                android:layout_height="36dp"
                 android:layout_weight="1"
                 android:background="@drawable/widget_button_primary"
                 android:gravity="center"
                 android:maxLines="1"
                 android:text="@string/widget_action_day"
+                android:fontFamily="sans-serif-medium"
                 android:textColor="@color/widget_accent_ink"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:textSize="13sp" />
 
             <TextView
                 android:id="@+id/widget_action_ping"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
+                android:layout_height="36dp"
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:background="@drawable/widget_button_soft"
                 android:gravity="center"
                 android:maxLines="1"
                 android:text="@string/widget_action_ping"
-                android:textColor="@color/widget_accent_soft_ink"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/widget_accent"
+                android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

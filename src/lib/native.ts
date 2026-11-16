@@ -14,6 +14,11 @@ interface WidgetBridgePlugin {
   /* Forget the key: on sign-out or when revoked. */
   clear(): Promise<void>;
   status(): Promise<{ configured: boolean; api?: string }>;
+  /* Android: whether this build carries a Firebase project. Without one, registering for push kills the app. */
+  pushAvailable(): Promise<{ available: boolean }>;
+  /* Android: the quiet «today» line on the lock screen. */
+  lockStatus(): Promise<{ enabled: boolean; permitted: boolean }>;
+  setLockStatus(options: { enabled: boolean }): Promise<{ enabled: boolean }>;
 }
 
 export const WidgetBridge = registerPlugin<WidgetBridgePlugin>('WidgetBridge');

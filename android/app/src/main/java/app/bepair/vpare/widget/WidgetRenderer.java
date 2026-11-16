@@ -24,6 +24,13 @@ public final class WidgetRenderer {
         for (int id : manager.getAppWidgetIds(new ComponentName(context, CoupleWidgetProvider.class))) {
             manager.updateAppWidget(id, render(context, true));
         }
+        /* The lock-screen line reads the same snapshot, so it changes with the widgets. */
+        LockStatus.update(context);
+    }
+
+    /* Periodic refresh is needed while anything shows today: a widget or the lock-screen line. */
+    public static boolean needsRefresh(Context context) {
+        return hasAnyWidget(context) || WidgetStore.lockStatus(context);
     }
 
     public static boolean hasAnyWidget(Context context) {

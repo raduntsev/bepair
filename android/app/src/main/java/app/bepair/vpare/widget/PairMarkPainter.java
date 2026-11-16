@@ -10,16 +10,17 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 
 /**
- * Draws the product's mark for today, the same device as in the app:
- * a ring is your day, a filled disc is your partner's.
- *   - not marked yet       → dotted outline
- *   - marked, colour known → filled/stroked with the actual colour of the day
- *   - partner marked, still sealed for you → amber disc with a small lock
- * Indigo and amber are the only UI colours; mood colours appear only as a day's colour.
+ * Today as two discs side by side, the way an iOS widget shows a pair of
+ * values: yours on the left, your partner's on the right.
+ *   - not marked yet                → a thin dashed outline in neutral ink
+ *   - marked, colour known          → a solid disc in the actual colour of the day
+ *   - partner marked, still sealed  → a neutral disc with a small lock
+ * No UI colour competes with them: the mood spectrum appears only as a day's colour.
  */
 public final class PairMarkPainter {
     private static final float VIEW_W = 96f;
-    private static final float VIEW_H = 56f;
+    private static final float VIEW_H = 48f;
+    private static final float R = 16f;
 
     private PairMarkPainter() {}
 
@@ -40,7 +41,7 @@ public final class PairMarkPainter {
     public static Bitmap draw(Context context, WidgetSnapshot s) {
         float density = context.getResources().getDisplayMetrics().density;
         int width = Math.round(72 * density);
-        int height = Math.round(42 * density);
+        int height = Math.round(36 * density);
         float scale = width / VIEW_W;
 
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -48,49 +49,48 @@ public final class PairMarkPainter {
         canvas.scale(scale, scale);
 
         boolean night = isNight(context);
-        int accent = night ? 0xFF8B85FF : 0xFF5B54E8;
-        int partner = night ? 0xFFE8A552 : 0xFFD98324;
-        int surface = night ? 0xFF1A1A25 : 0xFFFFFFFF;
+        int neutral = night ? 0xFF3A3A3C : 0xFFE5E5EA;
+        int outline = night ? 0xFF636366 : 0xFFC7C7CC;
+        int lockInk = night ? 0xFF98989F : 0xFF8E8E93;
+        int accent = 0xFF5856D6;
+
+        float cy = VIEW_H / 2f;
+        float meX = R + 2f;
+        float partnerX = meX + R * 2f + 6f;
 
         boolean meMarked = s != null && s.meMarked;
-        boolean hasPartner = s != null && s.hasPartner;
-        boolean partnerMarked = hasPartner && s.partnerMarked;
-        boolean together = meMarked && partnerMarked;
-
-        float ringX = together ? 40f : 30f;
-        float discX = together ? 56f : 66f;
-        float cy = VIEW_H / 2f;
-
-        Paint dotted = new Paint(Paint.ANTI_ALIAS_FLAG);
-        dotted.setStyle(Paint.Style.STROKE);
-        dotted.setStrokeWidth(2.5f);
-        dotted.setStrokeCap(Paint.Cap.ROUND);
-        dotted.setPathEffect(new DashPathEffect(new float[] {4f, 5f}, 0f));
-
-        /* Partner's disc first, so your ring sits on top where they overlap. */
-        if (!partnerMarked) {
-            dotted.setColor(partner);
-            canvas.drawCircle(discX, cy, 17f, dotted);
+        if (meMarked) {
+            disc(canvas, meX, cy, parse(s.meColor, accent));
         } else {
-            Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
-            boolean showColour = s.partnerUnlocked && s.partnerColor != null;
-            fill.setColor(showColour ? parse(s.partnerColor, partner) : partner);
-            canvas.drawCircle(discX, cy, 18f, fill);
-            if (!s.partnerUnlocked) drawLock(canvas, discX + (together ? 4f : 0f), cy, surface);
+            dashed(canvas, meX, cy, outline);
         }
 
-        if (meMarked) {
-            Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
-            ring.setStyle(Paint.Style.STROKE);
-            ring.setStrokeWidth(5f);
-            ring.setColor(parse(s.meColor, accent));
-            canvas.drawCircle(ringX, cy, 16.5f, ring);
+        boolean hasPartner = s != null && s.hasPartner;
+        if (!hasPartner || !s.partnerMarked) {
+            dashed(canvas, partnerX, cy, outline);
+        } else if (s.partnerUnlocked && s.partnerColor != null) {
+            disc(canvas, partnerX, cy, parse(s.partnerColor, neutral));
         } else {
-            dotted.setColor(accent);
-            dotted.setStrokeWidth(3f);
-            canvas.drawCircle(ringX, cy, 16.5f, dotted);
+            disc(canvas, partnerX, cy, neutral);
+            drawLock(canvas, partnerX, cy, lockInk);
         }
         return bitmap;
+    }
+
+    private static void disc(Canvas canvas, float cx, float cy, int color) {
+        Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        fill.setColor(color);
+        canvas.drawCircle(cx, cy, R, fill);
+    }
+
+    private static void dashed(Canvas canvas, float cx, float cy, int color) {
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(2f);
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setPathEffect(new DashPathEffect(new float[] {3.5f, 4.5f}, 0f));
+        paint.setColor(color);
+        canvas.drawCircle(cx, cy, R - 1f, paint);
     }
 
     private static void drawLock(Canvas canvas, float cx, float cy, int color) {
