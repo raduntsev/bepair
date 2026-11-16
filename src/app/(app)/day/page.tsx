@@ -17,15 +17,13 @@ import { Button } from '@/components/ui/Button';
 import { AutoHeight } from '@/components/ui/AutoHeight';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Textarea } from '@/components/ui/Field';
-import { Alert, Loading, PageHeader, RowGroup, SectionHeader } from '@/components/ui/Blocks';
+import { Alert, Loading, PageHeader, SectionHeader } from '@/components/ui/Blocks';
 import { useCoupleDay } from '@/hooks/useCoupleDay';
 import { useTasks } from '@/hooks/useTasks';
 import { usePresence } from '@/hooks/usePresence';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
-import { useImportantDates, useShowMoon } from '@/hooks/useImportantDates';
+import { useImportantDates } from '@/hooks/useImportantDates';
 import { occursOn, withAnniversary, upcoming } from '@/lib/importantDates';
-import { moonAt } from '@/lib/moon';
-import { MoonGlyph } from '@/components/MoonGlyph';
 import { taskState } from '@/hooks/useTasks';
 
 export default function DayPage() {
@@ -105,25 +103,6 @@ function DatesChip({ date, isToday, togetherSince }: { date: string; isToday: bo
   );
 }
 
-/* Personal and off by default. Ink only — colour is mood's alone. */
-function MoonRow() {
-  const { showMoon } = useShowMoon();
-  if (!showMoon) return null;
-  const moon = moonAt(new Date());
-  return (
-    <li className="flex min-h-13 items-center gap-3.5 px-4 py-2.5">
-      <span aria-hidden className="flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5rem] bg-ink-faint text-surface">
-        <MoonGlyph phase={moon.phase} size={18} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-body">Луна: {moon.label}</span>
-        <span className="block text-footnote text-ink-faint">{moon.waxing ? 'растёт' : 'убывает'}</span>
-      </span>
-      <span className="text-body text-ink-faint tabular-nums">{Math.round(moon.lit * 100)}%</span>
-    </li>
-  );
-}
-
 function DayView() {
   const params = useSearchParams();
   const date = params.get('d') ?? todayISO();
@@ -193,7 +172,6 @@ function DayView() {
   const partnerMarkedToday = !!partner && !presence.isLoading && presence.partnerMarked(date);
   /* Once the day is marked it folds into one line; «Изменить» unfolds it again. */
   const showEditor = !isClosed && (!mine || editing);
-  const showMoon = isToday;
   /* A question from today's set stands in for any instruction about what to write. */
   const notePrompt = promptsFor(date, 1)[0] ?? 'Заметка';
   /* Only for those who turned it on, and only for women — a man's profile never shows it. */
@@ -414,7 +392,6 @@ function DayView() {
             </>
           )}
 
-          {showMoon && <ForYou />}
 
           {isToday && mine && partner && (
             <Counters
@@ -427,19 +404,5 @@ function DayView() {
         </motion.div>
       )}
     </div>
-  );
-}
-
-/* Personal rows. Rendered only when there is something to show — the moon is opt-in. */
-function ForYou() {
-  const { showMoon } = useShowMoon();
-  if (!showMoon) return null;
-  return (
-    <>
-      <SectionHeader title="Для себя" />
-      <RowGroup label="Для себя">
-        <MoonRow />
-      </RowGroup>
-    </>
   );
 }

@@ -136,6 +136,8 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tucked = useScrollTuck(open);
   const here = currentDestination(pathname);
+  /* Inside «Переписка» the chat has its own input; a second «write» button would be noise. */
+  const hideCompose = open || here.href === '/messages';
 
   const clearTimer = () => {
     if (timer.current) clearTimeout(timer.current);
@@ -313,15 +315,15 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
         <motion.div
           initial={false}
           animate={{
-            opacity: open || tucked ? 0 : 1,
-            scale: open ? 0.6 : 1,
+            opacity: hideCompose || tucked ? 0 : 1,
+            scale: hideCompose ? 0.6 : 1,
             y: tucked ? 110 : 0,
-            width: open ? 0 : PILL_H,
-            marginLeft: open ? -8 : 0,
+            width: hideCompose ? 0 : PILL_H,
+            marginLeft: hideCompose ? -8 : 0,
           }}
           transition={reduce ? instant : open ? FOLD : GROW}
           className="pointer-events-auto"
-          inert={open}
+          inert={hideCompose}
         >
           <Link
             href={COMPOSE}
