@@ -1,5 +1,6 @@
 import { differenceInCalendarDays, differenceInYears, isLeapYear, parseISO } from 'date-fns';
 import { plural } from '@/lib/dates';
+import { tr } from '@/lib/i18n';
 
 export interface ImportantDate {
   id: string;
@@ -45,7 +46,7 @@ function nextOccurrence(item: Pick<ImportantDate, 'date' | 'yearly'>, today: str
 /* The start of «дней вместе» doubles as a yearly anniversary. */
 export function withAnniversary(items: ImportantDate[], togetherSince: string | null): ImportantDate[] {
   if (!togetherSince) return items;
-  return [...items, { id: '', title: 'Годовщина', date: togetherSince, yearly: true, created_by: null }];
+  return [...items, { id: '', title: tr('Годовщина', 'Anniversary'), date: togetherSince, yearly: true, created_by: null }];
 }
 
 export function upcoming(items: ImportantDate[], today: string, horizonDays = 366): Occurrence[] {
@@ -57,7 +58,7 @@ export function upcoming(items: ImportantDate[], today: string, horizonDays = 36
       let title = item.title;
       if (!item.id) {
         const years = differenceInYears(parseISO(on), parseISO(item.date));
-        title = years > 0 ? `${years} ${plural(years, 'год', 'года', 'лет')} вместе` : 'Начало';
+        title = years > 0 ? tr(`${years} ${plural(years, 'год', 'года', 'лет')} вместе`, `${years} ${years === 1 ? 'year' : 'years'} together`) : tr('Начало', 'The beginning');
       }
       return { id: item.id || null, title, on, inDays, derived: !item.id };
     })
@@ -66,7 +67,7 @@ export function upcoming(items: ImportantDate[], today: string, horizonDays = 36
 }
 
 export function whenText(inDays: number) {
-  if (inDays === 0) return 'сегодня';
-  if (inDays === 1) return 'завтра';
-  return `через ${inDays} ${plural(inDays, 'день', 'дня', 'дней')}`;
+  if (inDays === 0) return tr('сегодня', 'today');
+  if (inDays === 1) return tr('завтра', 'tomorrow');
+  return tr(`через ${inDays} ${plural(inDays, 'день', 'дня', 'дней')}`, `in ${inDays} ${inDays === 1 ? 'day' : 'days'}`);
 }

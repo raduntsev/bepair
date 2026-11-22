@@ -8,6 +8,7 @@ import { noticeText, type NoticeKind } from '@/lib/notices';
 import { displayName, verb } from '@/lib/words';
 import type { Partner } from '@/hooks/useSpaceAuth';
 import { Card } from '@/components/ui/Blocks';
+import { tr } from '@/lib/i18n';
 
 interface Rhythm {
   last_seen_at: string | null;
@@ -64,13 +65,13 @@ export function PartnerRhythm({ partner, showClock }: { partner: Partner; showCl
   if (showClock) {
     const clock = timeIn(partner.timezone ?? rhythm?.timezone);
     const at = partner.gender === 'f' ? 'у неё' : partner.gender === 'm' ? 'у него' : 'у партнёра';
-    if (clock) lines.push({ Icon: Clock, text: `Сейчас ${at} ${clock}` });
+    if (clock) lines.push({ Icon: Clock, text: tr(`Сейчас ${at} ${clock}`, `It’s ${clock} there now`) });
   }
   if (rhythm) {
-    const morning = rhythm.remind_morning ? `утром в ${hhmm(rhythm.remind_morning_at)}` : null;
-    const evening = rhythm.remind_evening ? `вечером в ${hhmm(rhythm.remind_evening_at)}` : null;
-    const both = [morning, evening].filter(Boolean).join(' и ');
-    lines.push({ Icon: morning ? Sunrise : Moon, text: both ? `Напоминания приходят ${both}` : 'Напоминания выключены' });
+    const morning = rhythm.remind_morning ? tr(`утром в ${hhmm(rhythm.remind_morning_at)}`, `in the morning at ${hhmm(rhythm.remind_morning_at)}`) : null;
+    const evening = rhythm.remind_evening ? tr(`вечером в ${hhmm(rhythm.remind_evening_at)}`, `in the evening at ${hhmm(rhythm.remind_evening_at)}`) : null;
+    const both = [morning, evening].filter(Boolean).join(tr(' и ', ' and '));
+    lines.push({ Icon: morning ? Sunrise : Moon, text: both ? tr(`Напоминания приходят ${both}`, `Reminders come ${both}`) : tr('Напоминания выключены', 'Reminders are off') });
   }
 
   const seen = rhythm?.last_seen_at ? relativeStamp(rhythm.last_seen_at) : null;
@@ -79,12 +80,12 @@ export function PartnerRhythm({ partner, showClock }: { partner: Partner; showCl
     <Card>
       <h2 className="font-semibold">{name}</h2>
       <p className="mt-1 text-sm text-ink-soft">
-        {seen ? `${verb(partner.gender, 'Заходил')} ${/^\d/.test(seen) ? `сегодня в ${seen}` : seen}` : 'Когда партнёр обычно здесь'}
+        {seen ? tr(`${verb(partner.gender, 'Заходил')} ${/^\d/.test(seen) ? `сегодня в ${seen}` : seen}`, `Last here ${/^\d/.test(seen) ? `today at ${seen}` : seen}`) : tr('Когда партнёр обычно здесь', 'When your partner is usually here')}
       </p>
 
       {last && (
         <p className="mt-3 text-sm">
-          <span className="text-ink-faint">Последнее для вас: </span>
+          <span className="text-ink-faint">{tr('Последнее для вас: ', 'Latest for you: ')}</span>
           {noticeText(last, name, partner.gender)}
           <span className="text-ink-faint"> · {relativeStamp(last.created_at)}</span>
         </p>

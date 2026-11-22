@@ -5,6 +5,7 @@ import supabase from '@/lib/supabase';
 import { flushPush, registerServiceWorker } from '@/lib/push';
 import type { NoticeKind } from '@/lib/notices';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { tr } from '@/lib/i18n';
 
 export interface Notice {
   id: string;
@@ -42,7 +43,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       .order('created_at', { ascending: false })
       .limit(60);
     if (!loadError) setNotices((data ?? []) as Notice[]);
-    setError(loadError ? 'Не удалось загрузить уведомления. Проверьте связь и обновите страницу.' : null);
+    setError(loadError ? tr('Не удалось загрузить уведомления. Проверьте связь и обновите страницу.', 'Couldn’t load notifications. Check your connection and reload.') : null);
     setIsLoading(false);
   }, [user, spaceId]);
 

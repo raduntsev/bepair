@@ -201,8 +201,11 @@ battery on the device this product is read on in bed.
 
 **The pair waits.** Loading is the pair mark's two halves as two round
 characters with glints for eyes (`src/components/PairLoader.tsx`): they glance
-at each other and blink, shrink into the three dots of «typing…», roll a wave
-through them, and spring back round. 3.6 s, CSS keyframes only. Used on the
+play a 10 s scene with a temper each — indigo curious and bouncy, amber calmer
+and a little shy: a glance, a hop and a nudge with happy ^ ^ eyes, a look up
+together, the three dots of «typing…», a wide-eyed pop back, a jump answered
+by a jump, a blink in unison. CSS keyframes only, four layers per character
+(position, body, look, eyes). Used on the
 opening screen and in every `Loading` block; buttons keep their small spinner.
 
 **The tour lights the way.** «Обучение» (`src/components/Tour.tsx`) dims the
@@ -274,6 +277,18 @@ The middle state means the partner has not noticed yet — never "on review", or
 the product becomes an acceptance process.
 
 ## Language
+
+Two languages, Russian and English (`src/lib/i18n.ts`). Every visible string
+is a pair at the place it is used — `tr('Сегодня', 'Today')` — so the two
+travel together and nothing hides behind a key. The language is settled
+before first paint by the inline script in the root layout: the choice saved
+in Профиль, otherwise the phone's language (ru/uk/be/kk → Russian, anything
+else → English). Switching reloads the app. The server composes push and
+widget text in the reader's language from `profiles.lang`, which the app keeps
+in step; `inLang()` swaps the language only for a synchronous block. English
+calls the weekly «Планёрка» a *check-in* and «Услуги» *favours*. Developer
+notices (missing env, old database) stay Russian.
+
 
 Russian verbs agree with gender, so the profile carries an optional «он/она»
 (`src/lib/words.ts`): «Аня отметила», «Алекс отметил», and the neutral

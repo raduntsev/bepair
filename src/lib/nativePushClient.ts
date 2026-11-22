@@ -1,5 +1,6 @@
 import supabase from './supabase';
 import { WidgetBridge, isNative, nativePlatform } from './native';
+import { tr } from '@/lib/i18n';
 
 /*
   Native push inside the iOS/Android shell. Web push does not work in an app's
@@ -50,8 +51,8 @@ export async function subscribeNativePush(userId: string): Promise<NativePushRes
 
   if (kind === 'fcm') {
     /* Quiet notices («со звуком» off) land in their own silent channel. */
-    await PushNotifications.createChannel({ id: 'default', name: 'Уведомления', importance: 4, sound: 'default' }).catch(() => {});
-    await PushNotifications.createChannel({ id: 'quiet', name: 'Без звука', importance: 3 }).catch(() => {});
+    await PushNotifications.createChannel({ id: 'default', name: tr('Уведомления', 'Notifications'), importance: 4, sound: 'default' }).catch(() => {});
+    await PushNotifications.createChannel({ id: 'quiet', name: tr('Без звука', 'Silent'), importance: 3 }).catch(() => {});
   }
 
   return new Promise<NativePushResult>((resolve) => {

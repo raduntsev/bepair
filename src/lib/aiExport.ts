@@ -2,6 +2,7 @@ import { format, parseISO } from 'date-fns';
 import supabase from '@/lib/supabase';
 import { moodLabel } from '@/lib/mood';
 import { QUESTIONS } from '@/lib/questions';
+import { tr } from '@/lib/i18n';
 
 /*
   The export for a neural network: your own records for a period, with a prompt
@@ -13,9 +14,9 @@ import { QUESTIONS } from '@/lib/questions';
 export type ExportGoal = 'problem' | 'closer' | 'curious';
 
 export const GOALS: { value: ExportGoal; label: string }[] = [
-  { value: 'closer', label: 'Как стать ближе' },
-  { value: 'problem', label: 'Разобраться в проблеме' },
-  { value: 'curious', label: 'Просто интересно' },
+  { value: 'closer', label: tr('Как стать ближе', 'Get closer') },
+  { value: 'problem', label: tr('Разобраться в проблеме', 'Sort out a problem') },
+  { value: 'curious', label: tr('Просто интересно', 'Just curious') },
 ];
 
 export interface ExportData {
@@ -103,31 +104,33 @@ export function exportSummary(data: ExportData) {
   const sent = data.letters.filter((l) => l.direction === 'sent').length;
   const notes = data.days.filter((d) => d.note.trim()).length;
   return [
-    ['Дней', data.days.length],
-    ['Заметок', notes],
-    ['Писем', data.letters.length, `${sent} отправлено, ${data.letters.length - sent} получено`],
-    ['Весточек', data.pings.length],
-    ['Просьб', data.tasks.length],
-    ...(data.cycle.length ? [['Дней цикла', data.cycle.length] as [string, number]] : []),
+    [tr('Дней', 'Days'), data.days.length],
+    [tr('Заметок', 'Notes'), notes],
+    [tr('Писем', 'Letters'), data.letters.length, tr(`${sent} отправлено, ${data.letters.length - sent} получено`, `${sent} sent, ${data.letters.length - sent} received`)],
+    [tr('Весточек', 'Notes sent'), data.pings.length],
+    [tr('Просьб', 'Requests'), data.tasks.length],
+    ...(data.cycle.length ? [[tr('Дней цикла', 'Cycle days'), data.cycle.length] as [string, number]] : []),
   ] as [string, number, string?][];
 }
 
 const GOAL_PROMPT: Record<ExportGoal, (concern: string) => string> = {
   problem: (concern) =>
     [
-      'Цель: разобраться в конкретной проблеме.',
-      concern ? `Что беспокоит, словами автора: «${concern}».` : 'Автор не описал проблему словами — начни с вопроса, что именно его беспокоит, а потом опирайся на записи.',
-      'Найди в записях, когда и при каких обстоятельствах это проявлялось. Предложи две-три гипотезы о причинах и что можно попробовать. Опирайся на конкретные даты и цитаты.',
+      tr('Цель: разобраться в конкретной проблеме.', 'Goal: understand a specific problem.'),
+      concern
+        ? tr(`Что беспокоит, словами автора: «${concern}».`, `What worries the author, in their words: “${concern}”.`)
+        : tr('Автор не описал проблему словами — начни с вопроса, что именно его беспокоит, а потом опирайся на записи.', 'The author didn’t describe the problem — start by asking what exactly worries them, then lean on the entries.'),
+      tr('Найди в записях, когда и при каких обстоятельствах это проявлялось. Предложи две-три гипотезы о причинах и что можно попробовать. Опирайся на конкретные даты и цитаты.', 'Find in the entries when and in what circumstances it showed up. Offer two or three hypotheses about the causes and what could be tried. Rely on specific dates and quotes.'),
     ].join('\n'),
   closer: () =>
     [
-      'Цель: понять, как стать ближе.',
-      'Опиши динамику периода: когда было легче, когда тяжелее и что этому сопутствовало — письма, просьбы, весточки, тишина. Отметь, что у пары уже хорошо получается, и предложи несколько бережных, конкретных шагов.',
+      tr('Цель: понять, как стать ближе.', 'Goal: understand how to get closer.'),
+      tr('Опиши динамику периода: когда было легче, когда тяжелее и что этому сопутствовало — письма, просьбы, весточки, тишина. Отметь, что у пары уже хорошо получается, и предложи несколько бережных, конкретных шагов.', 'Describe how the period went: when it was easier, when harder, and what came with it — letters, requests, notes, silence. Note what the couple already does well and suggest a few gentle, concrete steps.'),
     ].join('\n'),
   curious: () =>
     [
-      'Цель: просто интерес.',
-      'Сделай спокойный обзор периода: что происходило, какие темы повторялись, какие моменты выделяются. Без советов, если о них не попросят.',
+      tr('Цель: просто интерес.', 'Goal: simple curiosity.'),
+      tr('Сделай спокойный обзор периода: что происходило, какие темы повторялись, какие моменты выделяются. Без советов, если о них не попросят.', 'Give a calm overview of the period: what happened, which themes recurred, which moments stand out. No advice unless asked.'),
     ].join('\n'),
 };
 
@@ -137,72 +140,74 @@ const time = (iso: string) => format(parseISO(iso), 'HH:mm');
 const clean = (text: string | null | undefined) => (text ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+\n/g, '\n').trim();
 
 export function buildMarkdown(data: ExportData, goal: ExportGoal, concern: string) {
-  const period = data.from ? `с ${data.from} по ${data.to}` : `за всё время по ${data.to}`;
+  const period = data.from ? tr(`с ${data.from} по ${data.to}`, `${data.from} to ${data.to}`) : tr(`за всё время по ${data.to}`, `all time to ${data.to}`);
   const out: string[] = [];
 
-  out.push(`# Впаре — ${data.name.trim() || 'записи'}, ${period}`, '');
-  out.push('## Инструкция для нейросети', '');
+  out.push(`# ${tr('Впаре', 'Bepair')} — ${data.name.trim() || tr('записи', 'entries')}, ${period}`, '');
+  out.push(tr('## Инструкция для нейросети', '## Instructions for the AI'), '');
   out.push(
-    'Ты — внимательный и бережный собеседник, который помогает человеку разобраться в его отношениях. Ниже — его записи из приложения «Впаре»: это общее пространство дня для пары, где каждый отмечает свой день цветом и может написать партнёру.',
+    tr('Ты — внимательный и бережный собеседник, который помогает человеку разобраться в его отношениях. Ниже — его записи из приложения «Впаре»: это общее пространство дня для пары, где каждый отмечает свой день цветом и может написать партнёру.', 'You are an attentive, caring companion helping a person make sense of their relationship. Below are their entries from Bepair, a shared daily space for a couple where each marks their day with a colour and can write to their partner.'),
     '',
-    'Это записи **одного человека**: его дни и заметки, письма и весточки, которые он отправил и получил, просьбы между партнёрами. Дни и заметки партнёра сюда не входят — не додумывай, что партнёр чувствовал, сверх того, что видно в письмах, весточках и просьбах.',
+    tr('Это записи **одного человека**: его дни и заметки, письма и весточки, которые он отправил и получил, просьбы между партнёрами. Дни и заметки партнёра сюда не входят — не додумывай, что партнёр чувствовал, сверх того, что видно в письмах, весточках и просьбах.', 'These are the entries of **one person**: their days and notes, letters and notes they sent and received, requests between the partners. The partner’s days and notes are not included — don’t guess what the partner felt beyond what the letters, notes and requests show.'),
     '',
     GOAL_PROMPT[goal](concern.trim()),
     '',
-    'Как читать данные:',
-    '- Настроение дня в приложении — цвет на шкале без цифр. Здесь оно записано числом от 0 (лёгкий день) до 1 (тяжёлый) и словом. Это не оценка: не называй дни хорошими или плохими, говори о том, что было легче или тяжелее.',
-    '- Просьбы — то, о чём партнёры просят друг друга. Баллы — вес, который поставил тот, кто просит. «Увидено» — партнёр заметил, что просьба выполнена.',
-    '- Пропущенные дни — не провал, а просто дни без записи.',
+    tr('Как читать данные:', 'How to read the data:'),
+    tr('- Настроение дня в приложении — цвет на шкале без цифр. Здесь оно записано числом от 0 (лёгкий день) до 1 (тяжёлый) и словом. Это не оценка: не называй дни хорошими или плохими, говори о том, что было легче или тяжелее.', '- In the app a day’s mood is a colour on a scale with no numbers. Here it is written as a number from 0 (light day) to 1 (heavy) and a word. It is not a grade: don’t call days good or bad, talk about what was easier or harder.'),
+    tr('- Просьбы — то, о чём партнёры просят друг друга. Баллы — вес, который поставил тот, кто просит. «Увидено» — партнёр заметил, что просьба выполнена.', '- Requests are what the partners ask of each other. Points are the weight set by the one asking. “Seen” means the partner noticed it was done.'),
+    tr('- Пропущенные дни — не провал, а просто дни без записи.', '- Missing days are not failures, just days without an entry.'),
     '',
-    'Правила: пиши по-русски, тепло и конкретно. Не ставь диагнозов и не делай выводов о партнёре как о человеке. Если в записях есть признаки опасности — насилия, мыслей о самоповреждении, — мягко посоветуй обратиться к специалисту.',
+    tr('Правила: пиши по-русски, тепло и конкретно. Не ставь диагнозов и не делай выводов о партнёре как о человеке. Если в записях есть признаки опасности — насилия, мыслей о самоповреждении, — мягко посоветуй обратиться к специалисту.', 'Rules: write in English, warmly and specifically. Don’t diagnose, and don’t draw conclusions about the partner as a person. If the entries show signs of danger — violence, thoughts of self-harm — gently suggest seeing a professional.'),
     '',
   );
 
-  out.push('## Дни', '');
-  if (!data.days.length) out.push('Дней с отметкой за период нет.', '');
+  out.push(tr('## Дни', '## Days'), '');
+  if (!data.days.length) out.push(tr('Дней с отметкой за период нет.', 'No marked days in this period.'), '');
   for (const d of data.days) {
     out.push(`### ${d.entry_date} · ${d.mood.toFixed(2)} (${moodLabel(d.mood)})`);
-    out.push(clean(d.note) ? clean(d.note) : '_без заметки_', '');
+    out.push(clean(d.note) ? clean(d.note) : tr('_без заметки_', '_no note_'), '');
   }
 
   if (data.letters.length) {
-    out.push('## Письма', '');
+    out.push(tr('## Письма', '## Letters'), '');
     for (const l of data.letters) {
       const when = l.delivered_at ?? l.created_at;
-      out.push(`### ${day(when)} ${time(when)} · ${l.direction === 'sent' ? 'отправлено' : 'получено'}${l.title ? ` · «${clean(l.title)}»` : ''}`);
-      out.push(clean(l.content) || '_без текста — только вложения_', '');
+      out.push(`### ${day(when)} ${time(when)} · ${l.direction === 'sent' ? tr('отправлено', 'sent') : tr('получено', 'received')}${l.title ? ` · «${clean(l.title)}»` : ''}`);
+      out.push(clean(l.content) || tr('_без текста — только вложения_', '_no text — attachments only_'), '');
     }
   }
 
   if (data.pings.length) {
-    out.push('## Весточки', '');
+    out.push(tr('## Весточки', '## Notes'), '');
     for (const p of data.pings) {
       const parts = [clean(p.body)];
-      if (p.track_title) parts.push(`трек: ${p.track_title}${p.track_artist ? ` — ${p.track_artist}` : ''}`);
-      if (p.has_photo) parts.push('снимок');
-      if (p.has_voice) parts.push('голосовое');
-      out.push(`- ${day(p.created_at)} ${time(p.created_at)} · ${p.direction === 'sent' ? 'отправлено' : 'получено'}: ${parts.filter(Boolean).join(' · ')}`);
+      if (p.track_title) parts.push(`${tr('трек', 'track')}: ${p.track_title}${p.track_artist ? ` — ${p.track_artist}` : ''}`);
+      if (p.has_photo) parts.push(tr('снимок', 'photo'));
+      if (p.has_voice) parts.push(tr('голосовое', 'voice note'));
+      out.push(`- ${day(p.created_at)} ${time(p.created_at)} · ${p.direction === 'sent' ? tr('отправлено', 'sent') : tr('получено', 'received')}: ${parts.filter(Boolean).join(' · ')}`);
     }
     out.push('');
   }
 
   if (data.tasks.length) {
-    out.push('## Просьбы', '');
+    out.push(tr('## Просьбы', '## Requests'), '');
     for (const t of data.tasks) {
-      const status = t.completed_at ? `выполнено ${day(t.completed_at)}${t.acknowledged_at ? ', увидено' : ''}` : 'не выполнено';
-      out.push(`- ${day(t.created_at)} · ${t.direction === 'asked' ? 'автор попросил' : 'автора попросили'}: «${clean(t.content)}» · ${t.points} б. · ${status}`);
+      const status = t.completed_at
+        ? tr(`выполнено ${day(t.completed_at)}${t.acknowledged_at ? ', увидено' : ''}`, `done ${day(t.completed_at)}${t.acknowledged_at ? ', seen' : ''}`)
+        : tr('не выполнено', 'not done');
+      out.push(`- ${day(t.created_at)} · ${t.direction === 'asked' ? tr('автор попросил', 'the author asked') : tr('автора попросили', 'the author was asked')}: «${clean(t.content)}» · ${t.points} ${tr('б.', 'pts')} · ${status}`);
     }
     out.push('');
   }
 
   if (data.cycle.length) {
-    out.push('## Дни цикла', '', data.cycle.join(', '), '');
+    out.push(tr('## Дни цикла', '## Cycle days'), '', data.cycle.join(', '), '');
   }
 
   const answered = data.answers.filter((a) => a.answer.trim());
   if (answered.length) {
-    out.push('## Ответы на вопросы при знакомстве с приложением', '');
-    for (const a of answered) out.push(`**${QUESTIONS[a.question - 1] ?? `Вопрос ${a.question}`}**`, clean(a.answer), '');
+    out.push(tr('## Ответы на вопросы при знакомстве с приложением', '## Answers to the getting-started questions'), '');
+    for (const a of answered) out.push(`**${QUESTIONS[a.question - 1] ?? `${tr('Вопрос', 'Question')} ${a.question}`}**`, clean(a.answer), '');
   }
 
   return out.join('\n');

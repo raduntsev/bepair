@@ -7,11 +7,12 @@ import { displayName, verb } from '@/lib/words';
 
 const sentenceVerb = (g: 'm' | 'f' | null | undefined) => {
   const v = verb(g, 'увидел');
-  return `${v.charAt(0).toUpperCase()}${v.slice(1)}, спасибо`;
+  return tr(`${v.charAt(0).toUpperCase()}${v.slice(1)}, спасибо`, 'Seen, thank you');
 };
 import { taskState, type Task } from '@/hooks/useTasks';
 import type { Partner } from '@/hooks/useSpaceAuth';
 import { Button } from '@/components/ui/Button';
+import { tr } from '@/lib/i18n';
 
 /*
   Two different kinds of action, on two sides of the day, as agreed:
@@ -40,8 +41,8 @@ export function MyTasks({
   return (
     <section className="overflow-hidden rounded-2xl bg-surface shadow-card">
       <div className="flex items-baseline justify-between gap-3 px-4 pt-4 pb-1">
-        <h3 className="text-headline font-semibold">Вас попросили</h3>
-        {open.length > 0 && <span className="text-footnote text-ink-faint">осталось {open.length}</span>}
+        <h3 className="text-headline font-semibold">{tr('Вас попросили', 'Asked of you')}</h3>
+        {open.length > 0 && <span className="text-footnote text-ink-faint">{tr(`осталось ${open.length}`, `${open.length} left`)}</span>}
       </div>
 
       <ul className="pb-1.5">
@@ -69,7 +70,7 @@ export function MyTasks({
                 <span className="block text-body text-ink">{task.content}</span>
                 <span className="block text-footnote text-ink-faint">{points(task.points)}</span>
               </span>
-              <span className="sr-only">Отметить «{task.content}» выполненной</span>
+              <span className="sr-only">{tr(`Отметить «${task.content}» выполненной`, `Mark “${task.content}” as done`)}</span>
             </button>
           </li>
         ))}
@@ -81,7 +82,7 @@ export function MyTasks({
             <span className="min-w-0 flex-1">
               <span className="block text-body text-ink-faint line-through decoration-ink-faint">{task.content}</span>
               <span className="block text-footnote text-ink-faint">
-                {taskState(task) === 'confirmed' ? 'партнёр увидел' : 'сделано сегодня'}
+                {taskState(task) === 'confirmed' ? tr('партнёр увидел', 'partner saw it') : tr('сделано сегодня', 'done today')}
               </span>
             </span>
           </li>
@@ -114,7 +115,7 @@ export function DoneForMe({
   return (
     <section className="overflow-hidden rounded-2xl bg-surface shadow-card">
       <h3 className="px-4 pt-4 pb-1 text-headline font-semibold">
-        {name} {verb(partner.gender, 'сделал')} для вас
+        {tr(`${name} ${verb(partner.gender, 'сделал')} для вас`, `${name} did this for you`)}
       </h3>
       <ul>
         {unseen.map((task) => (

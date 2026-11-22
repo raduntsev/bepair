@@ -12,6 +12,7 @@ import { Segment } from '@/components/ui/Controls';
 import { Alert, Chip, Loading, Page, SectionHeader } from '@/components/ui/Blocks';
 import { AutoHeight } from '@/components/ui/AutoHeight';
 import { ExchangeHeader } from '@/components/ExchangeHeader';
+import { tr } from '@/lib/i18n';
 
 function TaskCard({
   task,
@@ -49,8 +50,8 @@ function TaskCard({
   if (editing) {
     return (
       <li className="space-y-3 rounded-2xl bg-surface p-5 shadow-card">
-        <Input aria-label="Текст просьбы" value={draft} onChange={(event) => setDraft(event.target.value)} autoFocus />
-        <Segment legend="Насколько это важно" options={WEIGHTS} value={weight} onChange={setWeight} />
+        <Input aria-label={tr('Текст просьбы', 'Request text')} value={draft} onChange={(event) => setDraft(event.target.value)} autoFocus />
+        <Segment legend={tr('Насколько это важно', 'How much it matters')} options={WEIGHTS} value={weight} onChange={setWeight} />
         <div className="flex gap-2">
           <Button
             loading={busy}
@@ -61,10 +62,10 @@ function TaskCard({
               })
             }
           >
-            Сохранить
+            {tr('Сохранить', 'Save')}
           </Button>
           <Button variant="ghost" onClick={() => setEditing(false)}>
-            <X className="size-4" aria-hidden /> Отмена
+            <X className="size-4" aria-hidden /> {tr('Отмена', 'Cancel')}
           </Button>
         </div>
       </li>
@@ -78,10 +79,10 @@ function TaskCard({
   const chip =
     state === 'awaiting' ? null : state === 'done_unseen' ? (
       <Chip tone="accent" Icon={Eye}>
-        {asked ? 'Вы ещё не видели' : `${partnerName} ещё не ${verb(partnerGender, 'видел')}`}
+        {asked ? tr('Вы ещё не видели', 'You haven’t seen it yet') : tr(`${partnerName} ещё не ${verb(partnerGender, 'видел')}`, `${partnerName} hasn’t seen it yet`)}
       </Chip>
     ) : (
-      <Chip Icon={Check}>Выполнено</Chip>
+      <Chip Icon={Check}>{tr('Выполнено', 'Done')}</Chip>
     );
 
   const seen = verb(myGender, 'увидел');
@@ -98,12 +99,12 @@ function TaskCard({
         <div className="mt-4 flex flex-wrap gap-2 empty:hidden">
           {state === 'awaiting' && !asked && (
             <Button loading={busy} onClick={() => run(onComplete)}>
-              <Check className="size-4" aria-hidden /> Сделано
+              <Check className="size-4" aria-hidden /> {tr('Сделано', 'Done')}
             </Button>
           )}
           {state === 'done_unseen' && asked && (
             <Button loading={busy} onClick={() => run(onAcknowledge)}>
-              <Eye className="size-4" aria-hidden /> {seen.charAt(0).toUpperCase() + seen.slice(1)}, спасибо
+              <Eye className="size-4" aria-hidden /> {tr(`${seen.charAt(0).toUpperCase() + seen.slice(1)}, спасибо`, 'Seen, thank you')}
             </Button>
           )}
           {asked && state === 'awaiting' && (
@@ -116,10 +117,10 @@ function TaskCard({
                   setEditing(true);
                 }}
               >
-                <Pencil className="size-4" aria-hidden /> Изменить
+                <Pencil className="size-4" aria-hidden /> {tr('Изменить', 'Edit')}
               </Button>
               <Button variant="ghost" loading={busy} onClick={() => run(onRemove)}>
-                Убрать
+                {tr('Убрать', 'Remove')}
               </Button>
             </>
           )}
@@ -203,16 +204,16 @@ export default function TasksPage() {
         >
           <div className="flex items-center gap-2">
             <Input
-              aria-label="О чём попросить"
+              aria-label={tr('О чём попросить', 'What to ask for')}
               value={content}
               onChange={(event) => setContent(event.target.value)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              placeholder="Попросить о…"
+              placeholder={tr('Попросить о…', 'Ask for…')}
               disabled={!partner}
               className="!bg-transparent focus:!shadow-none !border-transparent"
             />
-            <Button type="submit" loading={busy} disabled={!content.trim() || !partner} aria-label="Попросить" className="!size-11 !rounded-full !px-0">
+            <Button type="submit" loading={busy} disabled={!content.trim() || !partner} aria-label={tr('Попросить', 'Ask')} className="!size-11 !rounded-full !px-0">
               <ArrowUp className="size-5" strokeWidth={2.4} aria-hidden />
             </Button>
           </div>
@@ -220,7 +221,7 @@ export default function TasksPage() {
           <AutoHeight>
             {composerOpen ? (
               <div className="space-y-3 px-2 pt-2 pb-2" onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}>
-                <Segment legend="Насколько это важно" options={WEIGHTS} value={weight} onChange={setWeight} />
+                <Segment legend={tr('Насколько это важно', 'How much it matters')} options={WEIGHTS} value={weight} onChange={setWeight} />
                 <label className="flex min-h-11 cursor-pointer items-center gap-3 text-subhead text-ink-soft">
                   <input
                     type="checkbox"
@@ -228,7 +229,7 @@ export default function TasksPage() {
                     onChange={(event) => setRemember(event.target.checked)}
                     className="size-4.5 accent-[var(--c-accent)]"
                   />
-                  В подборку
+                  {tr('В подборку', 'Save to favourites')}
                 </label>
               </div>
             ) : (
@@ -250,7 +251,7 @@ export default function TasksPage() {
                         <span
                           role="button"
                           tabIndex={0}
-                          aria-label={`Убрать «${t.content}» из подборки`}
+                          aria-label={tr(`Убрать «${t.content}» из подборки`, `Remove “${t.content}” from favourites`)}
                           onClick={(event) => {
                             event.stopPropagation();
                             removeTemplate(t.key);
@@ -277,29 +278,29 @@ export default function TasksPage() {
       </section>
 
       {isLoading ? (
-        <Loading label="Загружаем просьбы…" />
+        <Loading label={tr('Загружаем просьбы…', 'Loading requests…')} />
       ) : tasks.length === 0 ? null : (
         <div className="space-y-7">
           {incoming.length > 0 && (
             <section>
-              <SectionHeader title="Вас попросили" />
+              <SectionHeader title={tr('Вас попросили', 'Asked of you')} />
               <ul className="space-y-3">{incoming.map(card)}</ul>
             </section>
           )}
           {asked.length > 0 && (
             <section>
-              <SectionHeader title="Вы попросили" />
+              <SectionHeader title={tr('Вы попросили', 'You asked')} />
               <ul className="space-y-3">{asked.map(card)}</ul>
             </section>
           )}
           {finished.length > 0 && (
             <section>
               <SectionHeader
-                title="Выполнено"
+                title={tr('Выполнено', 'Done')}
                 action={
                   finished.length > 5 && (
                     <Button variant="ghost" className="!h-9 !px-3" onClick={() => setShowDone(!showDone)}>
-                      {showDone ? 'Свернуть' : `Все ${finished.length}`}
+                      {showDone ? tr('Свернуть', 'Show less') : tr(`Все ${finished.length}`, `All ${finished.length}`)}
                     </Button>
                   )
                 }

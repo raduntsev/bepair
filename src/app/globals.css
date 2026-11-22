@@ -563,89 +563,187 @@
 
 @layer components {
   /*
-    The loading pair — see src/components/PairLoader.tsx. One 3.6 s loop:
-    0–30 %   both look at each other and blink;
-    34–42 %  a small squash, then each shrinks to a dot and steps inward;
-    42–74 %  three dots, a wave rolls through them left to right;
-    74–96 %  the middle dot goes, the outer two spring back round with an
-             overshoot that reads as a breath, not a bounce.
+    The loading pair — see src/components/PairLoader.tsx for the scene. One
+    10 s loop; percentages below are tenths of a second ×10 (38 % = 3.8 s).
+    Each character has four layers: pos (hops), body (squash, sway), look
+    (where the eyes point) and eyes/happy (blink, surprise, ^ ^).
   */
   .pair-loader {
     overflow: visible;
   }
-  .pair-loader__blob,
-  .pair-loader__mid,
-  .pair-loader__eyes {
+  .pair-loader__pos,
+  .pair-loader__body,
+  .pair-loader__look,
+  .pair-loader__eyes,
+  .pair-loader__happy,
+  .pair-loader__mid {
     transform-box: fill-box;
     transform-origin: center;
-    animation-duration: 3.6s;
+    animation-duration: 10s;
     animation-iteration-count: infinite;
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
-  .pair-loader__blob--you {
-    animation-name: pair-loader-you;
-  }
-  .pair-loader__blob--partner {
-    animation-name: pair-loader-partner;
+  .pair-loader__happy {
+    opacity: 0;
   }
   .pair-loader__mid {
-    animation-name: pair-loader-mid;
     opacity: 0.55;
+    animation-name: pair-loader-mid;
   }
-  .pair-loader__blob--you .pair-loader__eyes {
-    animation-name: pair-loader-eyes-you;
+  .pair-loader__pos--you { animation-name: pl-pos-you; }
+  .pair-loader__body--you { animation-name: pl-body-you; }
+  .pair-loader__look--you { animation-name: pl-look-you; }
+  .pair-loader__eyes--you { animation-name: pl-eyes-you; }
+  .pair-loader__happy--you { animation-name: pl-happy-you; }
+  .pair-loader__pos--partner { animation-name: pl-pos-partner; }
+  .pair-loader__body--partner { animation-name: pl-body-partner; }
+  .pair-loader__look--partner { animation-name: pl-look-partner; }
+  .pair-loader__eyes--partner { animation-name: pl-eyes-partner; }
+  .pair-loader__happy--partner { animation-name: pl-happy-partner; }
+
+  /* ——— You: curious, bouncy ——— */
+  @keyframes pl-pos-you {
+    0%, 12% { transform: translate(0, 0); }
+    15% { transform: translate(8px, -7px); }
+    18% { transform: translate(15px, 0); }
+    20% { transform: translate(11px, 0); }
+    22%, 30% { transform: translate(13px, 0); }
+    34% { transform: translate(0, 0); }
+    38% { transform: translate(9px, 0); }
+    41% { transform: translate(9px, -7px); }
+    43% { transform: translate(9px, 0); }
+    48% { transform: translate(9px, -7px); }
+    50%, 56% { transform: translate(9px, 0); }
+    62%, 66% { transform: translate(0, 0); }
+    68% { transform: translate(0, -10px); }
+    70% { transform: translate(0, 0); }
+    72% { transform: translate(0, -8px); }
+    74%, 100% { transform: translate(0, 0); }
   }
-  .pair-loader__blob--partner .pair-loader__eyes {
-    animation-name: pair-loader-eyes-partner;
+  @keyframes pl-body-you {
+    0% { transform: scale(1, 1); }
+    6% { transform: scale(1.03, 0.97); }
+    12% { transform: scale(1, 1); }
+    14% { transform: scale(0.94, 1.06); }
+    18% { transform: scale(1.1, 0.9); }
+    21% { transform: scale(0.97, 1.03); }
+    24%, 34% { transform: scale(1, 1); }
+    36% { transform: scale(1.07, 0.93); }
+    38.5%, 56% { transform: scale(0.3, 0.3); }
+    61% { transform: scale(1.12, 1.04); }
+    64% { transform: scale(0.96, 1.03); }
+    66% { transform: scale(1, 1); }
+    67% { transform: scale(1.1, 0.9); }
+    68% { transform: scale(0.92, 1.08); }
+    70% { transform: scale(1.1, 0.9); }
+    72% { transform: scale(0.94, 1.06); }
+    74% { transform: scale(1.06, 0.94); }
+    77%, 100% { transform: scale(1, 1); }
+  }
+  @keyframes pl-look-you {
+    0% { transform: translate(0, 0); }
+    3%, 12% { transform: translate(3px, 1px); }
+    24%, 30% { transform: translate(0, -3px); }
+    33%, 74% { transform: translate(0, 0); }
+    77%, 88% { transform: translate(3px, 1px); }
+    94%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-eyes-you {
+    0%, 18% { transform: scale(1, 1); opacity: 1; }
+    19%, 29% { transform: scale(1, 1); opacity: 0; }
+    30%, 36% { transform: scale(1, 1); opacity: 1; }
+    37.5%, 59% { transform: scale(1, 1); opacity: 0; }
+    61%, 63% { transform: scale(1.35, 1.35); opacity: 1; }
+    66% { transform: scale(1, 1); opacity: 1; }
+    67%, 75% { transform: scale(1, 1); opacity: 0; }
+    76%, 91% { transform: scale(1, 1); opacity: 1; }
+    92.5% { transform: scale(1, 0.1); opacity: 1; }
+    94%, 100% { transform: scale(1, 1); opacity: 1; }
+  }
+  @keyframes pl-happy-you {
+    0%, 18% { opacity: 0; }
+    19%, 29% { opacity: 1; }
+    30%, 66% { opacity: 0; }
+    67%, 75% { opacity: 1; }
+    76%, 100% { opacity: 0; }
   }
 
-  @keyframes pair-loader-you {
-    0%, 30% { transform: translate(0, 0) scale(1); }
-    35% { transform: translate(-1px, 1px) scale(1.07, 0.93); }
-    42%, 46% { transform: translate(9px, 0) scale(0.3); }
-    50% { transform: translate(9px, -7px) scale(0.3); }
-    54%, 70% { transform: translate(9px, 0) scale(0.3); }
-    80% { transform: translate(0, -1px) scale(1.1, 1.05); }
-    86% { transform: translate(0, 0) scale(0.95, 1.03); }
-    92% { transform: translate(0, 0) scale(1.02, 0.99); }
-    97%, 100% { transform: translate(0, 0) scale(1); }
+  /* ——— Partner: calmer, a little shy ——— */
+  @keyframes pl-pos-partner {
+    0%, 18% { transform: translate(0, 0); }
+    19% { transform: translate(3px, 0); }
+    21% { transform: translate(0, 0); }
+    22.5% { transform: translate(0, -5px); }
+    24%, 34% { transform: translate(0, 0); }
+    38% { transform: translate(-9px, 0); }
+    45% { transform: translate(-9px, -7px); }
+    47% { transform: translate(-9px, 0); }
+    52% { transform: translate(-9px, -7px); }
+    54%, 56% { transform: translate(-9px, 0); }
+    62%, 77% { transform: translate(0, 0); }
+    79% { transform: translate(0, -12px); }
+    81.5%, 100% { transform: translate(0, 0); }
   }
-  @keyframes pair-loader-partner {
-    0%, 30% { transform: translate(0, 0) scale(1); }
-    35% { transform: translate(1px, 1px) scale(1.07, 0.93); }
-    42%, 58% { transform: translate(-9px, 0) scale(0.3); }
-    62% { transform: translate(-9px, -7px) scale(0.3); }
-    66%, 72% { transform: translate(-9px, 0) scale(0.3); }
-    82% { transform: translate(0, -1px) scale(1.1, 1.05); }
-    88% { transform: translate(0, 0) scale(0.95, 1.03); }
-    94% { transform: translate(0, 0) scale(1.02, 0.99); }
-    98%, 100% { transform: translate(0, 0) scale(1); }
+  @keyframes pl-body-partner {
+    0% { transform: rotate(0deg) scale(1, 1); }
+    8% { transform: rotate(0deg) scale(1.03, 0.97); }
+    14%, 18% { transform: rotate(0deg) scale(1, 1); }
+    19% { transform: rotate(0deg) scale(1.08, 0.92); }
+    21% { transform: rotate(0deg) scale(0.95, 1.05); }
+    22.5% { transform: rotate(0deg) scale(0.94, 1.06); }
+    24% { transform: rotate(0deg) scale(1.06, 0.94); }
+    26% { transform: rotate(-10deg) scale(1, 1); }
+    28% { transform: rotate(9deg) scale(1, 1); }
+    30% { transform: rotate(-5deg) scale(1, 1); }
+    32%, 34% { transform: rotate(0deg) scale(1, 1); }
+    36% { transform: rotate(0deg) scale(1.07, 0.93); }
+    38.5%, 56% { transform: rotate(0deg) scale(0.3, 0.3); }
+    62% { transform: rotate(0deg) scale(1.12, 1.04); }
+    65% { transform: rotate(0deg) scale(0.96, 1.03); }
+    68%, 76% { transform: rotate(0deg) scale(1, 1); }
+    77.5% { transform: rotate(0deg) scale(1.14, 0.86); }
+    79% { transform: rotate(0deg) scale(0.9, 1.1); }
+    81.5% { transform: rotate(0deg) scale(1.12, 0.88); }
+    84%, 100% { transform: rotate(0deg) scale(1, 1); }
   }
+  @keyframes pl-look-partner {
+    0%, 9% { transform: translate(0, 0); }
+    11%, 18% { transform: translate(-3px, 1px); }
+    24%, 30% { transform: translate(0, -3px); }
+    33%, 64% { transform: translate(0, 0); }
+    66%, 76% { transform: translate(-3px, 1px); }
+    80%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-eyes-partner {
+    0%, 5% { transform: scale(1, 1); opacity: 1; }
+    6% { transform: scale(1, 0.1); opacity: 1; }
+    7%, 19% { transform: scale(1, 1); opacity: 1; }
+    20%, 31% { transform: scale(1, 1); opacity: 0; }
+    32%, 36% { transform: scale(1, 1); opacity: 1; }
+    37.5%, 60% { transform: scale(1, 1); opacity: 0; }
+    62%, 64% { transform: scale(1.35, 1.35); opacity: 1; }
+    67%, 78.5% { transform: scale(1, 1); opacity: 1; }
+    79.5%, 88% { transform: scale(1, 1); opacity: 0; }
+    89%, 91% { transform: scale(1, 1); opacity: 1; }
+    92.5% { transform: scale(1, 0.1); opacity: 1; }
+    94%, 100% { transform: scale(1, 1); opacity: 1; }
+  }
+  @keyframes pl-happy-partner {
+    0%, 19% { opacity: 0; }
+    20%, 31% { opacity: 1; }
+    32%, 79% { opacity: 0; }
+    79.5%, 88% { opacity: 1; }
+    89%, 100% { opacity: 0; }
+  }
+
   @keyframes pair-loader-mid {
-    0%, 39% { transform: translate(0, 0) scale(0); }
-    45%, 52% { transform: translate(0, 0) scale(1); }
-    56% { transform: translate(0, -7px) scale(1); }
-    60%, 70% { transform: translate(0, 0) scale(1); }
-    76%, 100% { transform: translate(0, 0) scale(0); }
-  }
-  /* A glance at the partner, a blink, back; gone while they are dots. */
-  @keyframes pair-loader-eyes-you {
-    0%, 4% { transform: translate(0, 0) scaleY(1); opacity: 1; }
-    10%, 18% { transform: translate(3px, 1px) scaleY(1); }
-    20% { transform: translate(3px, 1px) scaleY(0.12); }
-    22%, 26% { transform: translate(3px, 1px) scaleY(1); }
-    31% { transform: translate(0, 0) scaleY(1); opacity: 1; }
-    36%, 80% { transform: translate(0, 0) scaleY(1); opacity: 0; }
-    88%, 100% { transform: translate(0, 0) scaleY(1); opacity: 1; }
-  }
-  @keyframes pair-loader-eyes-partner {
-    0%, 7% { transform: translate(0, 0) scaleY(1); opacity: 1; }
-    13%, 21% { transform: translate(-3px, 1px) scaleY(1); }
-    23% { transform: translate(-3px, 1px) scaleY(0.12); }
-    25%, 27% { transform: translate(-3px, 1px) scaleY(1); }
-    31% { transform: translate(0, 0) scaleY(1); opacity: 1; }
-    36%, 82% { transform: translate(0, 0) scaleY(1); opacity: 0; }
-    90%, 100% { transform: translate(0, 0) scaleY(1); opacity: 1; }
+    0%, 37% { transform: translate(0, 0) scale(0); }
+    40% { transform: translate(0, 0) scale(1); }
+    43% { transform: translate(0, -7px) scale(1); }
+    45% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(0, -7px) scale(1); }
+    52%, 56% { transform: translate(0, 0) scale(1); }
+    59%, 100% { transform: translate(0, 0) scale(0); }
   }
 }
 

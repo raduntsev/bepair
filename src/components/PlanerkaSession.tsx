@@ -4,13 +4,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, Check, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts';
-import { displayName } from '@/lib/words';
+import { displayName, verb } from '@/lib/words';
 import { fmt } from '@/lib/dates';
 import { QUESTIONS, SPHERES, type Comments, type QuestionKey, type Scores, type SphereKey } from '@/lib/planerka';
 import { type PlanTodo, type TodoStatus, usePlanerka } from '@/hooks/usePlanerka';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Segment } from '@/components/ui/Controls';
 import { Alert, Loading } from '@/components/ui/Blocks';
+import { Button } from '@/components/ui/Button';
+import { tr } from '@/lib/i18n';
 
 const EASE = [0.32, 0.72, 0, 1] as const;
 
@@ -54,7 +56,7 @@ function useAutosave<T>(server: T, save: (value: T) => Promise<void>, delay = 70
 function SaveMark({ saving, saved }: { saving: boolean; saved: boolean }) {
   return (
     <span aria-live="polite" className="text-footnote text-ink-faint">
-      {saving ? 'сохраняем…' : saved ? <Check className="inline size-4 text-accent" aria-label="Сохранено" /> : null}
+      {saving ? tr('сохраняем…', 'saving…') : saved ? <Check className="inline size-4 text-accent" aria-label={tr('Сохранено', 'Saved')} /> : null}
     </span>
   );
 }
@@ -109,18 +111,18 @@ function SphereComment({ label, value, onChange }: { label: string; value: strin
         className="tap -ml-1 mt-1 inline-flex items-center gap-1 rounded-lg px-1 text-footnote font-medium text-accent"
       >
         <Plus className="size-3.5" aria-hidden />
-        Почему так
+        {tr('Почему так', 'Why')}
       </button>
     );
   }
   return (
     <textarea
       ref={ref}
-      aria-label={`Почему так: ${label}`}
+      aria-label={tr(`Почему так: ${label}`, `Why: ${label}`)}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onBlur={() => setOpen(false)}
-      placeholder="Почему такая оценка"
+      placeholder={tr('Почему такая оценка', 'Why this score')}
       rows={1}
       className="mt-2 w-full resize-none rounded-xl border border-transparent bg-sunken px-3 py-2 text-subhead text-ink outline-none transition-[border-color,background-color,box-shadow] placeholder:text-ink-faint focus:border-accent focus:bg-surface focus:shadow-[0_0_0_3px_var(--c-accent-soft)]"
     />
@@ -221,10 +223,10 @@ function WheelStep({
 
       <section className="rounded-2xl bg-surface p-4 shadow-card">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-headline font-semibold">Что было на неделе</h3>
+          <h3 className="text-headline font-semibold">{tr('Что было на неделе', 'What happened this week')}</h3>
           <SaveMark saving={wheel.saving || why.saving || text.saving} saved={wheel.saved || why.saved || text.saved} />
         </div>
-        <AutoTextarea label="Заметка к колесу" value={text.value} onChange={text.change} placeholder="События, настроение, что повлияло" />
+        <AutoTextarea label={tr('Заметка к колесу', 'Wheel note')} value={text.value} onChange={text.change} placeholder={tr('События, настроение, что повлияло', 'Events, mood, what made a difference')} />
       </section>
     </div>
   );
@@ -294,7 +296,7 @@ function StatusDot({ status, onClick, label }: { status: TodoStatus; onClick: ()
     <button
       type="button"
       onClick={onClick}
-      aria-label={`${label}: ${status === 'done' ? 'сделано' : status === 'in_process' ? 'в процессе' : 'не начато'}`}
+      aria-label={`${label}: ${status === 'done' ? tr('сделано', 'done') : status === 'in_process' ? tr('в процессе', 'in progress') : tr('не начато', 'not started')}`}
       className="tap -m-2 flex shrink-0 items-center justify-center"
     >
       <span
@@ -334,12 +336,12 @@ function TodoRow({ todo, onUpdate, onRemove }: { todo: PlanTodo; onUpdate: (patc
           >
             <div className="flex items-start gap-2 pt-2 pl-10">
               <div className="min-w-0 flex-1">
-                <AutoTextarea label="Решение" value={decision.value} onChange={decision.change} placeholder="Решение" />
+                <AutoTextarea label={tr('Решение', 'Decision')} value={decision.value} onChange={decision.change} placeholder={tr('Решение', 'Decision')} />
               </div>
               <button
                 type="button"
                 onClick={onRemove}
-                aria-label="Удалить дело"
+                aria-label={tr('Удалить дело', 'Delete to-do')}
                 className="flex size-10 shrink-0 items-center justify-center rounded-full text-ink-faint hover:bg-sunken hover:text-danger"
               >
                 <Trash2 className="size-4.5" aria-hidden />
@@ -362,8 +364,8 @@ export function TodosBoard({ planerkaId }: { planerkaId: string | null }) {
 
   const ownerId = (o: typeof owner) => (o === 'me' ? (user?.id ?? null) : o === 'partner' ? (partner?.id ?? null) : null);
   const groups = [
-    { key: 'both', title: 'Общие', id: null as string | null },
-    { key: 'me', title: 'Мои', id: user?.id ?? null },
+    { key: 'both', title: tr('Общие', 'Shared'), id: null as string | null },
+    { key: 'me', title: tr('Мои', 'Mine'), id: user?.id ?? null },
     { key: 'partner', title: partnerName, id: partner?.id ?? null },
   ];
   const open = todos.filter((t) => t.status !== 'done');
@@ -384,24 +386,24 @@ export function TodosBoard({ planerkaId }: { planerkaId: string | null }) {
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Новое дело"
-            aria-label="Новое дело"
+            placeholder={tr('Новое дело', 'New to-do')}
+            aria-label={tr('Новое дело', 'New to-do')}
             className="h-11 min-w-0 flex-1 bg-transparent px-2.5 text-body text-ink outline-none placeholder:text-ink-faint"
           />
           <button
             type="submit"
             disabled={!text.trim()}
-            aria-label="Добавить"
+            aria-label={tr('Добавить', 'Add')}
             className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-opacity disabled:opacity-30"
           >
             <Plus className="size-5" aria-hidden />
           </button>
         </div>
         <Segment
-          legend="Чьё дело"
+          legend={tr('Чьё дело', 'Whose')}
           options={[
-            { value: 'both' as const, label: 'Общее' },
-            { value: 'me' as const, label: 'Моё' },
+            { value: 'both' as const, label: tr('Общее', 'Shared') },
+            { value: 'me' as const, label: tr('Моё', 'Mine') },
             { value: 'partner' as const, label: partnerName },
           ]}
           value={owner}
@@ -432,7 +434,7 @@ export function TodosBoard({ planerkaId }: { planerkaId: string | null }) {
             aria-expanded={showDone}
             className="tap flex items-center gap-1 px-1 text-subhead font-semibold text-ink-faint"
           >
-            Сделано · {done.length}
+            {tr('Сделано', 'Done')} · {done.length}
             <ChevronDown className={`size-4 transition-transform duration-300 ${showDone ? 'rotate-180' : ''}`} aria-hidden />
           </button>
           <AnimatePresence initial={false}>
@@ -456,13 +458,91 @@ export function TodosBoard({ planerkaId }: { planerkaId: string | null }) {
   );
 }
 
+/* ——— Закрыть свою часть ——— */
+
+/*
+  The session has no single end: each of you closes your own part when you are
+  done, and it leaves that person's «Сегодня». Closing is reversible — you can
+  open your part again and keep writing.
+*/
+function ClosePart({
+  isMine,
+  name,
+  gender,
+  closed,
+  other,
+  busy,
+  onToggle,
+}: {
+  isMine: boolean;
+  name: string;
+  gender: 'm' | 'f' | null;
+  closed: boolean;
+  other: { name: string; gender: 'm' | 'f' | null; closed: boolean; you: boolean } | null;
+  busy: boolean;
+  onToggle: (closed: boolean) => Promise<void>;
+}) {
+  const otherLine = other
+    ? other.you
+      ? other.closed
+        ? tr('Вы свою часть уже закрыли', 'You’ve closed your part')
+        : tr('Вы ещё заполняете', 'You’re still filling in')
+      : other.closed
+        ? tr(`${other.name} тоже ${verb(other.gender, 'закончил')}`, `${other.name} is done too`)
+        : tr(`${other.name} ещё заполняет`, `${other.name} is still filling in`)
+    : null;
+
+  return (
+    <section className="rounded-2xl bg-surface p-4 shadow-card">
+      <AnimatePresence mode="wait" initial={false}>
+        {closed ? (
+          <motion.div
+            key="closed"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.3, ease: EASE }}
+            className="flex items-center gap-3"
+          >
+            <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink">
+              <Check className="size-5" strokeWidth={2.6} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-body font-semibold">{isMine ? tr('Ваша часть закрыта', 'Your part is closed') : tr(`${name}: часть закрыта`, `${name}: part closed`)}</span>
+              {otherLine && <span className="block text-footnote text-ink-faint">{otherLine}</span>}
+            </span>
+            <Button variant="ghost" loading={busy} onClick={() => onToggle(false)}>
+              {tr('Открыть', 'Reopen')}
+            </Button>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="open"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.3, ease: EASE }}
+          >
+            <Button block size="lg" loading={busy} onClick={() => onToggle(true)}>
+              <Check className="size-5" aria-hidden />
+              {isMine ? tr(`Я ${verb(gender, 'закончил')}`, 'I’m done') : tr(`${name} ${verb(gender, 'закончил')}`, `${name} is done`)}
+            </Button>
+            {otherLine && <p className="mt-2 text-center text-footnote text-ink-faint">{otherLine}</p>}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
 /* ——— Сессия ——— */
 
 type Step = 'wheel' | 'questions' | 'todos';
 
 export function PlanerkaSession({ heldOn }: { heldOn: string }) {
-  const { user, partner } = useSpaceAuth();
-  const { planerkas, wheels, answers, isLoading, error, ensure, saveWheel, saveAnswer } = usePlanerka();
+  const { user, partner, profile } = useSpaceAuth();
+  const { planerkas, wheels, answers, isLoading, error, ensure, saveWheel, closePart, saveAnswer } = usePlanerka();
+  const [closing, setClosing] = useState(false);
   const [step, setStep] = useState<Step>('wheel');
   const [whose, setWhose] = useState<'me' | 'partner'>('me');
   const [planerkaId, setPlanerkaId] = useState<string | null>(null);
@@ -504,18 +584,18 @@ export function PlanerkaSession({ heldOn }: { heldOn: string }) {
     return null;
   };
 
-  if (isLoading || !id || !personId) return <Loading label="Открываем планёрку…" />;
+  if (isLoading || !id || !personId) return <Loading label={tr('Открываем планёрку…', 'Opening the check-in…')} />;
 
   return (
     <div className="space-y-4">
       {error && <Alert>{error}</Alert>}
 
       <Segment
-        legend="Шаг"
+        legend={tr('Шаг', 'Step')}
         options={[
-          { value: 'wheel' as const, label: 'Колесо' },
-          { value: 'questions' as const, label: 'Вопросы' },
-          { value: 'todos' as const, label: 'Дела' },
+          { value: 'wheel' as const, label: tr('Колесо', 'Wheel') },
+          { value: 'questions' as const, label: tr('Вопросы', 'Questions') },
+          { value: 'todos' as const, label: tr('Дела', 'To-dos') },
         ]}
         value={step}
         onChange={setStep}
@@ -523,12 +603,12 @@ export function PlanerkaSession({ heldOn }: { heldOn: string }) {
 
       {step !== 'todos' && partner && (
         <div className="flex items-center gap-3 px-1">
-          <span className="shrink-0 text-subhead text-ink-faint">Заполняет</span>
+          <span className="shrink-0 text-subhead text-ink-faint">{tr('Заполняет', 'Filling in')}</span>
           <div className="min-w-0 flex-1">
             <Segment
-              legend="Чьи ответы"
+              legend={tr('Чьи ответы', 'Whose answers')}
               options={[
-                { value: 'me' as const, label: 'Я' },
+                { value: 'me' as const, label: tr('Я', 'Me') },
                 { value: 'partner' as const, label: partnerName },
               ]}
               value={whose}
@@ -575,6 +655,29 @@ export function PlanerkaSession({ heldOn }: { heldOn: string }) {
           {step === 'todos' && <TodosBoard planerkaId={id} />}
         </motion.div>
       </AnimatePresence>
+
+      <ClosePart
+        isMine={whose === 'me'}
+        name={whose === 'me' ? tr('Я', 'Me') : partnerName}
+        gender={whose === 'me' ? (profile?.gender ?? null) : (partner?.gender ?? null)}
+        closed={!!wheel?.closed_at}
+        other={
+          partner
+            ? {
+                name: whose === 'me' ? partnerName : tr('Вы', 'You'),
+                gender: whose === 'me' ? (partner.gender ?? null) : (profile?.gender ?? null),
+                closed: !!wheels.find((w) => w.planerka_id === id && w.user_id === (whose === 'me' ? partner.id : user?.id))?.closed_at,
+                you: whose !== 'me',
+              }
+            : null
+        }
+        busy={closing}
+        onToggle={async (next) => {
+          setClosing(true);
+          await closePart(id, personId, next);
+          setClosing(false);
+        }}
+      />
     </div>
   );
 }

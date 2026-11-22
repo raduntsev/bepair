@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import supabase from '@/lib/supabase';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { tr } from '@/lib/i18n';
 
 export interface Reminders {
   remind_morning: boolean;
@@ -62,7 +63,7 @@ export function useReminders() {
       const { error: writeError } = await supabase.from('profiles').update(patch).eq('id', user.id);
       if (writeError) {
         setValue(previous);
-        setError('Не получилось сохранить. Попробуйте ещё раз.');
+        setError(tr('Не получилось сохранить. Попробуйте ещё раз.', 'Couldn’t save. Please try again.'));
         return false;
       }
       return true;

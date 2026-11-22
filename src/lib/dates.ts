@@ -1,5 +1,8 @@
 import { differenceInCalendarDays, format, parseISO } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { enUS, ru } from 'date-fns/locale';
+import { getLang, tr } from '@/lib/i18n';
+
+const locale = () => (getLang() === 'en' ? enUS : ru);
 
 /* The local calendar date, which is what "today" means to the person holding the phone. */
 export function todayISO(date: Date = new Date()) {
@@ -29,7 +32,21 @@ export function sentence(text: string) {
 
 export function fmt(value: string | Date, pattern: string) {
   const date = typeof value === 'string' ? parseISO(value) : value;
-  return format(date, pattern, { locale: ru });
+  return format(date, getLang() === 'en' ? toEnglish(pattern) : pattern, { locale: locale() });
+}
+
+/* Russian puts the day first («5 августа»); English the month («August 5»). */
+function toEnglish(pattern: string) {
+  return pattern
+    .replace(/^d MMMM yyyy$/, 'MMMM d, yyyy')
+    .replace(/^d MMMM$/, 'MMMM d')
+    .replace(/^d MMM yyyy$/, 'MMM d, yyyy')
+    .replace(/^d MMM$/, 'MMM d')
+    .replace(/^EEEE, d MMMM yyyy$/, 'EEEE, MMMM d, yyyy')
+    .replace(/^EEEE, d MMMM$/, 'EEEE, MMMM d')
+    .replace(/^EEE, d MMMM$/, 'EEE, MMMM d')
+    .replace(/^EEEEEE, d MMMM$/, 'EEEEEE, MMMM d')
+    .replace(/^d MMMM, HH:mm$/, 'MMMM d, HH:mm');
 }
 
 export function longDate(value: string | Date) {
@@ -41,8 +58,8 @@ export function relativeStamp(value: string) {
   const date = parseISO(value);
   const days = differenceInCalendarDays(new Date(), date);
   if (days === 0) return format(date, 'HH:mm');
-  if (days === 1) return `вчера, ${format(date, 'HH:mm')}`;
-  return format(date, 'd MMMM, HH:mm', { locale: ru });
+  if (days === 1) return `${tr('вчера', 'yesterday')}, ${format(date, 'HH:mm')}`;
+  return fmt(date, 'd MMMM, HH:mm');
 }
 
 export function plural(n: number, one: string, few: string, many: string) {
@@ -53,14 +70,16 @@ export function plural(n: number, one: string, few: string, many: string) {
   return many;
 }
 
-export const points = (n: number) => `${n} ${plural(n, 'балл', 'балла', 'баллов')}`;
-export const daysWord = (n: number) => plural(n, 'день', 'дня', 'дней');
+export const points = (n: number) => tr(`${n} ${plural(n, 'балл', 'балла', 'баллов')}`, `${n} ${n === 1 ? 'point' : 'points'}`);
+export const daysWord = (n: number) => tr(plural(n, 'день', 'дня', 'дней'), n === 1 ? 'day' : 'days');
+/* «3 дня» / «3 days». */
+export const days = (n: number) => `${n} ${daysWord(n)}`;
 
 /* The partner's wall clock, for couples who live apart. */
 export function timeIn(timezone: string | null | undefined) {
   if (!timezone) return null;
   try {
-    return new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: timezone }).format(
+    return new Intl.DateTimeFormat(getLang() === 'en' ? 'en-GB' : 'ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: timezone }).format(
       new Date(),
     );
   } catch {

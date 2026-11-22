@@ -1,16 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, Check, ChevronRight, GraduationCap, Heart, LayoutGrid, Lock, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import Link from 'next/link';
+import { differenceInCalendarDays, parseISO } from 'date-fns';
+import { Bell, Check, ChevronRight, GraduationCap, Images, LayoutGrid, Lock, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import { displayName } from '@/lib/words';
+import { plural, todayISO } from '@/lib/dates';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
-import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Field';
 import { Segment } from '@/components/ui/Controls';
-import { Card, LinkRow, Page, PageHeader, RowGroup, RowIcon, SectionHeader } from '@/components/ui/Blocks';
-import { useTour } from '@/components/Tour';
+import { Card, LinkRow, Page, RowGroup, RowIcon, SectionHeader } from '@/components/ui/Blocks';
 import { InviteCard } from '@/components/InviteCard';
+import { Avatar, AvatarPicker } from '@/components/Avatar';
+import { useTour } from '@/components/Tour';
+import { chooseLang, savedLang, tr } from '@/lib/i18n';
 
 type ThemeChoice = 'system' | 'light' | 'dark';
 
@@ -23,17 +26,24 @@ function readTheme(): ThemeChoice {
   }
 }
 
+/*
+  Профиль reads top to bottom as three questions: who am I here (photo, name,
+  how to address me), who are we (the pair, one tap into it), and how does the
+  app behave (grouped settings). Notifications are not here any more — the feed
+  is the bell on «Сегодня»; only «what to send» stays, as a setting.
+*/
 export default function SettingsPage() {
-  const { profile, partner, updateProfile, signOut } = useSpaceAuth();
-  const { unread } = useNotifications();
+  const { profile, partner, settings, updateProfile, signOut } = useSpaceAuth();
   const tour = useTour();
 
   const [name, setName] = useState(profile?.display_name ?? '');
   const [savedName, setSavedName] = useState(false);
   const [theme, setTheme] = useState<ThemeChoice>('system');
+  const [lang, setLang] = useState<'auto' | 'ru' | 'en'>('auto');
 
   useEffect(() => {
     setTheme(readTheme());
+    setLang(savedLang() ?? 'auto');
   }, []);
 
   const applyTheme = (choice: ThemeChoice) => {
@@ -52,91 +62,124 @@ export default function SettingsPage() {
     if (await updateProfile({ display_name: next })) setSavedName(true);
   };
 
-  /*
-    The profile is one list, in the order people look for things: who you are
-    together, what happened, then how the app behaves. No captions — each row
-    says what it is.
-  */
+  const partnerName = displayName(partner?.display_name);
+  const together = settings?.together_since ? differenceInCalendarDays(parseISO(todayISO()), parseISO(settings.together_since)) + 1 : null;
+
   return (
     <Page width="form">
-      <PageHeader title="Профиль" />
+      <h1 className="sr-only">{tr('Профиль', 'Profile')}</h1>
+
+      {/* Вы */}
+      <section className="flex flex-col items-center pt-2 pb-6">
+        <AvatarPicker className="size-24 text-title-1" />
+        <form
+          className="mt-4 flex w-full max-w-xs items-center justify-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            saveName();
+          }}
+        >
+          <input
+            aria-label={tr('Ваше имя', 'Your name')}
+            autoComplete="given-name"
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              setSavedName(false);
+            }}
+            onBlur={saveName}
+            className="min-w-0 flex-1 rounded-xl bg-transparent px-2 py-1 text-center text-title-2 font-bold text-ink outline-none transition-colors hover:bg-sunken focus:bg-sunken"
+          />
+        </form>
+        <Check
+          className={`-mt-1 size-4 text-accent transition-opacity duration-500 ${savedName ? 'opacity-100' : 'opacity-0'}`}
+          aria-label={savedName ? tr('Сохранено', 'Saved') : undefined}
+        />
+        <div className="mt-2 w-full max-w-xs">
+          <Segment
+            legend={tr('Как о вас писать', 'How to address you')}
+            options={[
+              { value: 'f' as const, label: tr('Она', 'She') },
+              { value: 'm' as const, label: tr('Он', 'He') },
+            ]}
+            value={profile?.gender ?? null}
+            onChange={(gender) => updateProfile({ gender })}
+          />
+        </div>
+      </section>
 
       <div className="space-y-3">
-        <div data-tour="profile-pair">
-        <RowGroup label="Вы вдвоём">
-          <LinkRow href="/couple" Icon={Heart} tone="partner" title={partner ? `Вы и ${displayName(partner.display_name)}` : 'Пара'} />
-          <LinkRow href="/notifications" Icon={Bell} title="Уведомления" badge={unread || undefined} />
-        </RowGroup>
-        </div>
-
-        {!partner && <InviteCard />}
-
-        <SectionHeader title="Вы" />
-        <Card>
-          <form
-            className="flex items-center gap-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              saveName();
-            }}
+        {/* Вы вдвоём */}
+        {partner ? (
+          <Link
+            href="/couple"
+            data-tour="profile-pair"
+            className="flex items-center gap-4 rounded-2xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken"
           >
-            <RowIcon Icon={UserRound} />
-            <Input
-              aria-label="Ваше имя"
-              autoComplete="given-name"
-              value={name}
-              onChange={(event) => {
-                setName(event.target.value);
-                setSavedName(false);
-              }}
-              onBlur={saveName}
-              className="min-w-0 flex-1"
-            />
-            <Check
-              className={`size-5 shrink-0 text-accent transition-opacity duration-500 ${savedName ? 'opacity-100' : 'opacity-0'}`}
-              aria-label={savedName ? 'Сохранено' : undefined}
-            />
-          </form>
-
-          <div className="mt-4">
-            <Segment
-              legend="Как о вас писать"
-              options={[
-                { value: 'f' as const, label: 'Я женщина' },
-                { value: 'm' as const, label: 'Я мужчина' },
-              ]}
-              value={profile?.gender ?? null}
-              onChange={(gender) => updateProfile({ gender })}
-            />
+            <span className="flex shrink-0">
+              <Avatar path={profile?.avatar_url} name={profile?.display_name ?? ''} who="me" className="size-12 text-headline ring-2 ring-surface" />
+              <Avatar path={partner.avatar_url} name={partnerName} who="partner" className="-ml-3 size-12 text-headline ring-2 ring-surface" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-headline font-semibold">{tr(`Вы и ${partnerName}`, `You and ${partnerName}`)}</span>
+              <span className="block text-footnote text-ink-faint">
+                {together && together > 0
+                  ? tr(`вместе ${together} ${plural(together, 'день', 'дня', 'дней')}`, `together ${together} ${together === 1 ? 'day' : 'days'}`)
+                  : tr('профиль пары, даты, ответы', 'your couple, dates, answers')}
+              </span>
+            </span>
+            <ChevronRight className="size-5 shrink-0 text-line-strong" strokeWidth={2.2} aria-hidden />
+          </Link>
+        ) : (
+          <div data-tour="profile-pair">
+            <InviteCard />
           </div>
-        </Card>
+        )}
 
-        <SectionHeader title="Оформление" />
-        <Card>
-          <Segment
-            legend="Тема"
-            options={[
-              { value: 'system' as const, label: 'Авто', Icon: Monitor },
-              { value: 'light' as const, label: 'Светлая', Icon: Sun },
-              { value: 'dark' as const, label: 'Тёмная', Icon: Moon },
-            ]}
-            value={theme}
-            onChange={applyTheme}
-          />
-        </Card>
+        <SectionHeader title={tr('Приложение', 'App')} />
+        <div data-tour="profile-settings" className="space-y-3">
+          <Card>
+            <Segment
+              legend={tr('Тема', 'Theme')}
+              options={[
+                { value: 'system' as const, label: tr('Авто', 'Auto'), Icon: Monitor },
+                { value: 'light' as const, label: tr('Светлая', 'Light'), Icon: Sun },
+                { value: 'dark' as const, label: tr('Тёмная', 'Dark'), Icon: Moon },
+              ]}
+              value={theme}
+              onChange={applyTheme}
+            />
+            <div className="mt-3">
+              <Segment
+                legend={tr('Язык', 'Language')}
+                options={[
+                  { value: 'auto' as const, label: tr('Как в телефоне', 'Phone’s') },
+                  { value: 'ru' as const, label: 'Русский' },
+                  { value: 'en' as const, label: 'English' },
+                ]}
+                value={lang}
+                onChange={(next) => {
+                  setLang(next);
+                  chooseLang(next === 'auto' ? null : next);
+                }}
+              />
+            </div>
+          </Card>
+          <RowGroup label={tr('Приложение', 'App')}>
+            <LinkRow href="/notifications/settings" Icon={Bell} title={tr('Уведомления', 'Notifications')} />
+            <LinkRow href="/settings/widgets" Icon={LayoutGrid} title={tr('Виджеты', 'Widgets')} />
+            <LinkRow href="/album" Icon={Images} tone="partner" title={tr('Фото для виджета', 'Photos for the widget')} />
+          </RowGroup>
 
-        <SectionHeader title="Настройки" />
-        <div data-tour="profile-settings">
-        <RowGroup label="Настройки">
-          <LinkRow href="/settings/paired" Icon={Lock} title="Парные" />
-          <LinkRow href="/settings/personal" Icon={UserRound} title="Личные и данные" />
-          <LinkRow href="/notifications/settings" Icon={Bell} title="Что присылать" />
-          <LinkRow href="/settings/widgets" Icon={LayoutGrid} title="Виджеты" />
-        </RowGroup>
+          <SectionHeader title={tr('Пара и данные', 'Couple and data')} />
+          <RowGroup label={tr('Пара и данные', 'Couple and data')}>
+            <LinkRow href="/settings/paired" Icon={Lock} tone="partner" title={tr('Парные настройки', 'Shared settings')} />
+            <LinkRow href="/settings/personal" Icon={UserRound} tone="neutral" title={tr('Личные и данные', 'Personal and data')} />
+          </RowGroup>
         </div>
 
         <div data-tour="profile-tour" className="pt-3">
-          <RowGroup label="Помощь">
+          <RowGroup label={tr('Помощь', 'Help')}>
             <li>
               <button
                 type="button"
@@ -144,7 +187,7 @@ export default function SettingsPage() {
                 className="flex min-h-13 w-full items-center gap-3.5 px-4 py-2.5 text-left transition-colors hover:bg-sunken focus-visible:bg-sunken active:bg-sunken"
               >
                 <RowIcon Icon={GraduationCap} tone="neutral" />
-                <span className="min-w-0 flex-1 text-body text-ink">Обучение</span>
+                <span className="min-w-0 flex-1 text-body text-ink">{tr('Обучение', 'Tour')}</span>
                 <ChevronRight className="size-5 shrink-0 text-line-strong" strokeWidth={2.2} aria-hidden />
               </button>
             </li>
@@ -153,7 +196,7 @@ export default function SettingsPage() {
 
         <div className="pt-6">
           <Button variant="danger" block onClick={signOut}>
-            <LogOut className="size-4" aria-hidden /> Выйти
+            <LogOut className="size-4" aria-hidden /> {tr('Выйти', 'Sign out')}
           </Button>
         </div>
       </div>

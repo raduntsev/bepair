@@ -24,6 +24,7 @@ public final class WidgetRenderer {
         for (int id : manager.getAppWidgetIds(new ComponentName(context, CoupleWidgetProvider.class))) {
             manager.updateAppWidget(id, render(context, true));
         }
+        PhotoRenderer.updateAll(context);
         /* The lock-screen line reads the same snapshot, so it changes with the widgets. */
         LockStatus.update(context);
     }
@@ -36,7 +37,8 @@ public final class WidgetRenderer {
     public static boolean hasAnyWidget(Context context) {
         AppWidgetManager manager = AppWidgetManager.getInstance(context);
         return manager.getAppWidgetIds(new ComponentName(context, DayWidgetProvider.class)).length > 0
-            || manager.getAppWidgetIds(new ComponentName(context, CoupleWidgetProvider.class)).length > 0;
+            || manager.getAppWidgetIds(new ComponentName(context, CoupleWidgetProvider.class)).length > 0
+            || PhotoRenderer.ids(context).length > 0;
     }
 
     /* vpare://day opens the app on that screen; MainActivity hands it to the web app. */

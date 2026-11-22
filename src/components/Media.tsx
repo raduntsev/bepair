@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ExternalLink, FileText, ImageIcon, Mic, Music, Square, Trash2 } from 'lucide-react';
 import { signedUrl, type MediaItem } from '@/lib/media';
 import { Button } from '@/components/ui/Button';
+import { tr } from '@/lib/i18n';
 
 export function useSignedUrl(path: string | null | undefined) {
   const [url, setUrl] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export function StoredAudio({ path, label }: { path: string; label: string }) {
       {url ? (
         <audio src={url} controls preload="metadata" aria-label={label} className="h-10 w-full min-w-0" />
       ) : (
-        <span className="text-sm text-ink-faint">Загружаем запись…</span>
+        <span className="text-sm text-ink-faint">{tr('Загружаем запись…', 'Loading the recording…')}</span>
       )}
     </div>
   );
@@ -47,8 +48,8 @@ export function StoredAudio({ path, label }: { path: string; label: string }) {
 
 export function StoredMedia({ item }: { item: MediaItem }) {
   const url = useSignedUrl(item.path);
-  if (item.kind === 'image') return <StoredImage path={item.path} alt={item.name ?? 'Снимок'} className="max-h-96 w-full rounded-xl" />;
-  if (item.kind === 'voice' || item.kind === 'audio') return <StoredAudio path={item.path} label={item.name ?? 'Голосовое'} />;
+  if (item.kind === 'image') return <StoredImage path={item.path} alt={item.name ?? tr('Снимок', 'Photo')} className="max-h-96 w-full rounded-xl" />;
+  if (item.kind === 'voice' || item.kind === 'audio') return <StoredAudio path={item.path} label={item.name ?? tr('Голосовое', 'Voice note')} />;
   if (item.kind === 'video') {
     return url ? (
       <video src={url} controls preload="metadata" className="max-h-96 w-full rounded-xl bg-sunken" />
@@ -63,7 +64,7 @@ export function StoredMedia({ item }: { item: MediaItem }) {
       rel="noreferrer"
       className="flex items-center gap-2 rounded-xl bg-sunken px-3.5 py-3 text-sm font-medium text-ink hover:underline"
     >
-      <FileText className="size-4.5 text-ink-soft" aria-hidden /> {item.name ?? 'Файл'}
+      <FileText className="size-4.5 text-ink-soft" aria-hidden /> {item.name ?? tr('Файл', 'File')}
     </a>
   );
 }
@@ -71,12 +72,12 @@ export function StoredMedia({ item }: { item: MediaItem }) {
 function serviceOf(url: string) {
   try {
     const host = new URL(url).hostname.replace(/^www\./, '');
-    if (host.includes('music.yandex')) return 'Яндекс Музыка';
+    if (host.includes('music.yandex')) return tr('Яндекс Музыка', 'Yandex Music');
     if (host.includes('spotify')) return 'Spotify';
     if (host.includes('music.apple')) return 'Apple Music';
     if (host.includes('youtube') || host === 'youtu.be') return 'YouTube';
-    if (host.includes('vk.com') || host.includes('vk.ru')) return 'VK Музыка';
-    if (host.includes('zvuk')) return 'Звук';
+    if (host.includes('vk.com') || host.includes('vk.ru')) return tr('VK Музыка', 'VK Music');
+    if (host.includes('zvuk')) return tr('Звук', 'Zvuk');
     return host;
   } catch {
     return null;
@@ -99,14 +100,14 @@ export function TrackCard({
     <div className="flex items-center gap-3 rounded-xl bg-sunken py-2 pr-2 pl-3.5">
       <Music className="size-4.5 shrink-0 text-ink-soft" aria-hidden />
       <a href={url} target="_blank" rel="noreferrer" className="group min-w-0 flex-1 py-1">
-        <span className="block truncate text-sm font-medium text-ink group-hover:underline">{title || 'Трек'}</span>
+        <span className="block truncate text-sm font-medium text-ink group-hover:underline">{title || tr('Трек', 'Track')}</span>
         <span className="block truncate text-xs text-ink-faint">{[artist, service].filter(Boolean).join(', ')}</span>
       </a>
       {onRemove ? (
         <button
           type="button"
           onClick={onRemove}
-          aria-label="Убрать трек"
+          aria-label={tr('Убрать трек', 'Remove track')}
           className="tap flex items-center justify-center rounded-lg text-ink-faint hover:bg-surface hover:text-ink"
         >
           <Trash2 className="size-4" aria-hidden />
@@ -168,7 +169,7 @@ export function VoiceRecorder({ onRecorded }: { onRecorded: (blob: Blob, ms: num
       setElapsed(0);
       timer.current = window.setInterval(() => setElapsed(Date.now() - started.current), 250);
     } catch {
-      setError('Нет доступа к микрофону. Разрешите его в настройках браузера.');
+      setError(tr('Нет доступа к микрофону. Разрешите его в настройках браузера.', 'No access to the microphone. Allow it in browser settings.'));
     }
   };
 
@@ -182,11 +183,11 @@ export function VoiceRecorder({ onRecorded }: { onRecorded: (blob: Blob, ms: num
     <div>
       {recording ? (
         <Button variant="danger" onClick={stop}>
-          <Square className="size-3.5 fill-current" aria-hidden /> Остановить, {formatDuration(elapsed)}
+          <Square className="size-3.5 fill-current" aria-hidden /> {tr('Остановить', 'Stop')}, {formatDuration(elapsed)}
         </Button>
       ) : (
         <Button variant="secondary" onClick={start}>
-          <Mic className="size-4" aria-hidden /> Голос
+          <Mic className="size-4" aria-hidden /> {tr('Голос', 'Voice')}
         </Button>
       )}
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}

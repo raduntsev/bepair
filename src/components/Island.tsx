@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { CalendarDays, ChevronUp, ListChecks, MessageCircle, PenLine, Sun, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { tr } from '@/lib/i18n';
 
 /*
   The island. One black shape at the bottom of every screen — the only
@@ -35,11 +36,11 @@ export interface Destination {
   to each other, what did we ask of each other, when, and who are we.
 */
 export const DESTINATIONS: Destination[] = [
-  { href: '/day', label: 'Сегодня', Icon: Sun },
-  { href: '/messages', label: 'Переписка', Icon: MessageCircle, also: ['/letters', '/chronicle', '/ping'] },
-  { href: '/tasks', label: 'Просьбы', Icon: ListChecks, also: ['/store'] },
-  { href: '/calendar', label: 'Календарь', Icon: CalendarDays, also: ['/planerka'] },
-  { href: '/settings', label: 'Профиль', Icon: UserRound, also: ['/couple', '/notifications'] },
+  { href: '/day', label: tr('Сегодня', 'Today'), Icon: Sun, also: ['/notifications'] },
+  { href: '/messages', label: tr('Переписка', 'Messages'), Icon: MessageCircle, also: ['/letters', '/chronicle', '/ping'] },
+  { href: '/tasks', label: tr('Просьбы', 'Requests'), Icon: ListChecks, also: ['/store'] },
+  { href: '/calendar', label: tr('Календарь', 'Calendar'), Icon: CalendarDays, also: ['/planerka'] },
+  { href: '/settings', label: tr('Профиль', 'Profile'), Icon: UserRound, also: ['/couple', '/album'] },
 ];
 
 const COMPOSE = '/ping';
@@ -218,7 +219,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
       </AnimatePresence>
 
       <nav
-        aria-label="Разделы"
+        aria-label={tr('Разделы', 'Sections')}
         className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex items-end justify-center gap-2"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
       >
@@ -257,13 +258,13 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
                 <here.Icon className="size-5" strokeWidth={2} aria-hidden />
                 {unread > 0 && (
                   <span className="absolute top-0.5 right-0.5 size-2.5 rounded-full bg-[#5856d6] ring-2 ring-island">
-                    <span className="sr-only">есть новые уведомления</span>
+                    <span className="sr-only">{tr('есть новые уведомления', 'new notifications')}</span>
                   </span>
                 )}
               </span>
               <span className="text-subhead font-semibold">{here.label}</span>
               <ChevronUp className="size-4 text-island-soft" strokeWidth={2.4} aria-hidden />
-              <span className="sr-only">— открыть разделы</span>
+              <span className="sr-only">{tr('— открыть разделы', '— open sections')}</span>
             </button>
           </motion.div>
 
@@ -281,7 +282,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
             <ul className="flex flex-col gap-0.5">
               {DESTINATIONS.map(({ href, label, Icon }) => {
                 const active = here.href === href;
-                const badge = href === '/settings' && unread > 0;
+                const badge = href === '/day' && unread > 0;
                 return (
                   <li key={href}>
                     <Link
@@ -301,7 +302,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
                       {badge && (
                         <span className="min-w-6 rounded-full bg-[#5856d6] px-2 text-center text-footnote leading-6 font-semibold text-white">
                           {unread > 9 ? '9+' : unread}
-                          <span className="sr-only"> новых</span>
+                          <span className="sr-only">{tr(' новых', ' new')}</span>
                         </span>
                       )}
                     </Link>
@@ -328,7 +329,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
         >
           <Link
             href={COMPOSE}
-            aria-label="Написать партнёру"
+            aria-label={tr('Написать партнёру', 'Write to your partner')}
             data-tour="compose"
             className="flex size-13 items-center justify-center rounded-full bg-[#5856d6] text-white transition-[filter] duration-300 hover:brightness-110"
             style={{ boxShadow: 'var(--sh-island)' }}

@@ -6,14 +6,15 @@ import { motion } from 'framer-motion';
 import supabase from '@/lib/supabase';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { plural } from '@/lib/dates';
+import { tr } from '@/lib/i18n';
 
 /*
   «Просьбы» and «Услуги» are one mechanic — ask, do, earn, spend — so they are
   one section with two tabs, and the balance that ties them sits over both.
 */
 const TABS = [
-  { href: '/tasks', label: 'Просьбы' },
-  { href: '/store', label: 'Услуги' },
+  { href: '/tasks', label: tr('Просьбы', 'Requests') },
+  { href: '/store', label: tr('Услуги', 'Favours') },
 ];
 
 function useBalance(given?: number) {
@@ -43,16 +44,16 @@ export function ExchangeHeader({ current, balance }: { current: '/tasks' | '/sto
   return (
     <header className="mb-6">
       <div className="flex items-end justify-between gap-4">
-        <h1 className="text-large-title font-bold">Просьбы</h1>
+        <h1 className="text-large-title font-bold">{tr('Просьбы', 'Requests')}</h1>
         {value !== null && (
           <p className="flex items-baseline gap-1 rounded-full bg-accent-soft px-3.5 py-1.5 text-accent-soft-ink" role="status">
             <span className="text-headline font-semibold tabular-nums">{value}</span>
-            <span className="text-footnote">{plural(value, 'балл', 'балла', 'баллов')}</span>
+            <span className="text-footnote">{tr(plural(value, 'балл', 'балла', 'баллов'), value === 1 ? 'point' : 'points')}</span>
           </p>
         )}
       </div>
 
-      <nav aria-label="Просьбы и услуги" data-tour="exchange-tabs" className="mt-4 flex rounded-xl bg-sunken p-1">
+      <nav aria-label={tr('Просьбы и услуги', 'Requests and favours')} data-tour="exchange-tabs" className="mt-4 flex rounded-xl bg-sunken p-1">
         {TABS.map(({ href, label }) => {
           const active = href === current;
           return (

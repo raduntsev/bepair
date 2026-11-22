@@ -1,4 +1,5 @@
 import { genitive, verb, type Gender } from './words';
+import { getLang, trIn, type Lang } from './i18n';
 
 /*
   One wording for the in-app feed and for system push. Every line reports a
@@ -26,50 +27,68 @@ export interface NoticeLike {
   payload: Record<string, unknown> | null;
 }
 
-export const PAIRED_LABELS: Record<string, string> = {
-  reveal_first: 'Сначала свой день',
-  chronicle_deletable: 'Удалять свои записи',
-  long_distance: 'Мы на расстоянии',
-  count_streak: 'Считать серию',
+export const PAIRED_LABELS: Record<string, [string, string]> = {
+  reveal_first: ['Сначала свой день', 'Your day first'],
+  chronicle_deletable: ['Удалять свои записи', 'Delete own entries'],
+  long_distance: ['Мы на расстоянии', 'We live apart'],
+  count_streak: ['Считать серию', 'Count the run'],
 };
 
-export function noticeText(notice: NoticeLike, actor: string, gender: Gender) {
+export function pairedLabel(key: string, lang: Lang = getLang()) {
+  const pair = PAIRED_LABELS[key];
+  return pair ? trIn(lang, pair[0], pair[1]) : trIn(lang, 'парную настройку', 'a shared setting');
+}
+
+/* The language is the reader's: the app's own, or the recipient's for push. */
+export function noticeText(notice: NoticeLike, actor: string, gender: Gender, lang: Lang = getLang()) {
   const p = notice.payload ?? {};
-  const quoted = (key: string) => (typeof p[key] === 'string' && p[key] ? `«${p[key]}»` : '');
+  const raw = (key: string) => (typeof p[key] === 'string' && p[key] ? String(p[key]) : '');
+  const ru = (key: string) => (raw(key) ? `«${raw(key)}»` : '');
+  const en = (key: string) => (raw(key) ? `“${raw(key)}”` : '');
+  const t = (ruText: string, enText: string) => trIn(lang, ruText, enText);
 
   switch (notice.kind) {
     case 'ping':
-      return `${actor} ${verb(gender, 'прислал')} весточку`;
+      return t(`${actor} ${verb(gender, 'прислал')} весточку`, `${actor} sent you a note`);
     case 'day':
-      return `${actor} ${verb(gender, 'отметил')} день`;
+      return t(`${actor} ${verb(gender, 'отметил')} день`, `${actor} marked the day`);
     case 'task_new':
-      return `${actor} ${verb(gender, 'попросил')}: ${quoted('content')}`;
+      return t(`${actor} ${verb(gender, 'попросил')}: ${ru('content')}`, `${actor} asked: ${en('content')}`);
     case 'task_done':
-      return `${actor} ${verb(gender, 'выполнил')} ${quoted('content')}`;
+      return t(`${actor} ${verb(gender, 'выполнил')} ${ru('content')}`, `${actor} did ${en('content')}`);
     case 'task_seen':
-      return `${actor} ${verb(gender, 'увидел')}, что вы сделали ${quoted('content')}`;
+      return t(`${actor} ${verb(gender, 'увидел')}, что вы сделали ${ru('content')}`, `${actor} saw that you did ${en('content')}`);
     case 'letter':
-      return `${actor} ${verb(gender, 'отправил')} письмо`;
+      return t(`${actor} ${verb(gender, 'отправил')} письмо`, `${actor} sent you a letter`);
     case 'service':
-      return `${actor} ${verb(gender, 'попросил')} об услуге ${quoted('title')}`;
+      return t(`${actor} ${verb(gender, 'попросил')} об услуге ${ru('title')}`, `${actor} asked for ${en('title')}`);
     case 'paired_proposal': {
-      const label = PAIRED_LABELS[String(p.key)] ?? 'парную настройку';
-      return `${actor} ${verb(gender, 'предложил')} ${p.value ? 'включить' : 'выключить'} «${label}»`;
+      const label = pairedLabel(String(p.key), lang);
+      return t(
+        `${actor} ${verb(gender, 'предложил')} ${p.value ? 'включить' : 'выключить'} «${label}»`,
+        `${actor} suggests turning ${p.value ? 'on' : 'off'} “${label}”`,
+      );
     }
     case 'paired_answer': {
-      const label = PAIRED_LABELS[String(p.key)] ?? 'парную настройку';
+      const label = pairedLabel(String(p.key), lang);
       return p.accepted
-        ? `${actor} ${verb(gender, 'согласился')}: «${label}» ${p.value ? 'включено' : 'выключено'}`
-        : `${actor} ${verb(gender, 'оставил')} «${label}» как было`;
+        ? t(
+            `${actor} ${verb(gender, 'согласился')}: «${label}» ${p.value ? 'включено' : 'выключено'}`,
+            `${actor} agreed: “${label}” is ${p.value ? 'on' : 'off'}`,
+          )
+        : t(`${actor} ${verb(gender, 'оставил')} «${label}» как было`, `${actor} kept “${label}” as it was`);
     }
     case 'joined':
-      return `${actor} ${verb(gender, 'присоединился')} к пространству`;
+      return t(`${actor} ${verb(gender, 'присоединился')} к пространству`, `${actor} joined your space`);
     case 'remind_morning':
-      return `Вчерашний день ${actor === 'Партнёр' ? 'партнёра' : genitive(actor, gender)} ждёт вас — вы его ещё не открывали`;
+      return t(
+        `Вчерашний день ${actor === 'Партнёр' ? 'партнёра' : genitive(actor, gender)} ждёт вас — вы его ещё не открывали`,
+        `${actor === 'Partner' ? 'Your partner’s' : `${actor}’s`} yesterday is waiting — you haven’t opened it yet`,
+      );
     case 'remind_evening':
-      return 'Вечер. Можно отметить, как прошёл день';
+      return t('Вечер. Можно отметить, как прошёл день', 'Evening. Time to mark how the day went');
     default:
-      return 'Новое событие';
+      return t('Новое событие', 'Something new');
   }
 }
 

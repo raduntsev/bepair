@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import WidgetKit
 
 /// The server's snapshot (src/lib/widgetSnapshot.ts). Every sentence arrives
@@ -159,6 +160,124 @@ struct Provider: TimelineProvider {
             let soon = now.addingTimeInterval(20 * 60)
             let midnight = Calendar.current.nextDate(after: now, matching: DateComponents(hour: 0, minute: 1), matchingPolicy: .nextTime) ?? soon
             completion(Timeline(entries: [DayEntry(date: now, state: state)], policy: .after(min(soon, midnight))))
+        }
+    }
+}
+
+// MARK: - «Фото»
+
+/// The photo the «Фото» widget shows: one JPEG in the App Group container plus
+/// the server's ETag (the photo's id), so an unchanged album downloads nothing.
+enum PhotoStore {
+    private static var defaults: UserDefaults? { UserDefaults(suiteName: WidgetStore.appGroup) }
+    private static var fileURL: URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: WidgetStore.appGroup)?
+            .appendingPathComponent("widget_photo.jpg")
+    }
+
+    static var etag: String? { defaults?.string(forKey: "photo_etag") }
+    static var isEmpty: Bool { defaults?.bool(forKey: "photo_empty") ?? false }
+
+    /// Widgets have a tight memory budget: the photo is drawn at most 900 px on its long side.
+    static func image() -> UIImage? {
+        guard let url = fileURL, let data = try? Data(contentsOf: url), let image = UIImage(data: data) else { return nil }
+        let longSide = max(image.size.width, image.size.height)
+        guard longSide > 900 else { return image }
+        let scale = 900 / longSide
+        return image.preparingThumbnail(of: CGSize(width: image.size.width * scale, height: image.size.height * scale)) ?? image
+    }
+
+    static func save(_ data: Data, etag: String?) {
+        guard let url = fileURL else { return }
+        try? data.write(to: url, options: .atomic)
+        defaults?.set(etag, forKey: "photo_etag")
+        defaults?.set(false, forKey: "photo_empty")
+    }
+
+    static func markEmpty() {
+        if let url = fileURL { try? FileManager.default.removeItem(at: url) }
+        defaults?.removeObject(forKey: "photo_etag")
+        defaults?.set(true, forKey: "photo_empty")
+    }
+
+    /// Signed out or revoked: nothing private stays on the device.
+    static func clear() {
+        if let url = fileURL { try? FileManager.default.removeItem(at: url) }
+        defaults?.removeObject(forKey: "photo_etag")
+        defaults?.removeObject(forKey: "photo_empty")
+    }
+}
+
+enum PhotoState {
+    case setup
+    case loading
+    case empty
+    case ready(UIImage)
+}
+
+struct PhotoEntry: TimelineEntry {
+    let date: Date
+    let state: PhotoState
+}
+
+enum PhotoAPI {
+    /// GET {api}/api/widget/photo. 304 — keep the stored photo; 204 — the album is empty.
+    static func fetch() async -> PhotoState {
+        guard let token = WidgetStore.token, let api = WidgetStore.api, let url = URL(string: api + "/api/widget/photo") else {
+            return .setup
+        }
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if let etag = PhotoStore.etag, PhotoStore.image() != nil {
+            request.setValue(etag, forHTTPHeaderField: "If-None-Match")
+        }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let http = response as? HTTPURLResponse
+            switch http?.statusCode ?? 0 {
+            case 401:
+                WidgetStore.clear()
+                PhotoStore.clear()
+                return .setup
+            case 204:
+                PhotoStore.markEmpty()
+                return .empty
+            case 200 where !data.isEmpty:
+                PhotoStore.save(data, etag: http?.value(forHTTPHeaderField: "ETag"))
+            default:
+                break
+            }
+        } catch {
+            // offline: fall back to the stored photo below
+        }
+        if let image = PhotoStore.image() { return .ready(image) }
+        return PhotoStore.isEmpty ? .empty : .loading
+    }
+}
+
+struct PhotoProvider: TimelineProvider {
+    func placeholder(in context: Context) -> PhotoEntry {
+        PhotoEntry(date: Date(), state: .loading)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (PhotoEntry) -> Void) {
+        if let image = PhotoStore.image() {
+            completion(PhotoEntry(date: Date(), state: .ready(image)))
+        } else {
+            completion(PhotoEntry(date: Date(), state: WidgetStore.isConfigured ? (PhotoStore.isEmpty ? .empty : .loading) : .setup))
+        }
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<PhotoEntry>) -> Void) {
+        Task {
+            let state = await PhotoAPI.fetch()
+            // The album turns over every three hours by the clock; look again just after the next turn.
+            let period: TimeInterval = 3 * 60 * 60
+            let now = Date()
+            let next = Date(timeIntervalSince1970: (now.timeIntervalSince1970 / period).rounded(.up) * period + 60)
+            completion(Timeline(entries: [PhotoEntry(date: now, state: state)], policy: .after(next)))
         }
     }
 }

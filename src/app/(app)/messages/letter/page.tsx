@@ -11,6 +11,7 @@ import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Loading } from '@/components/ui/Blocks';
 import { LetterComposer } from '@/components/LetterComposer';
 import { StoredMedia } from '@/components/Media';
+import { tr } from '@/lib/i18n';
 
 /*
   A letter has its own screen, like a note does: writing one (new or a draft)
@@ -18,7 +19,7 @@ import { StoredMedia } from '@/components/Media';
 */
 export default function LetterPage() {
   return (
-    <Suspense fallback={<Loading label="Открываем письмо…" />}>
+    <Suspense fallback={<Loading label={tr('Открываем письмо…', 'Opening the letter…')} />}>
       <LetterView />
     </Suspense>
   );
@@ -43,7 +44,7 @@ function LetterView() {
 
   const ease = [0.32, 0.72, 0, 1] as const;
 
-  if (id && isLoading) return <Loading label="Открываем письмо…" />;
+  if (id && isLoading) return <Loading label={tr('Открываем письмо…', 'Opening the letter…')} />;
 
   /* New letter, or a draft of mine: the editor. */
   if (!id || (letter && mine && letter.status === 'draft')) {
@@ -69,14 +70,14 @@ function LetterView() {
       <header className="mb-6 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-subhead text-ink-faint">
-            {letter ? `${mine ? 'Вы' : displayName(partner?.display_name)} · ${fmt(letterTime(letter), 'd MMMM, HH:mm')}` : ''}
+            {letter ? `${mine ? tr('Вы', 'You') : displayName(partner?.display_name)} · ${fmt(letterTime(letter), 'd MMMM, HH:mm')}` : ''}
           </p>
-          <h1 className="text-large-title font-bold">{letter?.sealed ? 'Письмо' : letter?.title || 'Без темы'}</h1>
+          <h1 className="text-large-title font-bold">{letter?.sealed ? tr('Письмо', 'Letter') : letter?.title || tr('Без темы', 'No subject')}</h1>
         </div>
         <button
           type="button"
           onClick={close}
-          aria-label="Закрыть"
+          aria-label={tr('Закрыть', 'Close')}
           className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sunken text-ink-soft hover:text-ink"
         >
           <X className="size-5" aria-hidden />
@@ -88,7 +89,7 @@ function LetterView() {
           <span className="flex size-14 items-center justify-center rounded-full bg-sunken text-ink-faint">
             <Lock className="size-6" aria-hidden />
           </span>
-          <span className="sr-only">Откроется, когда вы отметите свой день.</span>
+          <span className="sr-only">{tr('Откроется, когда вы отметите свой день.', 'Opens once you mark your day.')}</span>
         </div>
       ) : (
         <div className="space-y-5 rounded-2xl bg-surface p-5 shadow-card md:p-7">

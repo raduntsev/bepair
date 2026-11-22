@@ -6,6 +6,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Toggle } from '@/components/ui/Controls';
 import { Input } from '@/components/ui/Field';
 import type { Reminders } from '@/hooks/useReminders';
+import { tr } from '@/lib/i18n';
 
 interface RowProps {
   Icon: LucideIcon;
@@ -32,10 +33,10 @@ function ReminderRow({ Icon, title, sub, on, at, onToggle, onTime }: RowProps) {
       {on && (
         <div className="mt-2 flex items-center gap-2 pl-8.5">
           <label htmlFor={timeId} className="text-sm text-ink-soft">
-            в
+            {tr('в', 'at')}
           </label>
           <div className="w-36">
-            <Input id={timeId} type="time" aria-label={`${title}, время`} value={at} onChange={(event) => event.target.value && onTime(event.target.value)} />
+            <Input id={timeId} type="time" aria-label={tr(`${title}, время`, `${title}, time`)} value={at} onChange={(event) => event.target.value && onTime(event.target.value)} />
           </div>
         </div>
       )}
@@ -55,8 +56,8 @@ export function ReminderSettings({
     <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-card">
       <ReminderRow
         Icon={Sunrise}
-        title="Утром"
-        sub="Если вчерашний день партнёра открыт, а вы его ещё не видели"
+        title={tr('Утром', 'Morning')}
+        sub={tr('Если вчерашний день партнёра открыт, а вы его ещё не видели', 'If your partner’s yesterday is open and you haven’t seen it')}
         on={value.remind_morning}
         at={value.remind_morning_at}
         onToggle={(next) => onChange({ remind_morning: next })}
@@ -64,8 +65,8 @@ export function ReminderSettings({
       />
       <ReminderRow
         Icon={Moon}
-        title="Вечером"
-        sub="Если свой день ещё не отмечен"
+        title={tr('Вечером', 'Evening')}
+        sub={tr('Если свой день ещё не отмечен', 'If you haven’t marked your day yet')}
         on={value.remind_evening}
         at={value.remind_evening_at}
         onToggle={(next) => onChange({ remind_evening: next })}

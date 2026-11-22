@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { tr } from '@/lib/i18n';
 
 /*
   A section title over a pair of real destinations, shown as an iOS segmented
@@ -58,6 +59,6 @@ export function TabbedHeader({
 }
 
 export const TIME_TABS = [
-  { href: '/calendar', label: 'Календарь' },
-  { href: '/planerka', label: 'Планёрки' },
+  { href: '/calendar', label: tr('Календарь', 'Calendar') },
+  { href: '/planerka', label: tr('Планёрки', 'Check-ins') },
 ];

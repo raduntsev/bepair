@@ -12,8 +12,8 @@ const onest = Onest({
 });
 
 export const metadata: Metadata = {
-  title: 'Впаре — общее пространство',
-  description: 'Общее ежедневное пространство для двоих',
+  title: 'Впаре · Bepair',
+  description: 'Общее ежедневное пространство для двоих · A shared daily space for two',
   applicationName: 'Впаре',
   appleWebApp: { capable: true, title: 'Впаре', statusBarStyle: 'default' },
   formatDetection: { telephone: false },

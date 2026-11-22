@@ -1,3 +1,5 @@
+import { tr } from '@/lib/i18n';
+
 /*
   Russian past tense agrees with gender: «Аня отметила», «Алекс отметил».
   Gender is optional in the profile; without it the verb takes the neutral
@@ -14,7 +16,7 @@ export function verb(gender: Gender, masculine: string) {
   return gender === 'f' ? `${masculine}а` : `${masculine}(а)`;
 }
 
-export function displayName(name: string | null | undefined, fallback = 'Партнёр') {
+export function displayName(name: string | null | undefined, fallback = tr('Партнёр', 'Partner')) {
   const trimmed = name?.trim();
   return trimmed ? trimmed : fallback;
 }
@@ -39,4 +41,9 @@ export function genitive(name: string, gender: Gender) {
   if (last === 'й' || last === 'ь') return `${stem}я`;
   if ('бвгджзклмнпрстфхцчшщ'.includes(last)) return `${word}а`;
   return word;
+}
+
+/* «Ани» in Russian, «Anya's» in English — for «День Ани» / «Anya's day». */
+export function possessive(name: string, gender: Gender) {
+  return tr(genitive(name, gender), `${name}’s`);
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import supabase from '@/lib/supabase';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { tr } from '@/lib/i18n';
 
 export interface DayMark {
   /* Mood is present only where the reciprocity gate has opened. */
@@ -64,7 +65,7 @@ export function useMonthEntries(fromISO: string, toISO: string) {
     /* An unreported failure renders an empty month, which reads as "you never marked a day". */
     setError(
       moodResult.error || presenceResult.error
-        ? 'Не удалось загрузить месяц. Проверьте связь и обновите страницу.'
+        ? tr('Не удалось загрузить месяц. Проверьте связь и обновите страницу.', 'Couldn’t load the month. Check your connection and reload.')
         : null,
     );
     setIsLoading(false);

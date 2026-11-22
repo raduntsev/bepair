@@ -1,3 +1,5 @@
+import { tr } from '@/lib/i18n';
+
 /*
   Questions that help describe a day, shown under the note before you mark it.
   They are thinking aids, not a form: nothing is stored about which one you
@@ -8,19 +10,19 @@
   Four a day, picked by the date, so both partners see the same four.
 */
 export const DAY_PROMPTS = [
-  'Что сегодня занимало больше всего места в голове?',
-  'Был ли момент, когда стало легче?',
-  'Что сегодня забирало силы, а что их возвращало?',
-  'О чём хотелось рассказать, но было некому?',
-  'Что из сегодняшнего хочется сохранить, а что — отпустить?',
-  'Когда сегодня вы были больше всего собой?',
-  'Что вы хотели бы, чтобы партнёр знал о вашем дне?',
-  'Что сегодня удивило?',
-  'Какая мелочь запомнилась?',
-  'Чего сегодня не хватило?',
-  'С каким чувством вы заканчиваете этот день?',
-  'Чего хочется от завтра?',
-] as const;
+  tr('Что сегодня занимало больше всего места в голове?', 'What took up most of your mind today?'),
+  tr('Был ли момент, когда стало легче?', 'Was there a moment when it got easier?'),
+  tr('Что сегодня забирало силы, а что их возвращало?', 'What drained you today, and what gave strength back?'),
+  tr('О чём хотелось рассказать, но было некому?', 'What did you want to tell someone, with no one to tell?'),
+  tr('Что из сегодняшнего хочется сохранить, а что — отпустить?', 'What from today do you want to keep, and what to let go?'),
+  tr('Когда сегодня вы были больше всего собой?', 'When were you most yourself today?'),
+  tr('Что вы хотели бы, чтобы партнёр знал о вашем дне?', 'What would you like your partner to know about your day?'),
+  tr('Что сегодня удивило?', 'What surprised you today?'),
+  tr('Какая мелочь запомнилась?', 'What small thing stayed with you?'),
+  tr('Чего сегодня не хватило?', 'What was missing today?'),
+  tr('С каким чувством вы заканчиваете этот день?', 'What feeling are you ending this day with?'),
+  tr('Чего хочется от завтра?', 'What do you want from tomorrow?'),
+];
 
 export const PROMPTS_PER_DAY = 4;
 

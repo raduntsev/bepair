@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { EyeOff, LockKeyhole, Smartphone, Trash2 } from 'lucide-react';
+import { EyeOff, Images, LockKeyhole, Smartphone, Trash2 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { relativeStamp } from '@/lib/dates';
 import { WidgetBridge, clearWidgets, isNative, nativePlatform, refreshWidgets } from '@/lib/native';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Button } from '@/components/ui/Button';
-import { Card, Page, PageHeader, RowGroup, SwitchRow } from '@/components/ui/Blocks';
+import { Card, LinkRow, Page, PageHeader, RowGroup, SwitchRow } from '@/components/ui/Blocks';
+import { tr } from '@/lib/i18n';
 
 interface Device {
   id: string;
@@ -16,19 +17,19 @@ interface Device {
   last_used_at: string | null;
 }
 
-const PLATFORM = { ios: 'iPhone', android: 'Android', unknown: 'Устройство' };
+const PLATFORM = { ios: 'iPhone', android: 'Android', unknown: tr('Устройство', 'Device') };
 
 const HOW_TO = {
   ios: [
-    'Нажмите и подержите пустое место на экране «Домой», пока значки не задрожат.',
-    'Нажмите «Изменить» → «Добавить виджет» и найдите «Впаре».',
-    'Выберите размер: маленький — ваш день и день партнёра, средний — ещё дни вместе и серия.',
-    'Для экрана блокировки: подержите экран блокировки → «Настроить» → «Виджеты».',
+    tr('Нажмите и подержите пустое место на экране «Домой», пока значки не задрожат.', 'Touch and hold an empty spot on the Home Screen until the icons jiggle.'),
+    tr('Нажмите «Изменить» → «Добавить виджет» и найдите «Впаре».', 'Tap Edit → Add Widget and find Bepair.'),
+    tr('Выберите размер: маленький — ваш день и день партнёра, средний — ещё дни вместе и серия. «Фото» — ваши общие снимки.', 'Pick a size: small shows both your days, medium adds the run. “Photo” shows your shared photos.'),
+    tr('Для экрана блокировки: подержите экран блокировки → «Настроить» → «Виджеты».', 'For the Lock Screen: touch and hold it → Customize → Widgets.'),
   ],
   android: [
-    'Нажмите и подержите пустое место на рабочем столе.',
-    'Выберите «Виджеты» и найдите «Впаре».',
-    'Перетащите «День» или «Пара» на рабочий стол.',
+    tr('Нажмите и подержите пустое место на рабочем столе.', 'Touch and hold an empty spot on the home screen.'),
+    tr('Выберите «Виджеты» и найдите «Впаре».', 'Choose Widgets and find Bepair.'),
+    tr('Перетащите «День», «Пара» или «Фото» на рабочий стол.', 'Drag Day, Couple or Photo onto the home screen.'),
   ],
 };
 
@@ -68,15 +69,15 @@ export default function WidgetSettingsPage() {
 
   return (
     <Page width="form">
-      <PageHeader title="Виджеты" back={{ href: '/settings', label: 'Профиль' }} />
+      <PageHeader title={tr('Виджеты', 'Widgets')} back={{ href: '/settings', label: tr('Профиль', 'Profile') }} />
 
       <div className="space-y-4">
         {lock !== null && (
-          <RowGroup label="Экран блокировки">
+          <RowGroup label={tr('Экран блокировки', 'Lock screen')}>
             <SwitchRow
               Icon={LockKeyhole}
-              title="Статус дня на экране блокировки"
-              sub="Тихая строка: отмечен ли день, ждёт ли письмо"
+              title={tr('Статус дня на экране блокировки', 'Day status on the lock screen')}
+              sub={tr('Тихая строка: отмечен ли день, ждёт ли письмо', 'A quiet line: is the day marked, is a letter waiting')}
               checked={lock}
               onChange={async (next) => {
                 setLock(next);
@@ -93,7 +94,7 @@ export default function WidgetSettingsPage() {
 
         {native && steps ? (
           <Card>
-            <h2 className="font-semibold">Как добавить</h2>
+            <h2 className="font-semibold">{tr('Как добавить', 'How to add')}</h2>
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-ink-soft">
               {steps.map((step) => (
                 <li key={step}>{step}</li>
@@ -105,21 +106,27 @@ export default function WidgetSettingsPage() {
             <div className="flex items-start gap-3">
               <Smartphone className="mt-0.5 size-5 shrink-0 text-ink-soft" aria-hidden />
               <div>
-                <h2 className="font-semibold">Виджеты — в приложении для телефона</h2>
+                <h2 className="font-semibold">{tr('Виджеты — в приложении для телефона', 'Widgets live in the phone app')}</h2>
                 <p className="mt-1.5 text-sm text-ink-soft">
-                  Браузер и сайт на экране «Домой» не могут ставить виджеты — так устроены iOS и Android. Установите приложение Впаре для iPhone или Android
-                  и войдите тем же аккаунтом: виджет подключится сам.
+                  {tr(
+                    'Браузер и сайт на экране «Домой» не могут ставить виджеты — так устроены iOS и Android. Установите приложение Впаре для iPhone или Android и войдите тем же аккаунтом: виджет подключится сам.',
+                    'A browser or a Home Screen site can’t place widgets — that’s how iOS and Android work. Install the Bepair app for iPhone or Android and sign in with the same account: the widget connects by itself.',
+                  )}
                 </p>
               </div>
             </div>
           </Card>
         )}
 
-        <RowGroup label="Что видно на виджете">
+        <RowGroup label={tr('Фото', 'Photo')}>
+          <LinkRow href="/album" Icon={Images} tone="partner" title={tr('Фото для виджета', 'Photos for the widget')} sub={tr('Общий альбом: виджет «Фото» показывает его на обоих телефонах', 'A shared album: the Photo widget shows it on both phones')} />
+        </RowGroup>
+
+        <RowGroup label={tr('Что видно на виджете', 'What the widget shows')}>
           <SwitchRow
             Icon={EyeOff}
-            title="Скрывать настроение"
-            sub="Без цветов и слов — только «отмечено» или нет. Для экрана, который видят другие"
+            title={tr('Скрывать настроение', 'Hide mood')}
+            sub={tr('Без цветов и слов — только «отмечено» или нет. Для экрана, который видят другие', 'No colours or words — only marked or not. For a screen others can see')}
             checked={profile?.widget_hide_colors ?? false}
             onChange={async (next) => {
               await updateProfile({ widget_hide_colors: next });
@@ -128,16 +135,16 @@ export default function WidgetSettingsPage() {
           />
         </RowGroup>
         <p className="text-sm text-ink-faint">
-          День партнёра на виджете подчиняется тому же правилу, что и в приложении: пока вы не отметили свой, видно только, что он отмечен.
+          {tr('День партнёра на виджете подчиняется тому же правилу, что и в приложении: пока вы не отметили свой, видно только, что он отмечен.', 'Your partner’s day on the widget follows the same rule as in the app: until you mark yours, you only see that theirs is marked.')}
         </p>
 
         {devices && devices.length > 0 && (
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-semibold">Подключённые устройства</h2>
+              <h2 className="font-semibold">{tr('Подключённые устройства', 'Connected devices')}</h2>
               {devices.length > 1 && (
                 <Button variant="ghost" onClick={() => revoke()}>
-                  Отключить все
+                  {tr('Отключить все', 'Disconnect all')}
                 </Button>
               )}
             </div>
@@ -148,11 +155,13 @@ export default function WidgetSettingsPage() {
                   <span className="min-w-0 flex-1 text-sm">
                     <span className="block font-medium text-ink">{PLATFORM[device.platform]}</span>
                     <span className="block text-ink-faint">
-                      {device.last_used_at ? `обновлялся ${relativeStamp(device.last_used_at)}` : `подключён ${relativeStamp(device.created_at)}`}
+                      {device.last_used_at
+                        ? tr(`обновлялся ${relativeStamp(device.last_used_at)}`, `updated ${relativeStamp(device.last_used_at)}`)
+                        : tr(`подключён ${relativeStamp(device.created_at)}`, `connected ${relativeStamp(device.created_at)}`)}
                     </span>
                   </span>
-                  <Button variant="ghost" onClick={() => revoke(device.id)} aria-label={`Отключить ${PLATFORM[device.platform]}`}>
-                    <Trash2 className="size-4" aria-hidden /> Отключить
+                  <Button variant="ghost" onClick={() => revoke(device.id)} aria-label={tr(`Отключить ${PLATFORM[device.platform]}`, `Disconnect ${PLATFORM[device.platform]}`)}>
+                    <Trash2 className="size-4" aria-hidden /> {tr('Отключить', 'Disconnect')}
                   </Button>
                 </li>
               ))}

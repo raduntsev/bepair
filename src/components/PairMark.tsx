@@ -1,3 +1,4 @@
+import { tr } from '@/lib/i18n';
 /*
   The product's one graphic device: a single ring made of two halves. Indigo is
   you, amber is your partner, and the gaps sit at the top and the bottom.
@@ -73,7 +74,7 @@ export function Wordmark({ className = '' }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <PairMark spin={false} className="size-6" />
-      <span className="text-lg font-semibold tracking-tight">Впаре</span>
+      <span className="text-lg font-semibold tracking-tight">{tr('Впаре', 'Bepair')}</span>
     </span>
   );
 }

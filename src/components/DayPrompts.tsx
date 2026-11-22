@@ -3,6 +3,7 @@
 import { useId, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { promptsFor } from '@/lib/dayPrompts';
+import { tr } from '@/lib/i18n';
 
 /*
   A disclosure, not a questionnaire: closed by default, open by default only
@@ -24,7 +25,7 @@ export function DayPrompts({ date, defaultOpen = false }: { date: string; defaul
         onClick={() => setOpen((v) => !v)}
         className="tap -ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 text-subhead font-medium text-accent transition-opacity hover:opacity-80"
       >
-        Не знаете, с чего начать?
+        {tr('Не знаете, с чего начать?', 'Not sure where to start?')}
         <ChevronDown
           className={`size-4 transition-transform duration-200 motion-reduce:transition-none ${open ? 'rotate-180' : ''}`}
           aria-hidden
@@ -41,7 +42,7 @@ export function DayPrompts({ date, defaultOpen = false }: { date: string; defaul
             ))}
           </ul>
           <p className="mt-3 text-subhead text-ink-faint">
-            Просто чтобы было от чего оттолкнуться. Отвечать не нужно, и партнёр не узнает, какие вопросы вы читали.
+            {tr('Просто чтобы было от чего оттолкнуться. Отвечать не нужно, и партнёр не узнает, какие вопросы вы читали.', 'Just something to start from. No need to answer, and your partner won’t know which questions you read.')}
           </p>
         </div>
       )}

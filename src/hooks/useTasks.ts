@@ -5,6 +5,7 @@ import supabase from '@/lib/supabase';
 import { todayISO } from '@/lib/dates';
 import { flushPush } from '@/lib/push';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { tr } from '@/lib/i18n';
 
 export interface Task {
   id: string;
@@ -34,19 +35,19 @@ export function taskState(task: Task): TaskState {
 
 /* Three levels: enough to say «this matters», too few to turn a favour into a grade. */
 export const WEIGHTS = [
-  { value: 1, label: 'Мелочь', detail: '+1 балл' },
-  { value: 2, label: 'Обычно', detail: '+2 балла' },
-  { value: 3, label: 'Важно', detail: '+3 балла' },
+  { value: 1, label: tr('Мелочь', 'Small'), detail: tr('+1 балл', '+1 point') },
+  { value: 2, label: tr('Обычно', 'Usual'), detail: tr('+2 балла', '+2 points') },
+  { value: 3, label: tr('Важно', 'Important'), detail: tr('+3 балла', '+3 points') },
 ];
 
 /* A starter pack, so the first request never has to be typed from nothing. */
 export const STARTER_TEMPLATES = [
-  { content: 'Приготовить ужин', points: 3 },
-  { content: 'Разобрать посуду', points: 2 },
-  { content: 'Побыть рядом вечером', points: 3 },
-  { content: 'Забрать заказ', points: 2 },
-  { content: 'Позвонить, когда будет минутка', points: 1 },
-  { content: 'Погулять вместе', points: 3 },
+  { content: tr('Приготовить ужин', 'Cook dinner'), points: 3 },
+  { content: tr('Разобрать посуду', 'Put the dishes away'), points: 2 },
+  { content: tr('Побыть рядом вечером', 'Be close this evening'), points: 3 },
+  { content: tr('Забрать заказ', 'Pick up the order'), points: 2 },
+  { content: tr('Позвонить, когда будет минутка', 'Call when you have a minute'), points: 1 },
+  { content: tr('Погулять вместе', 'Go for a walk together'), points: 3 },
 ];
 
 export function useTasks() {
@@ -76,7 +77,7 @@ export function useTasks() {
 
     if (!taskResult.error) setTasks((taskResult.data ?? []) as Task[]);
     if (!templateResult.error) setTemplates((templateResult.data ?? []) as Template[]);
-    setError(taskResult.error ? 'Не удалось загрузить задачи. Проверьте связь и обновите страницу.' : null);
+    setError(taskResult.error ? tr('Не удалось загрузить задачи. Проверьте связь и обновите страницу.', 'Couldn’t load requests. Check your connection and reload.') : null);
     setIsLoading(false);
   }, [user, spaceId]);
 
@@ -110,7 +111,7 @@ export function useTasks() {
     if (existing) return existing.id as string;
 
     if (!partner) {
-      setError('Пока в пространстве только вы — попросить пока некого.');
+      setError(tr('Пока в пространстве только вы — попросить пока некого.', 'You’re alone in the space for now — there’s no one to ask yet.'));
       return null;
     }
 
@@ -122,7 +123,7 @@ export function useTasks() {
       .single();
 
     if (createError) {
-      setError('Не удалось создать список задач. Попробуйте ещё раз.');
+      setError(tr('Не удалось создать список задач. Попробуйте ещё раз.', 'Couldn’t create the list. Please try again.'));
       return null;
     }
     return created.id as string;
@@ -143,7 +144,7 @@ export function useTasks() {
       });
 
       if (addError) {
-        setError('Задача не добавилась. Попробуйте ещё раз.');
+        setError(tr('Задача не добавилась. Попробуйте ещё раз.', 'The request wasn’t added. Please try again.'));
         return false;
       }
       setError(null);
@@ -157,7 +158,7 @@ export function useTasks() {
   const edit = useCallback(
     async (id: string, content: string, weight: number) => {
       const { error: editError } = await supabase.from('checklist_items').update({ content, points: weight }).eq('id', id);
-      setError(editError ? 'Изменения не сохранились. Попробуйте ещё раз.' : null);
+      setError(editError ? tr('Изменения не сохранились. Попробуйте ещё раз.', 'Changes weren’t saved. Please try again.') : null);
       await load();
       return !editError;
     },
@@ -177,7 +178,7 @@ export function useTasks() {
         .select('id');
 
       if (completeError) {
-        setError('Не удалось отметить задачу. Попробуйте ещё раз.');
+        setError(tr('Не удалось отметить задачу. Попробуйте ещё раз.', 'Couldn’t mark the request. Please try again.'));
         return;
       }
       if (!completed || completed.length === 0) {
@@ -200,7 +201,7 @@ export function useTasks() {
           .from('checklist_items')
           .update({ is_completed: false, completed_by: null, completed_at: null })
           .eq('id', task.id);
-        setError('Баллы не начислились, задача осталась активной. Попробуйте ещё раз.');
+        setError(tr('Баллы не начислились, задача осталась активной. Попробуйте ещё раз.', 'Points weren’t added; the request is still open. Please try again.'));
       } else {
         setError(null);
         flushPush();
@@ -228,7 +229,7 @@ export function useTasks() {
   const remove = useCallback(
     async (id: string) => {
       const { error: removeError } = await supabase.from('checklist_items').delete().eq('id', id).eq('is_completed', false);
-      if (removeError) setError('Не удалось убрать задачу. Попробуйте ещё раз.');
+      if (removeError) setError(tr('Не удалось убрать задачу. Попробуйте ещё раз.', 'Couldn’t remove the request. Please try again.'));
       await load();
     },
     [load],
@@ -241,7 +242,7 @@ export function useTasks() {
       const { error: saveError } = await supabase
         .from('task_templates')
         .insert({ space_id: spaceId, user_id: user.id, content, points: weight });
-      if (saveError) setError('Не удалось сохранить в подборку.');
+      if (saveError) setError(tr('Не удалось сохранить в подборку.', 'Couldn’t save to favourites.'));
       await load();
     },
     [user, spaceId, templates, load],

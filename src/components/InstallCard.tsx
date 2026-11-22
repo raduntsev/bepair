@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { tr } from '@/lib/i18n';
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -42,14 +43,14 @@ export function InstallCard() {
     <section className="flex items-start gap-3 rounded-2xl bg-surface p-5 shadow-card">
       <Smartphone className="mt-0.5 size-5 shrink-0 text-ink-soft" aria-hidden />
       <div className="min-w-0 flex-1">
-        <h2 className="font-semibold">Впаре на экране «Домой»</h2>
+        <h2 className="font-semibold">{tr('Впаре на экране «Домой»', 'Bepair on your Home Screen')}</h2>
         {mode === 'ios' ? (
           <p className="mt-1.5 text-sm text-ink-soft">
-            В Safari нажмите «Поделиться», затем «На экран Домой». Так приложение открывается сразу, а уведомления начинают приходить.
+            {tr('В Safari нажмите «Поделиться», затем «На экран Домой». Так приложение открывается сразу, а уведомления начинают приходить.', 'In Safari tap Share, then Add to Home Screen. The app then opens at once and notifications start arriving.')}
           </p>
         ) : (
           <>
-            <p className="mt-1.5 text-sm text-ink-soft">Открывается одним касанием, как обычное приложение.</p>
+            <p className="mt-1.5 text-sm text-ink-soft">{tr('Открывается одним касанием, как обычное приложение.', 'Opens with one tap, like any app.')}</p>
             <Button
               className="mt-3"
               variant="secondary"
@@ -61,7 +62,7 @@ export function InstallCard() {
                 setMode('hidden');
               }}
             >
-              Установить
+              {tr('Установить', 'Install')}
             </Button>
           </>
         )}

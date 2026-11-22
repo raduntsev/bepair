@@ -1,15 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { format, parseISO } from 'date-fns';
-import { ru } from 'date-fns/locale';
 import { CalendarHeart, Plus, X } from 'lucide-react';
-import { todayISO } from '@/lib/dates';
+import { fmt, todayISO } from '@/lib/dates';
 import { upcoming, whenText, withAnniversary, type ImportantDate } from '@/lib/importantDates';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Toggle } from '@/components/ui/Controls';
 import { Alert, Card } from '@/components/ui/Blocks';
+import { tr } from '@/lib/i18n';
 
 interface Props {
   items: ImportantDate[];
@@ -47,11 +46,11 @@ export function ImportantDates({ items, togetherSince, error, onAdd, onRemove }:
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 font-semibold">
-          <CalendarHeart className="size-4.5 text-ink-soft" aria-hidden /> Важные даты
+          <CalendarHeart className="size-4.5 text-ink-soft" aria-hidden /> {tr('Важные даты', 'Important dates')}
         </h2>
         {!adding && (
           <Button variant="secondary" onClick={() => setAdding(true)}>
-            <Plus className="size-4" aria-hidden /> Добавить
+            <Plus className="size-4" aria-hidden /> {tr('Добавить', 'Add')}
           </Button>
         )}
       </div>
@@ -60,28 +59,28 @@ export function ImportantDates({ items, togetherSince, error, onAdd, onRemove }:
         <form onSubmit={submit} className="mt-4 space-y-3 rounded-xl bg-sunken p-4">
           <div>
             <label htmlFor="date-title" className="mb-2 block text-sm font-medium">
-              Что это за день
+              {tr('Что это за день', 'What day is it')}
             </label>
-            <Input id="date-title" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} placeholder="День рождения Ани" />
+            <Input id="date-title" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} placeholder={tr('День рождения Ани', 'Anna’s birthday')} />
           </div>
           <div className="flex flex-wrap items-end gap-4">
             <div>
               <label htmlFor="date-value" className="mb-2 block text-sm font-medium">
-                Дата
+                {tr('Дата', 'Date')}
               </label>
               <Input id="date-value" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-44" />
             </div>
             <div className="flex items-center gap-1">
-              <Toggle checked={yearly} onChange={setYearly} label="Каждый год" />
-              <span className="text-sm">Каждый год</span>
+              <Toggle checked={yearly} onChange={setYearly} label={tr('Каждый год', 'Every year')} />
+              <span className="text-sm">{tr('Каждый год', 'Every year')}</span>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 pt-1">
             <Button type="submit" loading={busy} disabled={!title.trim() || !date}>
-              Сохранить
+              {tr('Сохранить', 'Save')}
             </Button>
             <Button type="button" variant="ghost" onClick={() => setAdding(false)}>
-              Отмена
+              {tr('Отмена', 'Cancel')}
             </Button>
           </div>
         </form>
@@ -89,7 +88,7 @@ export function ImportantDates({ items, togetherSince, error, onAdd, onRemove }:
 
       {list.length === 0 ? (
         <p className="mt-3 text-sm text-ink-soft">
-          Дни рождения, годовщины, общие праздники — всё, что не хочется пропустить. Видно вам обоим.
+          {tr('Дни рождения, годовщины, общие праздники — всё, что не хочется пропустить. Видно вам обоим.', 'Birthdays, anniversaries, your own holidays — anything you don’t want to miss. Visible to you both.')}
         </p>
       ) : (
         <ul className="mt-3 divide-y divide-line">
@@ -99,13 +98,13 @@ export function ImportantDates({ items, togetherSince, error, onAdd, onRemove }:
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{o.title}</span>
                 <span className="block text-sm text-ink-faint">
-                  {format(parseISO(o.on), 'd MMMM', { locale: ru })} · {whenText(o.inDays)}
+                  {fmt(o.on, 'd MMMM')} · {whenText(o.inDays)}
                 </span>
               </span>
               {o.id && (
                 <button
                   type="button"
-                  aria-label={`Убрать «${o.title}»`}
+                  aria-label={tr(`Убрать «${o.title}»`, `Remove “${o.title}”`)}
                   onClick={() => onRemove(o.id!)}
                   className="tap flex items-center justify-center rounded-lg text-ink-faint transition-colors hover:bg-sunken hover:text-ink"
                 >

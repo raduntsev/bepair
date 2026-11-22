@@ -7,6 +7,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Island } from '@/components/Island';
 import { TourProvider } from '@/components/Tour';
+import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { getLang } from '@/lib/i18n';
 
 /*
   No rail, no tab bar, no sub-tabs: the screen belongs to the content, and the
@@ -18,6 +20,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { unread } = useNotifications();
   const reduce = useReducedMotion();
+
+  /* The server writes push in the reader's language: keep it told which one this phone reads. */
+  const { profile, updateProfile } = useSpaceAuth();
+  useEffect(() => {
+    if (profile && profile.lang !== getLang()) updateProfile({ lang: getLang() });
+  }, [profile, updateProfile]);
 
   /* «Заходил(а)» in the partner's profile: on open and on coming back. Throttled in SQL. */
   useEffect(() => {

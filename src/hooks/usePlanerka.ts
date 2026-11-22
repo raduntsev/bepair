@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useId } from 'react';
 import supabase from '@/lib/supabase';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import type { Comments, QuestionKey, Scores } from '@/lib/planerka';
+import { tr } from '@/lib/i18n';
 
 export interface Planerka {
   id: string;
@@ -18,6 +19,8 @@ export interface Wheel {
   comments: Comments;
   note: string;
   entered_by: string | null;
+  /* Set when this person said «my part is done»; null while still filling in. */
+  closed_at: string | null;
 }
 
 export interface Answer {
@@ -69,7 +72,7 @@ export function usePlanerka() {
     if (!spaceId) return;
     const [p, w, a, t, s] = await Promise.all([
       supabase.from('planerkas').select('id, held_on').eq('space_id', spaceId).order('held_on', { ascending: false }),
-      supabase.from('planerka_wheels').select('id, planerka_id, user_id, scores, comments, note, entered_by').eq('space_id', spaceId),
+      supabase.from('planerka_wheels').select('id, planerka_id, user_id, scores, comments, note, entered_by, closed_at').eq('space_id', spaceId),
       supabase.from('planerka_answers').select('id, planerka_id, user_id, question, answer, entered_by').eq('space_id', spaceId),
       supabase
         .from('plan_todos')
@@ -79,7 +82,7 @@ export function usePlanerka() {
       supabase.from('planerka_settings').select('weekday, at_time').eq('space_id', spaceId).maybeSingle(),
     ]);
     if (p.error || w.error || a.error || t.error) {
-      setError('Не удалось загрузить планёрку. Проверьте связь и обновите страницу.');
+      setError(tr('Не удалось загрузить планёрку. Проверьте связь и обновите страницу.', 'Couldn’t load the check-in. Check your connection and reload.'));
     } else {
       setPlanerkas((p.data ?? []) as Planerka[]);
       setWheels((w.data ?? []) as Wheel[]);
@@ -119,7 +122,7 @@ export function usePlanerka() {
         .from('planerkas')
         .upsert({ space_id: spaceId, held_on: heldOn, created_by: user.id }, { onConflict: 'space_id,held_on', ignoreDuplicates: true });
       if (insertError) {
-        setError('Не получилось начать планёрку.');
+        setError(tr('Не получилось начать планёрку.', 'Couldn’t start the check-in.'));
         return null;
       }
       const { data } = await supabase.from('planerkas').select('id, held_on').eq('space_id', spaceId).eq('held_on', heldOn).maybeSingle();
@@ -136,7 +139,21 @@ export function usePlanerka() {
         { planerka_id: planerkaId, space_id: spaceId, user_id: userId, scores, comments, note, entered_by: user.id, updated_at: new Date().toISOString() },
         { onConflict: 'planerka_id,user_id' },
       );
-      if (saveError) setError('Колесо не сохранилось. Попробуйте ещё раз.');
+      if (saveError) setError(tr('Колесо не сохранилось. Попробуйте ещё раз.', 'The wheel wasn’t saved. Please try again.'));
+      else await load();
+    },
+    [spaceId, user, load],
+  );
+
+  /* Only the columns sent are written, so closing never touches the scores. */
+  const closePart = useCallback(
+    async (planerkaId: string, userId: string, closed: boolean) => {
+      if (!spaceId || !user) return;
+      const { error: saveError } = await supabase.from('planerka_wheels').upsert(
+        { planerka_id: planerkaId, space_id: spaceId, user_id: userId, closed_at: closed ? new Date().toISOString() : null },
+        { onConflict: 'planerka_id,user_id' },
+      );
+      if (saveError) setError(tr('Не получилось закрыть планёрку. Попробуйте ещё раз.', 'Couldn’t close the check-in. Please try again.'));
       else await load();
     },
     [spaceId, user, load],
@@ -149,7 +166,7 @@ export function usePlanerka() {
         { planerka_id: planerkaId, space_id: spaceId, user_id: userId, question, answer, entered_by: user.id, updated_at: new Date().toISOString() },
         { onConflict: 'planerka_id,user_id,question' },
       );
-      if (saveError) setError('Ответ не сохранился. Попробуйте ещё раз.');
+      if (saveError) setError(tr('Ответ не сохранился. Попробуйте ещё раз.', 'The answer wasn’t saved. Please try again.'));
       else await load();
     },
     [spaceId, user, load],
@@ -161,7 +178,7 @@ export function usePlanerka() {
       const { error: saveError } = await supabase
         .from('plan_todos')
         .insert({ space_id: spaceId, owner_id: ownerId, content: content.trim(), planerka_id: planerkaId, created_by: user.id });
-      if (saveError) setError('Дело не добавилось.');
+      if (saveError) setError(tr('Дело не добавилось.', 'The to-do wasn’t added.'));
       else await load();
     },
     [spaceId, user, load],
@@ -171,7 +188,7 @@ export function usePlanerka() {
     async (id: string, patch: Partial<Pick<PlanTodo, 'status' | 'decision' | 'content' | 'owner_id'>>) => {
       const extra = patch.status ? { done_at: patch.status === 'done' ? new Date().toISOString() : null } : {};
       const { error: saveError } = await supabase.from('plan_todos').update({ ...patch, ...extra }).eq('id', id);
-      if (saveError) setError('Изменение не сохранилось.');
+      if (saveError) setError(tr('Изменение не сохранилось.', 'The change wasn’t saved.'));
       else await load();
     },
     [load],
@@ -192,7 +209,7 @@ export function usePlanerka() {
       const { error: saveError } = await supabase
         .from('planerka_settings')
         .upsert({ space_id: spaceId, weekday: next.weekday, at_time: next.at_time, updated_at: new Date().toISOString() });
-      if (saveError) setError('Расписание не сохранилось.');
+      if (saveError) setError(tr('Расписание не сохранилось.', 'The schedule wasn’t saved.'));
     },
     [spaceId],
   );
@@ -207,6 +224,7 @@ export function usePlanerka() {
     error,
     ensure,
     saveWheel,
+    closePart,
     saveAnswer,
     addTodo,
     updateTodo,

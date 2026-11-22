@@ -13,6 +13,7 @@ import supabase, { isNativeShell, NATIVE_AUTH_CALLBACK } from '@/lib/supabase';
 import { localTimezone } from '@/lib/dates';
 import { clearWidgets } from '@/lib/native';
 import type { Gender } from '@/lib/words';
+import { tr } from '@/lib/i18n';
 
 export interface Profile {
   id: string;
@@ -29,6 +30,7 @@ export interface Profile {
   notify_letters: boolean;
   notify_sound: boolean;
   widget_hide_colors: boolean;
+  lang: 'ru' | 'en';
 }
 
 export interface Partner {
@@ -52,7 +54,7 @@ export interface SpaceSettings {
 }
 
 const PROFILE_COLUMNS =
-  'id, space_id, display_name, avatar_url, timezone, gender, onboarded_at, cycle_tracking, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound, widget_hide_colors';
+  'id, space_id, display_name, avatar_url, timezone, gender, onboarded_at, cycle_tracking, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound, widget_hide_colors, lang';
 
 export const INVITE_KEY = 'bepair-invite';
 
@@ -133,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           session,
           isLoading: false,
           needsMigration: profileError.code === '42703',
-          error: 'Не удалось загрузить профиль. Проверьте связь и обновите страницу.',
+          error: tr('Не удалось загрузить профиль. Проверьте связь и обновите страницу.', 'Couldn’t load your profile. Check your connection and reload.'),
         }));
         return;
       }
@@ -249,8 +251,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...s,
         error:
           error.status === 429
-            ? 'Слишком много попыток подряд. Подождите минуту и попробуйте снова.'
-            : 'Не получилось отправить ссылку. Проверьте адрес и попробуйте ещё раз.',
+            ? tr('Слишком много попыток подряд. Подождите минуту и попробуйте снова.', 'Too many tries in a row. Wait a minute and try again.')
+            : tr('Не получилось отправить ссылку. Проверьте адрес и попробуйте ещё раз.', 'Couldn’t send the link. Check the address and try again.'),
       }));
       return false;
     }
@@ -273,7 +275,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await Browser.open({ url: data.url, presentationStyle: 'popover' });
         return;
       }
-      setState((s) => ({ ...s, error: 'Вход через Google сейчас недоступен. Войдите по ссылке на почту.' }));
+      setState((s) => ({ ...s, error: tr('Вход через Google сейчас недоступен. Войдите по ссылке на почту.', 'Google sign-in isn’t available right now. Sign in with an email link.') }));
       return;
     }
     const { error } = await supabase.auth.signInWithOAuth({
@@ -283,7 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) {
       setState((s) => ({
         ...s,
-        error: 'Вход через Google сейчас недоступен. Войдите по ссылке на почту.',
+        error: tr('Вход через Google сейчас недоступен. Войдите по ссылке на почту.', 'Google sign-in isn’t available right now. Sign in with an email link.'),
       }));
     }
   }, []);
@@ -295,18 +297,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: space, error: spaceError } = await supabase
       .from('spaces')
-      .insert({ name: 'Наше пространство' })
+      .insert({ name: tr('Наше пространство', 'Our space') })
       .select('id, invite_code')
       .single();
 
     if (spaceError || !space) {
-      setState((s) => ({ ...s, error: 'Не получилось создать пространство. Попробуйте ещё раз.' }));
+      setState((s) => ({ ...s, error: tr('Не получилось создать пространство. Попробуйте ещё раз.', 'Couldn’t create the space. Please try again.') }));
       return false;
     }
 
     const { error: profileError } = await supabase.from('profiles').update({ space_id: space.id }).eq('id', user.id);
     if (profileError) {
-      setState((s) => ({ ...s, error: 'Пространство создано, но не привязалось к вам. Попробуйте ещё раз.' }));
+      setState((s) => ({ ...s, error: tr('Пространство создано, но не привязалось к вам. Попробуйте ещё раз.', 'The space was created but didn’t link to you. Please try again.') }));
       return false;
     }
 
@@ -324,7 +326,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data: space } = await supabase.from('spaces').select('id').eq('invite_code', code).maybeSingle();
       if (!space) {
-        setState((s) => ({ ...s, error: 'Такого кода нет. Проверьте, что он скопирован целиком.' }));
+        setState((s) => ({ ...s, error: tr('Такого кода нет. Проверьте, что он скопирован целиком.', 'No such code. Check it was copied in full.') }));
         return false;
       }
 
@@ -334,13 +336,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('space_id', space.id);
 
       if ((count ?? 0) >= 2) {
-        setState((s) => ({ ...s, error: 'В этом пространстве уже двое. Попросите у партнёра свежий код.' }));
+        setState((s) => ({ ...s, error: tr('В этом пространстве уже двое. Попросите у партнёра свежий код.', 'This space already has two people. Ask your partner for a fresh code.') }));
         return false;
       }
 
       const { error: joinError } = await supabase.from('profiles').update({ space_id: space.id }).eq('id', user.id);
       if (joinError) {
-        setState((s) => ({ ...s, error: 'Не получилось войти в пространство. Попробуйте ещё раз.' }));
+        setState((s) => ({ ...s, error: tr('Не получилось войти в пространство. Попробуйте ещё раз.', 'Couldn’t join the space. Please try again.') }));
         return false;
       }
 

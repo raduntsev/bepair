@@ -5,6 +5,7 @@ import supabase from '@/lib/supabase';
 import { todayISO } from '@/lib/dates';
 import { flushPush } from '@/lib/push';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { tr } from '@/lib/i18n';
 
 export { todayISO };
 export type { Partner } from '@/hooks/useSpaceAuth';
@@ -41,7 +42,7 @@ export function useCoupleDay(date: string) {
       .eq('entry_date', date);
 
     if (loadError) {
-      setError('Не удалось загрузить день. Проверьте связь и обновите страницу.');
+      setError(tr('Не удалось загрузить день. Проверьте связь и обновите страницу.', 'Couldn’t load the day. Check your connection and reload.'));
     } else {
       const rows = (data ?? []) as DayEntry[];
       setMine(rows.find((row) => row.user_id === user.id) ?? null);
@@ -87,7 +88,7 @@ export function useCoupleDay(date: string) {
         );
 
       if (saveError) {
-        setError('Не удалось сохранить день. Проверьте связь и попробуйте ещё раз.');
+        setError(tr('Не удалось сохранить день. Проверьте связь и попробуйте ещё раз.', 'Couldn’t save the day. Check your connection and try again.'));
         return false;
       }
       flushPush();
