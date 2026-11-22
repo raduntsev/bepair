@@ -135,10 +135,17 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
   const [pillRef, pill] = useSize<HTMLDivElement>();
   const [panelRef, panel] = useSize<HTMLDivElement>();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tucked = useScrollTuck(open);
+  /*
+    In «Переписка» the note bar lives in the island's own row, beside a
+    capsule shrunk to its icon: one level at the bottom, nothing stacked on
+    anything. The page portals its bar into #island-slot. The row never tucks
+    away there — the bar is the point of the screen.
+  */
+  const inChat = currentDestination(pathname).href === '/messages';
+  const tucked = useScrollTuck(open || inChat);
   const here = currentDestination(pathname);
   /* Inside «Переписка» the chat has its own input; a second «write» button would be noise. */
-  const hideCompose = open || here.href === '/messages';
+  const hideCompose = open || inChat;
 
   const clearTimer = () => {
     if (timer.current) clearTimeout(timer.current);
@@ -220,7 +227,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
 
       <nav
         aria-label={tr('Разделы', 'Sections')}
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex items-end justify-center gap-2"
+        className={`pointer-events-none fixed inset-x-0 bottom-0 z-50 flex items-end justify-center gap-2 ${inChat ? 'px-3' : ''}`}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
       >
         <motion.div
@@ -252,7 +259,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
                 clearTimer();
                 setOpenedBy('press');
               }}
-              className="flex h-13 items-center gap-2.5 pr-4 pl-1.5 whitespace-nowrap"
+              className={`flex h-13 items-center gap-2.5 pl-1.5 whitespace-nowrap ${inChat ? 'pr-1.5' : 'pr-4'}`}
             >
               <span className="relative flex size-10 items-center justify-center rounded-full bg-island-fill">
                 <here.Icon className="size-5" strokeWidth={2} aria-hidden />
@@ -262,8 +269,14 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
                   </span>
                 )}
               </span>
-              <span className="text-subhead font-semibold">{here.label}</span>
-              <ChevronUp className="size-4 text-island-soft" strokeWidth={2.4} aria-hidden />
+              {inChat ? (
+                <span className="sr-only">{here.label}</span>
+              ) : (
+                <>
+                  <span className="text-subhead font-semibold">{here.label}</span>
+                  <ChevronUp className="size-4 text-island-soft" strokeWidth={2.4} aria-hidden />
+                </>
+              )}
               <span className="sr-only">{tr('— открыть разделы', '— open sections')}</span>
             </button>
           </motion.div>
@@ -337,6 +350,15 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
             <PenLine className="size-5" strokeWidth={2.2} aria-hidden />
           </Link>
         </motion.div>
+
+        {inChat && (
+          <div
+            id="island-slot"
+            className={`pointer-events-auto min-w-0 flex-1 ${open ? 'hidden' : ''}`}
+            style={{ maxWidth: '40rem' }}
+            inert={open}
+          />
+        )}
       </nav>
     </>
   );

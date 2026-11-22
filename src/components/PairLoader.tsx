@@ -36,9 +36,14 @@ function Character({ who, cx }: { who: 'you' | 'partner'; cx: number }) {
   );
 }
 
-export function PairLoader({ className = '' }: { className?: string }) {
+/*
+  `idle` is the same pair without the waiting: for empty states. A slower,
+  calmer loop — they glance, blink, nudge and squint, sway — and never turn
+  into dots, because nothing is loading.
+*/
+export function PairLoader({ className = '', mode = 'loading' }: { className?: string; mode?: 'loading' | 'idle' }) {
   return (
-    <svg viewBox="0 0 120 60" className={`pair-loader ${className}`} aria-hidden focusable="false">
+    <svg viewBox="0 0 120 60" className={`pair-loader ${mode === 'idle' ? 'pair-loader--idle' : ''} ${className}`} aria-hidden focusable="false">
       <circle className="pair-loader__mid" cx="60" cy="30" r="5" fill="var(--c-ink-faint)" />
       <Character who="you" cx={34} />
       <Character who="partner" cx={86} />

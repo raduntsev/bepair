@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { AlertCircle, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { PairMark } from '@/components/PairMark';
 import { PairLoader } from '@/components/PairLoader';
 
 export function Page({ children, width = 'narrow' }: { children: React.ReactNode; width?: 'narrow' | 'wide' | 'form' }) {
@@ -96,30 +95,31 @@ export function Alert({ kind = 'error', children }: { kind?: 'error' | 'success'
 export function Loading({ label }: { label: string }) {
   return (
     <div role="status" className="flex flex-col items-center justify-center gap-3 py-16 text-ink-faint">
-      <PairLoader className="h-8 w-16" />
+      <PairLoader className="h-12 w-24" />
       <span className="text-subhead">{label}</span>
     </div>
   );
 }
 
 /*
-  Empty is an invitation, not a dead end. The illustration is the product's own
-  mark — your ring and your partner's disc — waiting to overlap.
+  Empty is an invitation, not a dead end. The illustration is the pair
+  themselves — the two characters of the loader in their idle scene.
 */
 export function EmptyState({
   title,
   children,
   action,
-  variant = 'apart',
 }: {
   title: string;
   children?: React.ReactNode;
   action?: React.ReactNode;
+  /* Kept for callers; every empty state now shows the same idle pair. */
   variant?: 'apart' | 'together' | 'quiet';
 }) {
   return (
     <section className="rounded-2xl bg-surface px-6 py-10 text-center shadow-card">
-      <PairMark variant={variant} className="mx-auto size-16" />
+      {/* The pair, alive and waiting with you; the quiet mark only where nothing should move. */}
+      <PairLoader mode="idle" className="mx-auto h-14 w-28" />
       <h2 className="mt-4 text-headline font-semibold">{title}</h2>
       {children && <p className="mx-auto mt-1.5 max-w-sm text-subhead text-ink-faint">{children}</p>}
       {action && <div className="mt-5 flex justify-center">{action}</div>}
