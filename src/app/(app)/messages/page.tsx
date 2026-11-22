@@ -308,7 +308,7 @@ export default function MessagesPage() {
               sendText();
             }}
           >
-            <div className="material flex h-13 w-full items-center gap-2 rounded-full p-1.5" style={{ boxShadow: 'var(--sh-island)' }}>
+            <div className="flex h-13 w-full items-center gap-2 rounded-full bg-surface p-1.5" style={{ boxShadow: 'var(--sh-island)' }}>
               <Link
                 href="/ping"
                 aria-label={tr('Весточка со снимком, голосом или музыкой', 'A note with a photo, voice or music')}

@@ -409,9 +409,9 @@ function TourOverlay({
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={index}
-            initial={reduce ? false : { opacity: 0, y: 6, filter: 'blur(3px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={reduce ? undefined : { opacity: 0, y: -4, filter: 'blur(3px)' }}
+            initial={reduce ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? undefined : { opacity: 0, y: -4 }}
             transition={{ duration: 0.28, ease: EASE }}
           >
             {index === 0 && <PairMark className="mb-3 size-12" />}

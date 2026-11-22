@@ -54,19 +54,19 @@ export function currentDestination(pathname: string): Destination {
 }
 
 /*
-  Slow and even. The earlier curve front-loaded the motion — most of the
-  growth happened in the first tenth of a second and the rest was a tail, so
-  it read as a snap. An in-out curve spends its time evenly: the shape eases
-  out of rest, travels, and eases into place, a little under a second each way.
-  Content waits for the shape on the way in and leaves first on the way out.
+  Quick and light. Open in about 0.4 s, close in 0.3 s, on a curve that starts
+  fast and settles softly (iOS's sheet curve), so the shape answers the finger
+  at once. Content moves only by opacity and a small rise — no blur: a blur
+  filter on every frame is what made the island stutter on Android phones.
+  Content waits a beat for the shape on the way in and leaves first on the way out.
 */
-const EASE = [0.45, 0, 0.15, 1] as const;
-const GROW = { duration: 0.85, ease: EASE };
-const FOLD = { duration: 0.7, ease: EASE };
+const EASE = [0.32, 0.72, 0, 1] as const;
+const GROW = { duration: 0.42, ease: EASE };
+const FOLD = { duration: 0.32, ease: EASE };
 const PILL_H = 52;
 const PANEL_MAX = 320;
 const HOVER_OPEN_MS = 180;
-const HOVER_CLOSE_MS = 420;
+const HOVER_CLOSE_MS = 300;
 
 /* Tucks away on the way down, returns on the way up and near the top. */
 function useScrollTuck(disabled: boolean) {
@@ -204,8 +204,8 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
 
   const instant = { duration: 0 };
   /* Content timing hangs off the shape: in after it has grown, out before it folds. */
-  const pillFade = reduce ? instant : open ? { duration: 0.3, ease: EASE } : { duration: 0.45, delay: 0.35, ease: EASE };
-  const panelFade = reduce ? instant : open ? { duration: 0.5, delay: 0.32, ease: EASE } : { duration: 0.28, ease: EASE };
+  const pillFade = reduce ? instant : open ? { duration: 0.12, ease: EASE } : { duration: 0.2, delay: 0.14, ease: EASE };
+  const panelFade = reduce ? instant : open ? { duration: 0.24, delay: 0.12, ease: EASE } : { duration: 0.12, ease: EASE };
 
   return (
     <>
@@ -217,7 +217,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={reduce ? instant : { duration: 0.6, ease: EASE }}
+            transition={reduce ? instant : { duration: 0.3, ease: EASE }}
             onClick={() => close()}
             className="fixed inset-0 z-40"
             style={{ backgroundColor: 'var(--c-scrim)' }}
@@ -238,13 +238,13 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
           onPointerLeave={onPointerLeave}
           data-tour="island"
           className="pointer-events-auto relative overflow-hidden bg-island text-island-ink"
-          style={{ boxShadow: 'inset 0 0 0 1px var(--c-island-ring), var(--sh-island)', willChange: 'width, height' }}
+          style={{ boxShadow: 'inset 0 0 0 1px var(--c-island-ring), var(--sh-island)', willChange: 'transform' }}
         >
           {/* Capsule content — anchored to the bottom centre, fades as the shape grows. */}
           <motion.div
             ref={pillRef}
             initial={false}
-            animate={{ opacity: open ? 0 : 1, filter: open ? 'blur(4px)' : 'blur(0px)' }}
+            animate={{ opacity: open ? 0 : 1 }}
             transition={pillFade}
             className="absolute bottom-0 left-1/2 -translate-x-1/2"
             style={{ pointerEvents: open ? 'none' : 'auto' }}
@@ -286,7 +286,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
             ref={panelRef}
             id={panelId}
             initial={false}
-            animate={{ opacity: open ? 1 : 0, y: open ? 0 : 10, filter: open ? 'blur(0px)' : 'blur(4px)' }}
+            animate={{ opacity: open ? 1 : 0, y: open ? 0 : 8 }}
             transition={panelFade}
             className="absolute bottom-0 left-1/2 -translate-x-1/2 p-2"
             style={{ width: panelWidth, pointerEvents: open ? 'auto' : 'none' }}
