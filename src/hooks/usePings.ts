@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useId } from 'react';
 import supabase from '@/lib/supabase';
 import { MAX_UPLOAD_BYTES, uploadMedia } from '@/lib/media';
 import { flushPush } from '@/lib/push';
@@ -27,6 +27,8 @@ export interface PingDraft {
 }
 
 export function usePings() {
+  /* Two components on one screen may use this hook; a shared channel name would make the second subscription throw. */
+  const instance = useId();
   const { user, spaceId } = useSpaceAuth();
   const [pings, setPings] = useState<Ping[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,13 +54,13 @@ export function usePings() {
   useEffect(() => {
     if (!spaceId) return;
     const channel = supabase
-      .channel(`pings:${spaceId}`)
+      .channel(`pings:${spaceId}:${instance}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pings', filter: `space_id=eq.${spaceId}` }, () => load())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [spaceId, load]);
+  }, [spaceId, instance, load]);
 
   const send = useCallback(
     async (draft: PingDraft) => {

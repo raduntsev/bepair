@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useId } from 'react';
 import supabase from '@/lib/supabase';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import type { Comments, QuestionKey, Scores } from '@/lib/planerka';
@@ -54,6 +54,8 @@ export interface PlanerkaSettings {
   from the other phone arrive through Realtime — you see each other type.
 */
 export function usePlanerka() {
+  /* Two components on one screen may use this hook; a shared channel name would make the second subscription throw. */
+  const instance = useId();
   const { user, spaceId } = useSpaceAuth();
   const [planerkas, setPlanerkas] = useState<Planerka[]>([]);
   const [wheels, setWheels] = useState<Wheel[]>([]);
@@ -97,7 +99,7 @@ export function usePlanerka() {
     if (!spaceId) return;
     const filter = `space_id=eq.${spaceId}`;
     const channel = supabase
-      .channel(`planerka:${spaceId}`)
+      .channel(`planerka:${spaceId}:${instance}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'planerka_wheels', filter }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'planerka_answers', filter }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'plan_todos', filter }, () => load())
@@ -105,7 +107,7 @@ export function usePlanerka() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [spaceId, load]);
+  }, [spaceId, instance, load]);
 
   /* The session for a date, created on first touch. */
   const ensure = useCallback(

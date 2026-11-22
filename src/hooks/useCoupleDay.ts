@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useId } from 'react';
 import supabase from '@/lib/supabase';
 import { todayISO } from '@/lib/dates';
 import { flushPush } from '@/lib/push';
@@ -18,6 +18,8 @@ export interface DayEntry {
 }
 
 export function useCoupleDay(date: string) {
+  /* Two components on one screen may use this hook; a shared channel name would make the second subscription throw. */
+  const instance = useId();
   const { user, spaceId, partner, settings } = useSpaceAuth();
 
   const [mine, setMine] = useState<DayEntry | null>(null);
@@ -66,13 +68,13 @@ export function useCoupleDay(date: string) {
   useEffect(() => {
     if (!spaceId) return;
     const channel = supabase
-      .channel(`day:${spaceId}:${date}`)
+      .channel(`day:${spaceId}:${date}:${instance}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'day_entries', filter: `space_id=eq.${spaceId}` }, () => load())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [spaceId, date, load]);
+  }, [spaceId, date, instance, load]);
 
   const save = useCallback(
     async (mood: number, note: string) => {
