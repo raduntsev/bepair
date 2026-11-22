@@ -52,7 +52,7 @@ export function ExchangeHeader({ current, balance }: { current: '/tasks' | '/sto
         )}
       </div>
 
-      <nav aria-label="Просьбы и услуги" className="mt-4 flex rounded-xl bg-sunken p-1">
+      <nav aria-label="Просьбы и услуги" data-tour="exchange-tabs" className="mt-4 flex rounded-xl bg-sunken p-1">
         {TABS.map(({ href, label }) => {
           const active = href === current;
           return (

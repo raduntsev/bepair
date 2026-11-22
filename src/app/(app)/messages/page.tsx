@@ -288,6 +288,7 @@ export default function MessagesPage() {
 
       {/* Input bar: a note in one line, sitting just above the island. */}
       <form
+        data-tour="messages-input"
         onSubmit={(e) => {
           e.preventDefault();
           sendText();
@@ -324,6 +325,7 @@ export default function MessagesPage() {
             <Link
               href="/messages/letter"
               aria-label="Написать письмо"
+              data-tour="messages-letter"
               className={`flex size-10 shrink-0 items-center justify-center rounded-full bg-sunken text-ink-soft transition-colors hover:text-ink ${
                 !partner ? 'pointer-events-none opacity-40' : ''
               }`}

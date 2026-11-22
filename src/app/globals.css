@@ -561,6 +561,94 @@
   }
 }
 
+@layer components {
+  /*
+    The loading pair — see src/components/PairLoader.tsx. One 3.6 s loop:
+    0–30 %   both look at each other and blink;
+    34–42 %  a small squash, then each shrinks to a dot and steps inward;
+    42–74 %  three dots, a wave rolls through them left to right;
+    74–96 %  the middle dot goes, the outer two spring back round with an
+             overshoot that reads as a breath, not a bounce.
+  */
+  .pair-loader {
+    overflow: visible;
+  }
+  .pair-loader__blob,
+  .pair-loader__mid,
+  .pair-loader__eyes {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation-duration: 3.6s;
+    animation-iteration-count: infinite;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
+  }
+  .pair-loader__blob--you {
+    animation-name: pair-loader-you;
+  }
+  .pair-loader__blob--partner {
+    animation-name: pair-loader-partner;
+  }
+  .pair-loader__mid {
+    animation-name: pair-loader-mid;
+    opacity: 0.55;
+  }
+  .pair-loader__blob--you .pair-loader__eyes {
+    animation-name: pair-loader-eyes-you;
+  }
+  .pair-loader__blob--partner .pair-loader__eyes {
+    animation-name: pair-loader-eyes-partner;
+  }
+
+  @keyframes pair-loader-you {
+    0%, 30% { transform: translate(0, 0) scale(1); }
+    35% { transform: translate(-1px, 1px) scale(1.07, 0.93); }
+    42%, 46% { transform: translate(9px, 0) scale(0.3); }
+    50% { transform: translate(9px, -7px) scale(0.3); }
+    54%, 70% { transform: translate(9px, 0) scale(0.3); }
+    80% { transform: translate(0, -1px) scale(1.1, 1.05); }
+    86% { transform: translate(0, 0) scale(0.95, 1.03); }
+    92% { transform: translate(0, 0) scale(1.02, 0.99); }
+    97%, 100% { transform: translate(0, 0) scale(1); }
+  }
+  @keyframes pair-loader-partner {
+    0%, 30% { transform: translate(0, 0) scale(1); }
+    35% { transform: translate(1px, 1px) scale(1.07, 0.93); }
+    42%, 58% { transform: translate(-9px, 0) scale(0.3); }
+    62% { transform: translate(-9px, -7px) scale(0.3); }
+    66%, 72% { transform: translate(-9px, 0) scale(0.3); }
+    82% { transform: translate(0, -1px) scale(1.1, 1.05); }
+    88% { transform: translate(0, 0) scale(0.95, 1.03); }
+    94% { transform: translate(0, 0) scale(1.02, 0.99); }
+    98%, 100% { transform: translate(0, 0) scale(1); }
+  }
+  @keyframes pair-loader-mid {
+    0%, 39% { transform: translate(0, 0) scale(0); }
+    45%, 52% { transform: translate(0, 0) scale(1); }
+    56% { transform: translate(0, -7px) scale(1); }
+    60%, 70% { transform: translate(0, 0) scale(1); }
+    76%, 100% { transform: translate(0, 0) scale(0); }
+  }
+  /* A glance at the partner, a blink, back; gone while they are dots. */
+  @keyframes pair-loader-eyes-you {
+    0%, 4% { transform: translate(0, 0) scaleY(1); opacity: 1; }
+    10%, 18% { transform: translate(3px, 1px) scaleY(1); }
+    20% { transform: translate(3px, 1px) scaleY(0.12); }
+    22%, 26% { transform: translate(3px, 1px) scaleY(1); }
+    31% { transform: translate(0, 0) scaleY(1); opacity: 1; }
+    36%, 80% { transform: translate(0, 0) scaleY(1); opacity: 0; }
+    88%, 100% { transform: translate(0, 0) scaleY(1); opacity: 1; }
+  }
+  @keyframes pair-loader-eyes-partner {
+    0%, 7% { transform: translate(0, 0) scaleY(1); opacity: 1; }
+    13%, 21% { transform: translate(-3px, 1px) scaleY(1); }
+    23% { transform: translate(-3px, 1px) scaleY(0.12); }
+    25%, 27% { transform: translate(-3px, 1px) scaleY(1); }
+    31% { transform: translate(0, 0) scaleY(1); opacity: 1; }
+    36%, 82% { transform: translate(0, 0) scaleY(1); opacity: 0; }
+    90%, 100% { transform: translate(0, 0) scaleY(1); opacity: 1; }
+  }
+}
+
 @layer utilities {
   /* Every tap target on a touch surface clears 44px; the incumbent app failed on this. */
   .tap {

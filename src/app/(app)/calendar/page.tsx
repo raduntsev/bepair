@@ -97,7 +97,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      <div className="rounded-2xl bg-surface p-3 shadow-card md:p-6">
+      <div data-tour="calendar-grid" className="rounded-2xl bg-surface p-3 shadow-card md:p-6">
         <div className="mb-5 flex items-center justify-between">
           <button
             type="button"

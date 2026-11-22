@@ -93,6 +93,8 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
   and who entered it. Fields save themselves and follow the other phone live.
   On the couple's chosen weekday a «Планёрка» card is «now» on Сегодня, right
   after your own day.
+  When the couple meets is set once, so it is not on the page: the clock in
+  the header opens it as a bottom sheet.
 - **«Сегодня» shows the next thing, not everything.** Exactly one block is
   «now», in this order: your own day → a letter waiting → what the partner did
   for you → what you were asked. Blocks with nothing in them are not rendered.
@@ -196,6 +198,18 @@ not spin, or the movement stops meaning anything.
 The turn is off wherever the mark is chrome rather than the subject (`spin={false}`
 on the wordmark in the rail). A logo revolving all day is noise, and it costs
 battery on the device this product is read on in bed.
+
+**The pair waits.** Loading is the pair mark's two halves as two round
+characters with glints for eyes (`src/components/PairLoader.tsx`): they glance
+at each other and blink, shrink into the three dots of «typing…», roll a wave
+through them, and spring back round. 3.6 s, CSS keyframes only. Used on the
+opening screen and in every `Loading` block; buttons keep their small spinner.
+
+**The tour lights the way.** «Обучение» (`src/components/Tour.tsx`) dims the
+app and lights one real element at a time, with a card beside it. The light is
+one rounded box whose shadow is the dimming, moved on a spring so it travels
+with the page as it scrolls. Targets are marked with `data-tour`. It runs once
+after onboarding and again from «Профиль → Обучение».
 
 Onboarding questions slide; everything else is plain state change.
 `prefers-reduced-motion` turns all of it off — the global reduced-motion block
