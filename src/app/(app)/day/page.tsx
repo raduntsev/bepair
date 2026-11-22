@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CalendarHeart, Check, ChevronRight, Droplet, ListTodo, Lock, Mail, Pencil, Users } from 'lucide-react';
+import { Bell, CalendarHeart, Check, ChevronRight, Droplet, ListTodo, Lock, Mail, Pencil, Users } from 'lucide-react';
 import Link from 'next/link';
 import { displayName, genitive } from '@/lib/words';
 import { promptsFor } from '@/lib/dayPrompts';
@@ -22,6 +22,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { usePlanerka } from '@/hooks/usePlanerka';
 import { usePresence } from '@/hooks/usePresence';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { useNotifications } from '@/hooks/useNotifications';
 import { useImportantDates } from '@/hooks/useImportantDates';
 import { occursOn, withAnniversary, upcoming } from '@/lib/importantDates';
 import { taskState } from '@/hooks/useTasks';
@@ -112,6 +113,7 @@ function DayView() {
   const { tasks, complete, acknowledge, error: taskError } = useTasks();
   const planerka = usePlanerka();
   const presence = usePresence();
+  const { unread } = useNotifications();
   const waitingLetters = useWaitingLetters(user?.id, isUnlocked);
 
   const [mood, setMood] = useState<number | null>(null);
@@ -223,6 +225,23 @@ function DayView() {
         eyebrow={longDate(date)}
         title={isToday ? 'Сегодня' : fmt(date, 'd MMMM')}
         back={isToday ? undefined : { href: '/day', label: 'Сегодня' }}
+        action={
+          isToday ? (
+            <Link
+              href="/notifications"
+              data-tour="day-bell"
+              aria-label={unread > 0 ? `Уведомления, новых: ${unread}` : 'Уведомления'}
+              className="relative flex size-11 items-center justify-center rounded-full bg-surface text-ink-soft shadow-card transition-colors hover:text-ink"
+            >
+              <Bell className="size-5" aria-hidden />
+              {unread > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-5 rounded-full bg-accent px-1.5 text-center text-footnote leading-5 font-semibold text-accent-ink ring-2 ring-canvas tabular-nums">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </Link>
+          ) : undefined
+        }
       />
       <div className="-mt-4 mb-6 empty:hidden">
         <DatesChip date={date} isToday={isToday} togetherSince={settings?.together_since ?? null} />

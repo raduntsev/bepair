@@ -35,11 +35,11 @@ export interface Destination {
   to each other, what did we ask of each other, when, and who are we.
 */
 export const DESTINATIONS: Destination[] = [
-  { href: '/day', label: 'Сегодня', Icon: Sun },
+  { href: '/day', label: 'Сегодня', Icon: Sun, also: ['/notifications'] },
   { href: '/messages', label: 'Переписка', Icon: MessageCircle, also: ['/letters', '/chronicle', '/ping'] },
   { href: '/tasks', label: 'Просьбы', Icon: ListChecks, also: ['/store'] },
   { href: '/calendar', label: 'Календарь', Icon: CalendarDays, also: ['/planerka'] },
-  { href: '/settings', label: 'Профиль', Icon: UserRound, also: ['/couple', '/notifications'] },
+  { href: '/settings', label: 'Профиль', Icon: UserRound, also: ['/couple'] },
 ];
 
 const COMPOSE = '/ping';
@@ -281,7 +281,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
             <ul className="flex flex-col gap-0.5">
               {DESTINATIONS.map(({ href, label, Icon }) => {
                 const active = here.href === href;
-                const badge = href === '/settings' && unread > 0;
+                const badge = href === '/day' && unread > 0;
                 return (
                   <li key={href}>
                     <Link

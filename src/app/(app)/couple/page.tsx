@@ -9,6 +9,7 @@ import { displayName } from '@/lib/words';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { usePresence } from '@/hooks/usePresence';
 import { Counters } from '@/components/Counters';
+import { Avatar } from '@/components/Avatar';
 import { PartnerRhythm } from '@/components/PartnerRhythm';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
@@ -23,7 +24,7 @@ interface Facts {
 }
 
 export default function CouplePage() {
-  const { user, partner, settings, refreshSettings } = useSpaceAuth();
+  const { user, partner, profile, settings, refreshSettings } = useSpaceAuth();
   const presence = usePresence();
   const [facts, setFacts] = useState<Facts | null>(null);
   const [answers, setAnswers] = useState<{ user_id: string; question: number; answer: string }[]>([]);
@@ -49,6 +50,13 @@ export default function CouplePage() {
   return (
     <Page>
       <PageHeader title={partner ? `Вы и ${name}` : 'Пара'} back={{ href: '/settings', label: 'Профиль' }} />
+
+      {partner && (
+        <div aria-hidden className="-mt-2 mb-5 flex">
+          <Avatar path={profile?.avatar_url} name={profile?.display_name ?? ''} who="me" className="size-16 text-title-2 ring-4 ring-canvas" />
+          <Avatar path={partner.avatar_url} name={name} who="partner" className="-ml-4 size-16 text-title-2 ring-4 ring-canvas" />
+        </div>
+      )}
 
       <Counters
         togetherSince={settings?.together_since ?? null}

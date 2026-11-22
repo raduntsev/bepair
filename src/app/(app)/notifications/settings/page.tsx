@@ -17,7 +17,7 @@ export default function NotificationSettingsPage() {
 
   return (
     <Page width="form">
-      <PageHeader title="Что присылать" back={{ href: '/settings', label: 'Профиль' }} />
+      <PageHeader title="Уведомления" back={{ href: '/settings', label: 'Профиль' }} />
       <div className="space-y-4">
         <InstallCard />
         <PushCard />

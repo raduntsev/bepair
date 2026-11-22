@@ -43,7 +43,7 @@ export default function NotificationsPage() {
     <Page width="form">
       <PageHeader
         title="Уведомления"
-        back={{ href: '/settings', label: 'Профиль' }}
+        back={{ href: '/day', label: 'Сегодня' }}
         action={
           <LinkButton href="/notifications/settings" variant="ghost" aria-label="Что присылать">
             <Bell className="size-5" aria-hidden />

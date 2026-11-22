@@ -50,3 +50,22 @@ export async function signedUrl(path: string) {
 }
 
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+
+/*
+  An avatar is a square photo, cut from the centre and scaled to 512 px on the
+  phone, so a 12 MB camera shot uploads as ~60 KB and every circle is sharp.
+*/
+export async function squareImage(file: Blob, size = 512): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('no-canvas');
+  ctx.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, size, size);
+  bitmap.close();
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('no-blob'))), 'image/jpeg', 0.86),
+  );
+}
