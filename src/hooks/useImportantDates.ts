@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import supabase from '@/lib/supabase';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import type { ImportantDate } from '@/lib/importantDates';
+import { tr } from '@/lib/i18n';
 
 /*
   Shared by the couple. Until migration 0006 is run the table does not exist:
@@ -41,7 +42,7 @@ export function useImportantDates() {
         .from('important_dates')
         .insert({ space_id: spaceId, created_by: user.id, title: title.trim(), date, yearly });
       if (writeError) {
-        setError('Не получилось добавить дату. Попробуйте ещё раз.');
+        setError(tr('Не получилось добавить дату. Попробуйте ещё раз.', 'Couldn’t add the date. Please try again.'));
         return false;
       }
       await load();
@@ -54,7 +55,7 @@ export function useImportantDates() {
     async (id: string) => {
       setError(null);
       const { error: writeError } = await supabase.from('important_dates').delete().eq('id', id);
-      if (writeError) setError('Не получилось убрать дату.');
+      if (writeError) setError(tr('Не получилось убрать дату.', 'Couldn’t remove the date.'));
       await load();
     },
     [load],

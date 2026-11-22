@@ -278,6 +278,18 @@ the product becomes an acceptance process.
 
 ## Language
 
+Two languages, Russian and English (`src/lib/i18n.ts`). Every visible string
+is a pair at the place it is used — `tr('Сегодня', 'Today')` — so the two
+travel together and nothing hides behind a key. The language is settled
+before first paint by the inline script in the root layout: the choice saved
+in Профиль, otherwise the phone's language (ru/uk/be/kk → Russian, anything
+else → English). Switching reloads the app. The server composes push and
+widget text in the reader's language from `profiles.lang`, which the app keeps
+in step; `inLang()` swaps the language only for a synchronous block. English
+calls the weekly «Планёрка» a *check-in* and «Услуги» *favours*. Developer
+notices (missing env, old database) stay Russian.
+
+
 Russian verbs agree with gender, so the profile carries an optional «он/она»
 (`src/lib/words.ts`): «Аня отметила», «Алекс отметил», and the neutral
 «отметил(а)» when unset. Names are declined for «от Ани» with a light rule set;

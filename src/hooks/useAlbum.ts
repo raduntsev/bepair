@@ -5,6 +5,7 @@ import supabase from '@/lib/supabase';
 import { BUCKET, fitImage, uploadMedia } from '@/lib/media';
 import { refreshWidgets } from '@/lib/native';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { tr } from '@/lib/i18n';
 
 export interface AlbumPhoto {
   id: string;
@@ -28,7 +29,7 @@ export function useAlbum() {
       .select('id, path, added_by, created_at')
       .eq('space_id', spaceId)
       .order('created_at', { ascending: true });
-    if (loadError) setError('Не удалось загрузить фото. Проверьте связь и обновите страницу.');
+    if (loadError) setError(tr('Не удалось загрузить фото. Проверьте связь и обновите страницу.', 'Couldn’t load photos. Check your connection and reload.'));
     else {
       setPhotos((data ?? []) as AlbumPhoto[]);
       setError(null);
@@ -56,7 +57,7 @@ export function useAlbum() {
         }
         setAdding((n) => n - 1);
       }
-      if (failed) setError(failed === files.length ? 'Фото не загрузились. Попробуйте ещё раз.' : `Не загрузилось фото: ${failed}.`);
+      if (failed) setError(failed === files.length ? tr('Фото не загрузились. Попробуйте ещё раз.', 'Photos didn’t upload. Please try again.') : tr(tr(`Не загрузилось фото: ${failed}.`, `${failed} photos didn’t upload.`), `${failed} photos didn’t upload.`));
       await load();
       refreshWidgets();
     },
@@ -67,7 +68,7 @@ export function useAlbum() {
     async (photo: AlbumPhoto) => {
       const { error: deleteError } = await supabase.from('album_photos').delete().eq('id', photo.id);
       if (deleteError) {
-        setError('Не получилось убрать фото.');
+        setError(tr('Не получилось убрать фото.', 'Couldn’t remove the photo.'));
         return;
       }
       await supabase.storage.from(BUCKET).remove([photo.path]);

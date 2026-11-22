@@ -11,6 +11,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Alert, EmptyState, Loading, Page, PageHeader } from '@/components/ui/Blocks';
 import { LinkButton } from '@/components/ui/Button';
+import { tr } from '@/lib/i18n';
 
 const ICONS: Record<NoticeKind, LucideIcon> = {
   ping: Send,
@@ -42,10 +43,10 @@ export default function NotificationsPage() {
   return (
     <Page width="form">
       <PageHeader
-        title="Уведомления"
-        back={{ href: '/day', label: 'Сегодня' }}
+        title={tr('Уведомления', 'Notifications')}
+        back={{ href: '/day', label: tr('Сегодня', 'Today') }}
         action={
-          <LinkButton href="/notifications/settings" variant="ghost" aria-label="Что присылать">
+          <LinkButton href="/notifications/settings" variant="ghost" aria-label={tr('Что присылать', 'What to send')}>
             <Bell className="size-5" aria-hidden />
           </LinkButton>
         }
@@ -54,9 +55,9 @@ export default function NotificationsPage() {
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
 
       {isLoading ? (
-        <Loading label="Загружаем уведомления…" />
+        <Loading label={tr('Загружаем уведомления…', 'Loading notifications…')} />
       ) : notices.length === 0 ? (
-        <EmptyState title="Пока тихо" variant="quiet" />
+        <EmptyState title={tr('Пока тихо', 'All quiet')} variant="quiet" />
       ) : (
         <ul className="space-y-2">
           {notices.map((notice) => {
@@ -83,7 +84,7 @@ export default function NotificationsPage() {
                     </span>
                     <span className="block text-sm text-ink-faint">
                       {relativeStamp(notice.created_at)}
-                      {fresh && <span className="sr-only">, новое</span>}
+                      {fresh && <span className="sr-only">{tr(', новое', ', new')}</span>}
                     </span>
                   </span>
                   {fresh && <span className="mt-2 size-2 shrink-0 rounded-full bg-accent" aria-hidden />}

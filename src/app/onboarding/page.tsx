@@ -16,6 +16,7 @@ import { InviteCard } from '@/components/InviteCard';
 import { Centered } from '@/components/AuthScreens';
 import { ReminderSettings } from '@/components/ReminderSettings';
 import { useReminders } from '@/hooks/useReminders';
+import { tr } from '@/lib/i18n';
 
 const TOTAL = QUESTIONS.length;
 
@@ -62,7 +63,7 @@ export default function OnboardingPage() {
     const ok = await updateProfile({ display_name: name.trim(), ...(gender ? { gender } : {}) });
     setBusy(false);
     if (!ok) {
-      setError('Не получилось сохранить имя. Попробуйте ещё раз.');
+      setError(tr('Не получилось сохранить имя. Попробуйте ещё раз.', 'Couldn’t save the name. Please try again.'));
       return;
     }
     setStep(1);
@@ -84,7 +85,7 @@ export default function OnboardingPage() {
       }
       setBusy(false);
       if (saveError) {
-        setError('Ответ не сохранился. Попробуйте ещё раз или пропустите вопрос.');
+        setError(tr('Ответ не сохранился. Попробуйте ещё раз или пропустите вопрос.', 'The answer wasn’t saved. Try again or skip the question.'));
         return;
       }
     }
@@ -98,17 +99,17 @@ export default function OnboardingPage() {
     return (
       <Centered>
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Всё готово</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{tr('Всё готово', 'All set')}</h1>
           <p className="mt-2 text-sm text-ink-soft">
             {partner
-              ? `${partner.display_name || 'Партнёр'} уже здесь. Можно отмечать первый общий день.`
-              : 'Осталось позвать партнёра. Без него пространство работает, но смысла в нём немного.'}
+              ? tr(`${partner.display_name || 'Партнёр'} уже здесь. Можно отмечать первый общий день.`, `${partner.display_name || 'Your partner'} is already here. You can mark your first day together.`)
+              : tr('Осталось позвать партнёра. Без него пространство работает, но смысла в нём немного.', 'All that’s left is to invite your partner. The space works without them, but there isn’t much point.')}
           </p>
         </div>
         {!partner && <InviteCard />}
         <div className="mt-4 flex justify-center">
           <Button variant={partner ? 'primary' : 'ghost'} size={partner ? 'lg' : 'md'} onClick={() => router.replace('/day')}>
-            {partner ? 'Открыть день' : 'Позже'}
+            {partner ? tr('Открыть день', 'Open the day') : tr('Позже', 'Later')}
           </Button>
         </div>
       </Centered>
@@ -118,9 +119,9 @@ export default function OnboardingPage() {
   if (step === 0) {
     return (
       <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 py-10">
-        <p className="text-sm text-ink-faint">Знакомство</p>
-        <h1 className="mt-2 text-2xl leading-snug font-semibold tracking-tight md:text-3xl">Как вас зовут?</h1>
-        <p className="mt-3 text-sm text-ink-faint">Это имя увидит партнёр. Поменять можно в настройках.</p>
+        <p className="text-sm text-ink-faint">{tr('Знакомство', 'Getting started')}</p>
+        <h1 className="mt-2 text-2xl leading-snug font-semibold tracking-tight md:text-3xl">{tr('Как вас зовут?', 'What’s your name?')}</h1>
+        <p className="mt-3 text-sm text-ink-faint">{tr('Это имя увидит партнёр. Поменять можно в настройках.', 'Your partner will see this name. You can change it in settings.')}</p>
         <form
           className="mt-6 space-y-5"
           onSubmit={(event) => {
@@ -128,23 +129,23 @@ export default function OnboardingPage() {
             if (name.trim()) introduce();
           }}
         >
-          <Input aria-label="Имя" autoComplete="given-name" autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="Имя" />
+          <Input aria-label={tr('Имя', 'Name')} autoComplete="given-name" autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder={tr('Имя', 'Name')} />
           <div>
-            <p className="mb-2 text-sm font-medium">О себе</p>
+            <p className="mb-2 text-sm font-medium">{tr('О себе', 'About you')}</p>
             <Segment
-              legend="Как о вас писать"
+              legend={tr('Как о вас писать', 'How to address you')}
               options={[
-                { value: 'f' as const, label: 'Я женщина' },
-                { value: 'm' as const, label: 'Я мужчина' },
+                { value: 'f' as const, label: tr('Я женщина', 'She') },
+                { value: 'm' as const, label: tr('Я мужчина', 'He') },
               ]}
               value={gender}
               onChange={setGender}
             />
-            <p className="mt-2 text-sm text-ink-faint">Чтобы уведомления партнёру звучали по-человечески. Можно не выбирать.</p>
+            <p className="mt-2 text-sm text-ink-faint">{tr('Чтобы уведомления партнёру звучали по-человечески. Можно не выбирать.', 'So notifications to your partner read naturally. Optional.')}</p>
           </div>
           {error && <Alert>{error}</Alert>}
           <Button type="submit" size="lg" block loading={busy} disabled={!name.trim()}>
-            Дальше <ArrowRight className="size-5" aria-hidden />
+            {tr('Дальше', 'Next')} <ArrowRight className="size-5" aria-hidden />
           </Button>
         </form>
       </div>
@@ -158,7 +159,7 @@ export default function OnboardingPage() {
       <div className="mb-10 flex items-center gap-3">
         <button
           type="button"
-          aria-label={step > 1 ? 'Предыдущий вопрос' : 'К имени'}
+          aria-label={step > 1 ? tr('Предыдущий вопрос', 'Previous question') : tr('К имени', 'Back to name')}
           onClick={() => setStep(step - 1)}
           className="tap flex items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-sunken hover:text-ink disabled:opacity-30"
         >
@@ -170,7 +171,7 @@ export default function OnboardingPage() {
           aria-valuemin={1}
           aria-valuemax={TOTAL}
           aria-valuenow={step}
-          aria-label="Вопросы"
+          aria-label={tr('Вопросы', 'Questions')}
         >
           <div className="h-full rounded-full bg-accent transition-[width] duration-300 ease-out-soft" style={{ width: `${(step / TOTAL) * 100}%` }} />
         </div>
@@ -189,13 +190,13 @@ export default function OnboardingPage() {
           className="flex flex-1 flex-col"
         >
           <p className="text-sm text-ink-faint">
-            Вопрос {step} из {TOTAL}
+            {tr(`Вопрос ${step} из ${TOTAL}`, `Question ${step} of ${TOTAL}`)}
           </p>
           <h1 className="mt-2 text-2xl leading-snug font-semibold tracking-tight md:text-3xl">{QUESTIONS[step - 1]}</h1>
           <p className="mt-3 text-sm text-ink-faint">
             {isDate
-              ? 'С этого дня мы посчитаем, сколько вы вместе. Дату можно поменять в профиле пары.'
-              : 'Ответ увидит только партнёр. Пропустить можно любой вопрос.'}
+              ? tr('С этого дня мы посчитаем, сколько вы вместе. Дату можно поменять в профиле пары.', 'We’ll count your days together from this date. You can change it in your couple profile.')
+              : tr('Ответ увидит только партнёр. Пропустить можно любой вопрос.', 'Only your partner will see the answer. Any question can be skipped.')}
           </p>
 
           <div className="mt-6">
@@ -213,7 +214,7 @@ export default function OnboardingPage() {
                 rows={5}
                 value={value}
                 onChange={(event) => setAnswers({ ...answers, [step]: event.target.value })}
-                placeholder="Напишите как есть — коротко тоже годится."
+                placeholder={tr('Напишите как есть — коротко тоже годится.', 'Write it as it is — short is fine.')}
               />
             )}
           </div>
@@ -228,16 +229,16 @@ export default function OnboardingPage() {
             <Button size="lg" block loading={busy} disabled={!value.trim()} onClick={() => advance(true)}>
               {step === TOTAL ? (
                 <>
-                  <Check className="size-5" aria-hidden /> Завершить
+                  <Check className="size-5" aria-hidden /> {tr('Завершить', 'Finish')}
                 </>
               ) : (
                 <>
-                  Дальше <ArrowRight className="size-5" aria-hidden />
+                  {tr('Дальше', 'Next')} <ArrowRight className="size-5" aria-hidden />
                 </>
               )}
             </Button>
             <Button variant="ghost" block disabled={busy} onClick={() => advance(false)}>
-              Пропустить
+              {tr('Пропустить', 'Skip')}
             </Button>
           </div>
         </motion.div>
@@ -263,10 +264,10 @@ function RemindersStep({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 py-10">
-      <p className="text-sm text-ink-faint">Последний шаг</p>
-      <h1 className="mt-2 text-2xl leading-snug font-semibold tracking-tight md:text-3xl">Когда напоминать?</h1>
+      <p className="text-sm text-ink-faint">{tr('Последний шаг', 'Last step')}</p>
+      <h1 className="mt-2 text-2xl leading-snug font-semibold tracking-tight md:text-3xl">{tr('Когда напоминать?', 'When to remind you?')}</h1>
       <p className="mt-3 text-sm text-ink-faint">
-        Только когда есть повод и не чаще раза в день. Поменять можно в любой момент в настройках уведомлений.
+        {tr('Только когда есть повод и не чаще раза в день. Поменять можно в любой момент в настройках уведомлений.', 'Only when there’s a reason, and at most once a day. You can change it any time in notification settings.')}
       </p>
       <div className="mt-6">
         <ReminderSettings value={reminders} onChange={update} />
@@ -278,10 +279,10 @@ function RemindersStep({ onDone }: { onDone: () => void }) {
       )}
       <div className="mt-8 flex flex-wrap items-center gap-3">
         <Button size="lg" onClick={onDone}>
-          Готово <ArrowRight className="size-4" aria-hidden />
+          {tr('Готово', 'Done')} <ArrowRight className="size-4" aria-hidden />
         </Button>
         <Button variant="ghost" onClick={onDone}>
-          Настрою позже
+          {tr('Настрою позже', 'I’ll set it later')}
         </Button>
       </div>
     </div>

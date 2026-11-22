@@ -12,10 +12,9 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { ru } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MOOD_INK, moodColor } from '@/lib/mood';
-import { sentence, todayISO } from '@/lib/dates';
+import { fmt, sentence, todayISO } from '@/lib/dates';
 import { Alert } from '@/components/ui/Blocks';
 import { useMonthEntries, type DayMark } from '@/hooks/useMonthEntries';
 import { useImportantDates, useShowMoon } from '@/hooks/useImportantDates';
@@ -25,10 +24,11 @@ import { PRINCIPAL_LABEL, phasesBetween, type Principal } from '@/lib/moon';
 import { ImportantDates } from '@/components/ImportantDates';
 import { MoonGlyph } from '@/components/MoonGlyph';
 import { TIME_TABS, TabbedHeader } from '@/components/TabbedHeader';
+import { tr } from '@/lib/i18n';
 
 const PRINCIPAL_PHASE: Record<Principal, number> = { new: 0, first: 0.25, full: 0.5, last: 0.75 };
 
-const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+const WEEKDAYS = tr('пн вт ср чт пт сб вс', 'Mo Tu We Th Fr Sa Su').split(' ');
 
 function iso(date: Date) {
   return format(date, 'yyyy-MM-dd');
@@ -89,7 +89,7 @@ export default function CalendarPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-8 sm:px-6 md:pt-12">
-      <TabbedHeader id="time" title="Календарь" tabs={TIME_TABS} current="/calendar" />
+      <TabbedHeader id="time" title={tr('Календарь', 'Calendar')} tabs={TIME_TABS} current="/calendar" />
 
       {error && (
         <div className="mb-4">
@@ -101,7 +101,7 @@ export default function CalendarPage() {
         <div className="mb-5 flex items-center justify-between">
           <button
             type="button"
-            aria-label="Предыдущий месяц"
+            aria-label={tr('Предыдущий месяц', 'Previous month')}
             onClick={() => setCursor((value) => addMonths(value, -1))}
             className="tap flex items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-sunken hover:text-ink"
           >
@@ -109,12 +109,12 @@ export default function CalendarPage() {
           </button>
 
           <h2 className="text-base font-semibold" aria-live="polite">
-            {sentence(format(cursor, 'LLLL yyyy', { locale: ru }))}
+            {sentence(fmt(cursor, 'LLLL yyyy'))}
           </h2>
 
           <button
             type="button"
-            aria-label="Следующий месяц"
+            aria-label={tr('Следующий месяц', 'Next month')}
             onClick={() => setCursor((value) => addMonths(value, 1))}
             className="tap flex items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-sunken hover:text-ink"
           >
@@ -144,7 +144,7 @@ export default function CalendarPage() {
                 type="button"
                 disabled={isFuture}
                 onClick={() => router.push(`/day?d=${key}`)}
-                aria-label={`${format(day, 'd MMMM yyyy', { locale: ru })}${mark?.theirsMarked ? ', партнёр отметил день' : ''}${mark?.mineMarked ? ', ваш день отмечен' : ''}${special.length ? `, ${special.map((d) => (d.id ? d.title : 'годовщина')).join(', ')}` : ''}${moon ? `, ${PRINCIPAL_LABEL[moon]}` : ''}`}
+                aria-label={`${fmt(day, 'd MMMM yyyy')}${mark?.theirsMarked ? tr(', партнёр отметил день', ', partner marked the day') : ''}${mark?.mineMarked ? tr(', ваш день отмечен', ', your day is marked') : ''}${special.length ? `, ${special.map((d) => (d.id ? d.title : tr('годовщина', 'anniversary'))).join(', ')}` : ''}${moon ? `, ${PRINCIPAL_LABEL[moon]}` : ''}`}
                 className={`relative flex aspect-square min-h-11 items-center justify-center rounded-full text-sm font-medium transition-colors enabled:hover:bg-sunken disabled:cursor-default ${
                   special.length ? 'disabled:opacity-60' : 'disabled:opacity-30'
                 }`}
@@ -175,8 +175,8 @@ export default function CalendarPage() {
         {!isLoading && !error && !monthHasDays && (
           <p className="mt-4 rounded-xl bg-sunken px-4 py-3 text-center text-sm text-ink-soft">
             {isCurrentMonth
-              ? 'В этом месяце пока ни одного отмеченного дня. Начните с сегодняшнего.'
-              : 'Этот месяц пуст. Дни появляются здесь, когда вы их отмечаете.'}
+              ? tr('В этом месяце пока ни одного отмеченного дня. Начните с сегодняшнего.', 'No marked days this month yet. Start with today.')
+              : tr('Этот месяц пуст. Дни появляются здесь, когда вы их отмечаете.', 'This month is empty. Days appear here as you mark them.')}
           </p>
         )}
         {!isCurrentMonth && (
@@ -186,7 +186,7 @@ export default function CalendarPage() {
               onClick={() => setCursor(startOfMonth(new Date()))}
               className="tap rounded-lg px-3 text-sm font-medium text-accent hover:underline"
             >
-              К текущему месяцу
+              {tr('К текущему месяцу', 'To this month')}
             </button>
           </div>
         )}
@@ -195,28 +195,28 @@ export default function CalendarPage() {
       <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-sm text-ink-soft">
         <span className="flex items-center gap-2">
           <span className="size-5 rounded-full ring-[2.5px] ring-inset ring-line-strong" aria-hidden />
-          ваш день
+          {tr('ваш день', 'your day')}
         </span>
         <span className="flex items-center gap-2">
           <span className="size-5 rounded-full bg-sunken" aria-hidden />
-          день партнёра
+          {tr('день партнёра', 'partner’s day')}
         </span>
         <span className="flex items-center gap-2">
           <span className="size-5 rounded-full bg-sunken ring-[2.5px] ring-inset ring-line-strong" aria-hidden />
-          отметились оба
+          {tr('отметились оба', 'both marked')}
         </span>
         {allDates.length > 0 && (
           <span className="flex items-center gap-2">
             <span className="flex size-5 items-center justify-center" aria-hidden>
               <span className="size-1.5 rounded-full bg-accent" />
             </span>
-            важная дата
+            {tr('важная дата', 'important date')}
           </span>
         )}
         {showMoon && (
           <span className="flex items-center gap-2">
             <MoonGlyph phase={0.5} size={14} className="text-ink-soft" />
-            главные фазы луны
+            {tr('главные фазы луны', 'main moon phases')}
           </span>
         )}
       </div>

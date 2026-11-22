@@ -5,6 +5,7 @@ import supabase from '@/lib/supabase';
 import { MAX_UPLOAD_BYTES, uploadMedia } from '@/lib/media';
 import { flushPush } from '@/lib/push';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { tr } from '@/lib/i18n';
 
 export interface Ping {
   id: string;
@@ -43,7 +44,7 @@ export function usePings() {
       .order('created_at', { ascending: false })
       .limit(300);
     if (!loadError) setPings((data ?? []) as Ping[]);
-    setError(loadError ? 'Не удалось загрузить летопись. Проверьте связь и обновите страницу.' : null);
+    setError(loadError ? tr('Не удалось загрузить летопись. Проверьте связь и обновите страницу.', 'Couldn’t load the feed. Check your connection and reload.') : null);
     setIsLoading(false);
   }, [spaceId]);
 
@@ -68,7 +69,7 @@ export function usePings() {
       setError(null);
 
       if (draft.photo && draft.photo.size > MAX_UPLOAD_BYTES) {
-        setError('Снимок больше 50 МБ. Выберите поменьше.');
+        setError(tr('Снимок больше 50 МБ. Выберите поменьше.', 'The photo is over 50 MB. Choose a smaller one.'));
         return false;
       }
 
@@ -91,7 +92,7 @@ export function usePings() {
         });
         if (insertError) throw insertError;
       } catch {
-        setError('Весточка не ушла. Проверьте связь и попробуйте ещё раз.');
+        setError(tr('Весточка не ушла. Проверьте связь и попробуйте ещё раз.', 'The note wasn’t sent. Check your connection and try again.'));
         return false;
       }
 
@@ -105,7 +106,7 @@ export function usePings() {
   const remove = useCallback(
     async (id: string) => {
       const { error: removeError } = await supabase.from('pings').delete().eq('id', id);
-      if (removeError) setError('Запись не удалилась.');
+      if (removeError) setError(tr('Запись не удалилась.', 'The entry wasn’t deleted.'));
       await load();
     },
     [load],

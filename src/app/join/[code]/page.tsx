@@ -6,6 +6,7 @@ import { INVITE_KEY, useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Centered, LoginPanel, Opening, Panel } from '@/components/AuthScreens';
 import { Alert } from '@/components/ui/Blocks';
 import { LinkButton } from '@/components/ui/Button';
+import { tr } from '@/lib/i18n';
 
 /*
   The link a partner taps. Signed out: remember the code, sign in, and the
@@ -36,21 +37,21 @@ export default function JoinPage() {
   }, [isLoading, isAuthenticated, hasSpace, code, joinSpace, router]);
 
   if (isLoading) return <Opening />;
-  if (!isAuthenticated) return <LoginPanel intro="Вас позвали в общее пространство. Войдите — и вы сразу окажетесь внутри." />;
+  if (!isAuthenticated) return <LoginPanel intro={tr('Вас позвали в общее пространство. Войдите — и вы сразу окажетесь внутри.', 'You’ve been invited to a shared space. Sign in and you’ll be right inside.')} />;
 
   if (hasSpace) {
     const own = inviteCode === code;
     return (
       <Centered>
         <Panel>
-          <h1 className="font-semibold">{own ? 'Это ваше собственное приглашение' : 'Вы уже в пространстве'}</h1>
+          <h1 className="font-semibold">{own ? tr('Это ваше собственное приглашение', 'This is your own invite') : tr('Вы уже в пространстве', 'You’re already in a space')}</h1>
           <p className="mt-2 text-sm text-ink-soft">
             {own
-              ? 'Отправьте эту ссылку партнёру — открыть её должен он.'
-              : 'У одного человека может быть только одно пространство. Чтобы перейти в другое, сначала выйдите из этого.'}
+              ? tr('Отправьте эту ссылку партнёру — открыть её должен он.', 'Send this link to your partner — they’re the one to open it.')
+              : tr('У одного человека может быть только одно пространство. Чтобы перейти в другое, сначала выйдите из этого.', 'One person can have only one space. To move to another, leave this one first.')}
           </p>
           <div className="mt-5">
-            <LinkButton href="/day">Открыть день</LinkButton>
+            <LinkButton href="/day">{tr('Открыть день', 'Open the day')}</LinkButton>
           </div>
         </Panel>
       </Centered>
@@ -61,10 +62,10 @@ export default function JoinPage() {
     return (
       <Centered>
         <Panel>
-          <Alert>{error ?? 'Не получилось войти по этой ссылке.'}</Alert>
+          <Alert>{error ?? tr('Не получилось войти по этой ссылке.', 'Couldn’t join with this link.')}</Alert>
           <div className="mt-5">
             <LinkButton href="/day" variant="secondary">
-              Ввести код вручную
+              {tr('Ввести код вручную', 'Enter the code by hand')}
             </LinkButton>
           </div>
         </Panel>
@@ -72,5 +73,5 @@ export default function JoinPage() {
     );
   }
 
-  return <Opening label="Входим в пространство партнёра…" />;
+  return <Opening label={tr('Входим в пространство партнёра…', 'Joining your partner’s space…')} />;
 }

@@ -9,6 +9,7 @@ import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { StoredImage } from '@/components/Media';
 import { Button } from '@/components/ui/Button';
 import { Alert, EmptyState, Loading, Page, PageHeader } from '@/components/ui/Blocks';
+import { tr } from '@/lib/i18n';
 
 /*
   The photos the «Фото» widget shows on both phones, one at a time, turning
@@ -39,12 +40,12 @@ export default function AlbumPage() {
   return (
     <Page>
       <PageHeader
-        title="Фото для виджета"
-        back={{ href: '/settings', label: 'Профиль' }}
+        title={tr('Фото для виджета', 'Photos for the widget')}
+        back={{ href: '/settings', label: tr('Профиль', 'Profile') }}
         action={
           photos.length > 0 ? (
             <Button variant="secondary" loading={adding > 0} onClick={() => input.current?.click()}>
-              <ImagePlus className="size-4" aria-hidden /> Добавить
+              <ImagePlus className="size-4" aria-hidden /> {tr('Добавить', 'Add')}
             </Button>
           ) : undefined
         }
@@ -58,18 +59,18 @@ export default function AlbumPage() {
       )}
 
       {isLoading ? (
-        <Loading label="Загружаем фото…" />
+        <Loading label={tr('Загружаем фото…', 'Loading photos…')} />
       ) : photos.length === 0 ? (
         <EmptyState
-          title="Здесь будут ваши фото"
+          title={tr('Здесь будут ваши фото', 'Your photos will be here')}
           variant="together"
           action={
             <Button size="lg" loading={adding > 0} onClick={() => input.current?.click()}>
-              <ImagePlus className="size-5" aria-hidden /> Добавить фото
+              <ImagePlus className="size-5" aria-hidden /> {tr('Добавить фото', 'Add photos')}
             </Button>
           }
         >
-          Виджет «Фото» покажет их на обоих телефонах — по одному, сменяя каждые три часа.
+          {tr('Виджет «Фото» покажет их на обоих телефонах — по одному, сменяя каждые три часа.', 'The Photo widget shows them on both phones, one at a time, changing every three hours.')}
         </EmptyState>
       ) : (
         <>
@@ -85,17 +86,17 @@ export default function AlbumPage() {
                   transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
                   className={`relative aspect-square overflow-hidden rounded-lg ${i === current ? 'ring-3 ring-accent ring-inset' : ''}`}
                 >
-                  <StoredImage path={photo.path} alt={i === current ? 'Сейчас на виджете' : 'Фото'} className="size-full" />
+                  <StoredImage path={photo.path} alt={i === current ? tr('Сейчас на виджете', 'On the widget now') : tr('Фото', 'Photo')} className="size-full" />
                   {i === current && (
                     <span className="absolute bottom-1.5 left-1.5 rounded-full bg-accent px-2 py-0.5 text-footnote font-semibold text-accent-ink">
-                      сейчас
+                      {tr('сейчас', 'now')}
                     </span>
                   )}
                   {photo.added_by === user?.id && (
                     <button
                       type="button"
                       onClick={() => remove(photo)}
-                      aria-label="Убрать фото"
+                      aria-label={tr('Убрать фото', 'Remove photo')}
                       className="absolute top-1 right-1 flex size-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
                     >
                       <Trash2 className="size-4" aria-hidden />
@@ -105,11 +106,11 @@ export default function AlbumPage() {
               ))}
             </AnimatePresence>
             {Array.from({ length: adding }).map((_, i) => (
-              <li key={`adding-${i}`} className="aspect-square animate-pulse rounded-lg bg-sunken" aria-label="Загружается" />
+              <li key={`adding-${i}`} className="aspect-square animate-pulse rounded-lg bg-sunken" aria-label={tr('Загружается', 'Uploading')} />
             ))}
           </ul>
           <p className="mt-3 px-1 text-footnote text-ink-faint">
-            {photos.length} · меняется каждые 3 часа
+            {photos.length} · {tr('меняется каждые 3 часа', 'changes every 3 hours')}
           </p>
         </>
       )}

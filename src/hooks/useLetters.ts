@@ -5,6 +5,7 @@ import supabase from '@/lib/supabase';
 import { kindOf, MAX_UPLOAD_BYTES, uploadMedia, type MediaItem } from '@/lib/media';
 import { flushPush } from '@/lib/push';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { tr } from '@/lib/i18n';
 
 export type LetterStatus = 'draft' | 'scheduled' | 'delivered';
 
@@ -92,7 +93,7 @@ export function useLetters() {
 
     /* Someone else's draft never reaches this list: RLS keeps it with its author. */
     setLetters([...readable, ...sealed].sort((a, b) => letterTime(b).localeCompare(letterTime(a))));
-    setError(loadError ? 'Не удалось загрузить письма. Проверьте связь и обновите страницу.' : null);
+    setError(loadError ? tr('Не удалось загрузить письма. Проверьте связь и обновите страницу.', 'Couldn’t load letters. Check your connection and reload.') : null);
     setIsLoading(false);
   }, [user, spaceId]);
 
@@ -108,7 +109,7 @@ export function useLetters() {
         if (file.size > MAX_UPLOAD_BYTES) throw new Error('too-big');
         const path = await uploadMedia(spaceId, 'letters', file);
         const name = 'name' in file ? (file as File).name : undefined;
-        items.push({ path, kind: name ? kindOf(file) : 'voice', name: name ?? 'Голосовое' });
+        items.push({ path, kind: name ? kindOf(file) : 'voice', name: name ?? tr('Голосовое', 'Voice note') });
       }
       return items;
     },
@@ -126,8 +127,8 @@ export function useLetters() {
       } catch (uploadError) {
         setError(
           uploadError instanceof Error && uploadError.message === 'too-big'
-            ? 'Один из файлов больше 50 МБ. Уберите его или сожмите.'
-            : 'Вложения не загрузились. Проверьте связь и попробуйте ещё раз.',
+            ? tr('Один из файлов больше 50 МБ. Уберите его или сожмите.', 'One of the files is over 50 MB. Remove or compress it.')
+            : tr('Вложения не загрузились. Проверьте связь и попробуйте ещё раз.', 'Attachments didn’t upload. Check your connection and try again.'),
         );
         return false;
       }
@@ -146,7 +147,7 @@ export function useLetters() {
         : await supabase.from('letters').insert({ ...row, space_id: spaceId, author_id: user.id, recipient_id: partner.id });
 
       if (saveError) {
-        setError('Письмо не сохранилось. Попробуйте ещё раз.');
+        setError(tr('Письмо не сохранилось. Попробуйте ещё раз.', 'The letter wasn’t saved. Please try again.'));
         return false;
       }
       if (input.status !== 'draft') flushPush();
@@ -166,7 +167,7 @@ export function useLetters() {
         .eq('status', 'scheduled')
         .select('id');
       if (cancelError || !data?.length) {
-        setError('Не удалось отменить отправку — похоже, письмо уже доставлено.');
+        setError(tr('Не удалось отменить отправку — похоже, письмо уже доставлено.', 'Couldn’t cancel — the letter seems to be delivered already.'));
         await load();
         return false;
       }

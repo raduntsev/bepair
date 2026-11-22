@@ -15,6 +15,7 @@ import { Button, LinkButton } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Segment } from '@/components/ui/Controls';
 import { Card, Page, PageHeader } from '@/components/ui/Blocks';
+import { tr } from '@/lib/i18n';
 
 interface Facts {
   letters: number;
@@ -49,7 +50,7 @@ export default function CouplePage() {
 
   return (
     <Page>
-      <PageHeader title={partner ? `Вы и ${name}` : 'Пара'} back={{ href: '/settings', label: 'Профиль' }} />
+      <PageHeader title={partner ? tr(`Вы и ${name}`, `You and ${name}`) : tr('Пара', 'Couple')} back={{ href: '/settings', label: tr('Профиль', 'Profile') }} />
 
       {partner && (
         <div aria-hidden className="-mt-2 mb-5 flex">
@@ -71,9 +72,11 @@ export default function CouplePage() {
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-semibold">Начало</h2>
+              <h2 className="font-semibold">{tr('Начало', 'The beginning')}</h2>
               <p className="mt-1 text-sm text-ink-soft">
-                {settings?.together_since ? `Вы считаете началом ${fmt(settings.together_since, 'd MMMM yyyy')}.` : 'Дата не указана.'}
+                {settings?.together_since
+                  ? tr(`Вы считаете началом ${fmt(settings.together_since, 'd MMMM yyyy')}.`, `You count ${fmt(settings.together_since, 'd MMMM yyyy')} as the beginning.`)
+                  : tr('Дата не указана.', 'No date set.')}
               </p>
             </div>
             {!editingDate && (
@@ -84,13 +87,13 @@ export default function CouplePage() {
                   setEditingDate(true);
                 }}
               >
-                <Pencil className="size-4" aria-hidden /> {settings?.together_since ? 'Изменить' : 'Указать'}
+                <Pencil className="size-4" aria-hidden /> {settings?.together_since ? tr('Изменить', 'Change') : tr('Указать', 'Set')}
               </Button>
             )}
           </div>
           {editingDate && (
             <div className="mt-4 flex flex-wrap gap-2">
-              <Input type="date" aria-label="День, который вы считаете началом" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value)} className="max-w-xs" />
+              <Input type="date" aria-label={tr('День, который вы считаете началом', 'The day you count as the beginning')} max={todayISO()} value={date} onChange={(e) => setDate(e.target.value)} className="max-w-xs" />
               <Button
                 disabled={!date}
                 onClick={async () => {
@@ -99,23 +102,23 @@ export default function CouplePage() {
                   setEditingDate(false);
                 }}
               >
-                Сохранить
+                {tr('Сохранить', 'Save')}
               </Button>
               <Button variant="ghost" onClick={() => setEditingDate(false)}>
-                Отмена
+                {tr('Отмена', 'Cancel')}
               </Button>
             </div>
           )}
         </Card>
 
         <Card>
-          <h2 className="font-semibold">Вы вдвоём</h2>
+          <h2 className="font-semibold">{tr('Вы вдвоём', 'The two of you')}</h2>
           <dl className="mt-3 divide-y divide-line text-sm">
             {[
-              ['Дней, отмеченных обоими', facts?.both_days],
-              ['Писем отправлено', facts?.letters],
-              ['Весточек', facts?.pings],
-              ['Просьб выполнено', facts?.tasks_done],
+              [tr('Дней, отмеченных обоими', 'Days you both marked'), facts?.both_days],
+              [tr('Писем отправлено', 'Letters sent'), facts?.letters],
+              [tr('Весточек', 'Notes'), facts?.pings],
+              [tr('Просьб выполнено', 'Requests done'), facts?.tasks_done],
             ].map(([label, value]) => (
               <div key={label as string} className="flex items-center justify-between gap-3 py-2.5">
                 <dt className="text-ink-soft">{label}</dt>
@@ -127,18 +130,18 @@ export default function CouplePage() {
 
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-semibold">Ответы на вопросы</h2>
+            <h2 className="font-semibold">{tr('Ответы на вопросы', 'Answers to the questions')}</h2>
             <LinkButton href="/onboarding" variant="ghost">
-              Ответить ещё раз
+              {tr('Ответить ещё раз', 'Answer again')}
             </LinkButton>
           </div>
           {partner && (
             <div className="mt-3">
               <Segment
-                legend="Чьи ответы"
+                legend={tr('Чьи ответы', 'Whose answers')}
                 options={[
                   { value: 'theirs' as const, label: name },
-                  { value: 'mine' as const, label: 'Мои' },
+                  { value: 'mine' as const, label: tr('Мои', 'Mine') },
                 ]}
                 value={whose}
                 onChange={setWhose}
@@ -147,7 +150,7 @@ export default function CouplePage() {
           )}
           {shown.length === 0 ? (
             <p className="mt-4 text-sm text-ink-soft">
-              {whose === 'mine' || !partner ? 'Вы пока ни на что не ответили.' : 'Партнёр пока ни на что не ответил.'}
+              {whose === 'mine' || !partner ? tr('Вы пока ни на что не ответили.', 'You haven’t answered anything yet.') : tr('Партнёр пока ни на что не ответил.', 'Your partner hasn’t answered anything yet.')}
             </p>
           ) : (
             <ul className="mt-4 space-y-5">
