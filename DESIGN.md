@@ -79,7 +79,8 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
   it a round accent button that writes to the partner. With a mouse the
   capsule opens on hover; on touch, on tap, over a scrim. It grows into a
   compact list of the five sections — Сегодня · Переписка · Просьбы ·
-  Календарь · Профиль — on Apple's sheet curve (0.56 s in, 0.46 s out);
+  Календарь · Профиль — on Apple's sheet curve (0.42 s in, 0.32 s out),
+  content by opacity and a small rise only (no blur: it stutters on Android);
   content waits for the shape on the way in and leaves first on the way out.
 - **In «Переписка» the island shares its row** with the note bar: the capsule
   shrinks to its icon and the bar fills the rest (portalled into
