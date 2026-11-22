@@ -14,10 +14,16 @@ import { Segment } from '@/components/ui/Controls';
 import { Alert, EmptyState, Loading, Page } from '@/components/ui/Blocks';
 import { TIME_TABS, TabbedHeader } from '@/components/TabbedHeader';
 import { TodosBoard } from '@/components/PlanerkaSession';
+import { tr } from '@/lib/i18n';
 
 type View = 'sessions' | 'wheel' | 'answers' | 'todos';
 const EASE = [0.32, 0.72, 0, 1] as const;
-const SHORT_Q: Record<QuestionKey, string> = { feel: 'Чувства', change: 'Изменить', enough: 'Хватает', love: 'Люблю' };
+const SHORT_Q: Record<QuestionKey, string> = {
+  feel: tr('Чувства', 'Feelings'),
+  change: tr('Изменить', 'Change'),
+  enough: tr('Хватает', 'Enough'),
+  love: tr('Люблю', 'Love'),
+};
 
 const one = (n: number | null) => (n === null ? '–' : n.toFixed(1).replace('.', ','));
 
@@ -55,14 +61,14 @@ export default function PlanerkaPage() {
     <Page>
       <TabbedHeader
         id="time"
-        title="Календарь"
+        title={tr('Календарь', 'Calendar')}
         tabs={TIME_TABS}
         current="/planerka"
         action={
           <button
             type="button"
             onClick={() => setScheduleOpen(true)}
-            aria-label="Когда встречаемся"
+            aria-label={tr('Когда встречаемся', 'When we meet')}
             aria-haspopup="dialog"
             data-tour="planerka-schedule"
             className="flex size-10 items-center justify-center rounded-full bg-sunken text-ink-soft transition-colors hover:text-ink"
@@ -88,7 +94,13 @@ export default function PlanerkaPage() {
           {closedToday ? <Check className="size-5" strokeWidth={2.6} /> : <Users className="size-5" />}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-headline font-semibold">{closedToday ? 'Планёрка проведена' : todaySession ? 'Продолжить планёрку' : isDay ? 'Планёрка сегодня' : 'Начать планёрку'}</span>
+          <span className="block text-headline font-semibold">{closedToday
+              ? tr('Планёрка проведена', 'Check-in done')
+              : todaySession
+                ? tr('Продолжить планёрку', 'Continue the check-in')
+                : isDay
+                  ? tr('Планёрка сегодня', 'Check-in today')
+                  : tr('Начать планёрку', 'Start a check-in')}</span>
           <span className="block text-footnote text-ink-faint">
             {isDay || todaySession ? fmt(today, 'd MMMM') : `${WEEKDAYS[settings.weekday]}, ${settings.at_time}`}
           </span>
@@ -98,12 +110,12 @@ export default function PlanerkaPage() {
 
       <div data-tour="planerka-views">
       <Segment
-        legend="Показать"
+        legend={tr('Показать', 'Show')}
         options={[
-          { value: 'sessions' as const, label: 'Встречи' },
-          { value: 'wheel' as const, label: 'Колесо' },
-          { value: 'answers' as const, label: 'Ответы' },
-          { value: 'todos' as const, label: 'Дела' },
+          { value: 'sessions' as const, label: tr('Встречи', 'Sessions') },
+          { value: 'wheel' as const, label: tr('Колесо', 'Wheel') },
+          { value: 'answers' as const, label: tr('Ответы', 'Answers') },
+          { value: 'todos' as const, label: tr('Дела', 'To-dos') },
         ]}
         value={view}
         onChange={setView}
@@ -111,12 +123,12 @@ export default function PlanerkaPage() {
       </div>
 
       {isLoading ? (
-        <Loading label="Загружаем планёрки…" />
+        <Loading label={tr('Загружаем планёрки…', 'Loading check-ins…')} />
       ) : (
         <motion.div key={view} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: EASE }} className="mt-5">
           {view === 'sessions' &&
             (planerkas.length === 0 ? (
-              <EmptyState title="Пока ни одной" variant="quiet" />
+              <EmptyState title={tr('Пока ни одной', 'None yet')} variant="quiet" />
             ) : (
               <ul className="overflow-hidden rounded-2xl bg-surface shadow-card [&>li+li]:border-t [&>li+li]:border-line">
                 {planerkas.map((p) => {
@@ -128,7 +140,7 @@ export default function PlanerkaPage() {
                         <span className="min-w-0 flex-1">
                           <span className="block text-body first-letter:uppercase">{fmt(p.held_on, 'd MMMM')}</span>
                           <span className="block text-footnote text-ink-faint">
-                            Я {one(mine)} · {partnerName} {one(theirs)}
+                            {tr('Я', 'Me')} {one(mine)} · {partnerName} {one(theirs)}
                           </span>
                         </span>
                         <ChevronRight className="size-5 text-line-strong" aria-hidden />
@@ -144,7 +156,7 @@ export default function PlanerkaPage() {
               <section className="rounded-2xl bg-surface p-4 shadow-card">
                 <div className="mb-3 flex items-center gap-4 text-footnote text-ink-faint">
                   <span className="flex items-center gap-1.5">
-                    <span className="size-2.5 rounded-full bg-accent" /> Я
+                    <span className="size-2.5 rounded-full bg-accent" /> {tr('Я', 'Me')}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="size-2.5 rounded-full bg-partner" /> {partnerName}
@@ -160,7 +172,7 @@ export default function PlanerkaPage() {
                         formatter={(v) => one(typeof v === 'number' ? v : null)}
                         contentStyle={{ background: 'var(--c-surface)', border: 'none', borderRadius: 12, boxShadow: 'var(--sh-lift)', fontSize: 13 }}
                       />
-                      <Line type="monotone" dataKey="me" name="Я" stroke="var(--c-accent)" strokeWidth={2.5} dot={false} connectNulls animationDuration={600} />
+                      <Line type="monotone" dataKey="me" name={tr('Я', 'Me')} stroke="var(--c-accent)" strokeWidth={2.5} dot={false} connectNulls animationDuration={600} />
                       <Line type="monotone" dataKey="partner" name={partnerName} stroke="var(--c-partner)" strokeWidth={2.5} dot={false} connectNulls animationDuration={600} />
                     </LineChart>
                   </ResponsiveContainer>
@@ -168,7 +180,7 @@ export default function PlanerkaPage() {
               </section>
 
               <ul className="flex flex-wrap gap-2">
-                {[{ key: 'avg' as const, label: 'В среднем' }, ...SPHERES].map((s) => (
+                {[{ key: 'avg' as const, label: tr('В среднем', 'Average') }, ...SPHERES].map((s) => (
                   <li key={s.key}>
                     <button
                       type="button"
@@ -210,7 +222,7 @@ export default function PlanerkaPage() {
                       {mine && (
                         <div>
                           <p className="text-footnote font-medium text-accent">
-                            Я{typeof mine.score === 'number' && <span className="tabular-nums"> · {mine.score}</span>}
+                            {tr('Я', 'Me')}{typeof mine.score === 'number' && <span className="tabular-nums"> · {mine.score}</span>}
                           </p>
                           <p className="text-body whitespace-pre-wrap">{mine.text}</p>
                         </div>
@@ -223,7 +235,7 @@ export default function PlanerkaPage() {
 
           {view === 'answers' && (
             <div className="space-y-4">
-              <Segment legend="Вопрос" options={QUESTIONS.map((q) => ({ value: q.key, label: SHORT_Q[q.key] }))} value={question} onChange={setQuestion} />
+              <Segment legend={tr('Вопрос', 'Question')} options={QUESTIONS.map((q) => ({ value: q.key, label: SHORT_Q[q.key] }))} value={question} onChange={setQuestion} />
               <p className="px-1 text-subhead font-semibold">{QUESTIONS.find((q) => q.key === question)?.label}</p>
               {planerkas.map((p) => {
                 const of = (uid: string | undefined) =>
@@ -242,7 +254,7 @@ export default function PlanerkaPage() {
                     )}
                     {mine && (
                       <div>
-                        <p className="text-footnote font-medium text-accent">Я</p>
+                        <p className="text-footnote font-medium text-accent">{tr('Я', 'Me')}</p>
                         <p className="text-body whitespace-pre-wrap">{mine}</p>
                       </div>
                     )}
@@ -320,12 +332,12 @@ function ScheduleSheet({
             <div aria-hidden className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line-strong" />
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 id="schedule-title" className="text-title-3 font-semibold">
-                Когда встречаемся
+                {tr('Когда встречаемся', 'When we meet')}
               </h2>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Закрыть"
+                aria-label={tr('Закрыть', 'Close')}
                 className="flex size-10 items-center justify-center rounded-full bg-sunken text-ink-soft hover:text-ink"
               >
                 <X className="size-5" aria-hidden />
@@ -353,7 +365,7 @@ function ScheduleSheet({
                 ))}
             </ul>
             <label className="flex items-center justify-between gap-3">
-              <span className="text-body">Время</span>
+              <span className="text-body">{tr('Время', 'Time')}</span>
               <input
                 type="time"
                 value={settings.at_time}

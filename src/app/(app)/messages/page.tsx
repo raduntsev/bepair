@@ -12,6 +12,7 @@ import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Alert, EmptyState, Loading } from '@/components/ui/Blocks';
 import { Segment } from '@/components/ui/Controls';
 import { StoredAudio, StoredImage, TrackCard, formatDuration } from '@/components/Media';
+import { tr } from '@/lib/i18n';
 
 /*
   «Переписка» is a chat: your messages on the right, your partner's on the
@@ -37,8 +38,8 @@ function dayLabel(iso: string) {
   return safe(() => {
     const d = parseISO(iso);
     const diff = differenceInCalendarDays(new Date(), d);
-    if (diff === 0) return 'Сегодня';
-    if (diff === 1) return 'Вчера';
+    if (diff === 0) return tr('Сегодня', 'Today');
+    if (diff === 1) return tr('Вчера', 'Yesterday');
     return fmt(iso, diff < 300 ? 'd MMMM' : 'd MMMM yyyy');
   }, '');
 }
@@ -51,7 +52,7 @@ function LetterBubble({ letter, mine, onRemove }: { letter: Letter; mine: boolea
   const Icon = letter.sealed ? Lock : letter.status === 'draft' ? FileText : Mail;
   const meta =
     letter.status === 'draft'
-      ? 'Черновик'
+      ? tr('Черновик', 'Draft')
       : letter.status === 'scheduled' && !delivered
         ? letter.deliver_at
           ? fmt(letter.deliver_at, 'd MMMM, HH:mm')
@@ -71,7 +72,7 @@ function LetterBubble({ letter, mine, onRemove }: { letter: Letter; mine: boolea
         <Icon className="size-4.5" />
       </span>
       <span className="min-w-0 flex-1 text-left">
-        <span className="block truncate text-body font-semibold">{letter.sealed ? 'Письмо' : letter.title || 'Без темы'}</span>
+        <span className="block truncate text-body font-semibold">{letter.sealed ? tr('Письмо', 'Letter') : letter.title || tr('Без темы', 'No subject')}</span>
         <span className={`flex items-center gap-1 text-footnote ${mine ? 'text-white/75' : 'text-ink-faint'}`}>
           {letter.status === 'scheduled' && !delivered && <Clock className="size-3.5" aria-hidden />}
           {meta}
@@ -86,14 +87,14 @@ function LetterBubble({ letter, mine, onRemove }: { letter: Letter; mine: boolea
         <button
           type="button"
           onClick={onRemove}
-          aria-label="Удалить черновик"
+          aria-label={tr('Удалить черновик', 'Delete draft')}
           className="flex size-9 items-center justify-center rounded-full text-ink-faint hover:bg-sunken hover:text-ink"
         >
           <Trash2 className="size-4" aria-hidden />
         </button>
       )}
       {letter.sealed ? (
-        <span aria-label="Откроется, когда вы отметите свой день">{body}</span>
+        <span aria-label={tr('Откроется, когда вы отметите свой день', 'Opens once you mark your day')}>{body}</span>
       ) : (
         <Link href={`/messages/letter?id=${letter.id}`} className="max-w-[85%] rounded-[1.25rem] transition-opacity active:opacity-70">
           {body}
@@ -112,12 +113,12 @@ function PingBubble({ ping, mine }: { ping: Ping; mine: boolean }) {
           mine ? 'rounded-br-md bg-accent text-accent-ink' : 'rounded-bl-md bg-surface text-ink'
         }`}
       >
-        {ping.photo_path && <StoredImage path={ping.photo_path} alt={ping.body || 'Снимок'} className="max-h-80 w-full min-w-48" />}
+        {ping.photo_path && <StoredImage path={ping.photo_path} alt={ping.body || tr('Снимок', 'Photo')} className="max-h-80 w-full min-w-48" />}
         {!onlyPhoto && (
           <div className="space-y-2 px-3.5 py-2">
             {ping.body && <p className="text-body whitespace-pre-wrap">{ping.body}</p>}
             {ping.voice_path && (
-              <StoredAudio path={ping.voice_path} label={`Голосовое${ping.voice_ms ? `, ${formatDuration(ping.voice_ms)}` : ''}`} />
+              <StoredAudio path={ping.voice_path} label={`${tr('Голосовое', 'Voice note')}${ping.voice_ms ? `, ${formatDuration(ping.voice_ms)}` : ''}`} />
             )}
             {ping.track_url && <TrackCard url={ping.track_url} title={ping.track_title} artist={ping.track_artist} />}
           </div>
@@ -191,14 +192,14 @@ export default function MessagesPage() {
     <div className="mx-auto w-full max-w-2xl px-4 pt-6 sm:px-6 md:pt-12" style={{ paddingBottom: '5rem' }}>
       <header className="mb-4">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-large-title font-bold">Переписка</h1>
+          <h1 className="text-large-title font-bold">{tr('Переписка', 'Messages')}</h1>
           <button
             type="button"
             onClick={() => {
               setSearching((v) => !v);
               setQuery('');
             }}
-            aria-label={searching ? 'Закрыть поиск' : 'Поиск'}
+            aria-label={searching ? tr('Закрыть поиск', 'Close search') : tr('Поиск', 'Search')}
             aria-pressed={searching}
             className="flex size-10 items-center justify-center rounded-full bg-sunken text-ink-soft transition-colors hover:text-ink"
           >
@@ -218,8 +219,8 @@ export default function MessagesPage() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Поиск"
-              aria-label="Поиск по переписке"
+              placeholder={tr('Поиск', 'Search')}
+              aria-label={tr('Поиск по переписке', 'Search messages')}
               tabIndex={searching ? 0 : -1}
               className="h-full min-w-0 flex-1 bg-transparent text-body text-ink outline-none placeholder:text-ink-faint"
             />
@@ -228,11 +229,11 @@ export default function MessagesPage() {
 
         <div className="mt-3">
           <Segment
-            legend="Показать"
+            legend={tr('Показать', 'Show')}
             options={[
-              { value: 'all' as const, label: 'Все' },
-              { value: 'media' as const, label: 'Медиа' },
-              { value: 'letters' as const, label: 'Письма' },
+              { value: 'all' as const, label: tr('Все', 'All') },
+              { value: 'media' as const, label: tr('Медиа', 'Media') },
+              { value: 'letters' as const, label: tr('Письма', 'Letters') },
             ]}
             value={filter}
             onChange={setFilter}
@@ -247,16 +248,16 @@ export default function MessagesPage() {
       )}
 
       {isLoading ? (
-        <Loading label="Загружаем переписку…" />
+        <Loading label={tr('Загружаем переписку…', 'Loading messages…')} />
       ) : items.length === 0 ? (
-        <EmptyState title={q ? 'Ничего не нашлось' : 'Пока пусто'} variant="quiet" />
+        <EmptyState title={q ? tr('Ничего не нашлось', 'Nothing found') : tr('Пока пусто', 'Nothing yet')} variant="quiet" />
       ) : filter === 'media' ? (
         <div className="space-y-4">
           {photos.length > 0 && (
             <ul className="grid grid-cols-3 gap-1 overflow-hidden rounded-2xl">
               {photos.map(({ ping }) => (
                 <li key={ping.id} className="aspect-square overflow-hidden bg-sunken">
-                  <StoredImage path={ping.photo_path!} alt={ping.body || 'Снимок'} className="size-full object-cover" />
+                  <StoredImage path={ping.photo_path!} alt={ping.body || tr('Снимок', 'Photo')} className="size-full object-cover" />
                 </li>
               ))}
             </ul>
@@ -299,7 +300,7 @@ export default function MessagesPage() {
         <div className="material flex w-full max-w-2xl items-center gap-2 rounded-full p-1.5 shadow-lift">
           <Link
             href="/ping"
-            aria-label="Весточка со снимком, голосом или музыкой"
+            aria-label={tr('Весточка со снимком, голосом или музыкой', 'A note with a photo, voice or music')}
             className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sunken text-ink-soft transition-colors hover:text-ink"
           >
             <Plus className="size-5" aria-hidden />
@@ -307,15 +308,15 @@ export default function MessagesPage() {
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Весточка"
-            aria-label="Текст весточки"
+            placeholder={tr('Весточка', 'Note')}
+            aria-label={tr('Текст весточки', 'Note text')}
             disabled={!partner}
             className="h-10 min-w-0 flex-1 bg-transparent px-1 text-body text-ink outline-none placeholder:text-ink-faint"
           />
           {text.trim() ? (
             <button
               type="submit"
-              aria-label="Отправить"
+              aria-label={tr('Отправить', 'Send')}
               disabled={sending}
               className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-opacity disabled:opacity-50"
             >
@@ -324,7 +325,7 @@ export default function MessagesPage() {
           ) : (
             <Link
               href="/messages/letter"
-              aria-label="Написать письмо"
+              aria-label={tr('Написать письмо', 'Write a letter')}
               data-tour="messages-letter"
               className={`flex size-10 shrink-0 items-center justify-center rounded-full bg-sunken text-ink-soft transition-colors hover:text-ink ${
                 !partner ? 'pointer-events-none opacity-40' : ''

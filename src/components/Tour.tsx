@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { PairMark } from '@/components/PairMark';
 import { Button } from '@/components/ui/Button';
+import { tr } from '@/lib/i18n';
 
 /*
   «Обучение» — a walk through the real app, not a slideshow about it. Each step
@@ -34,104 +35,104 @@ export interface TourStep {
 
 const STEPS: TourStep[] = [
   {
-    title: 'Впаре — пространство для двоих',
-    body: 'Здесь вы каждый день честно сверяетесь, как дела друг у друга, просите о мелочах без напряжения и пишете письма, которые ждут своего часа. Покажу, где что, — это минута.',
+    title: tr('Впаре — пространство для двоих', 'Bepair — a space for two'),
+    body: tr('Здесь вы каждый день честно сверяетесь, как дела друг у друга, просите о мелочах без напряжения и пишете письма, которые ждут своего часа. Покажу, где что, — это минута.', 'Here you check in honestly every day on how each of you is doing, ask for small things without pressure, and write letters that wait for their moment. Let me show you around — it takes a minute.'),
   },
   {
     route: '/day',
     target: 'day-mood',
-    title: 'Ваш день',
-    body: 'Главное за день: отметьте настроение цветом — без цифр и оценок — и добавьте пару слов, почему так. Это занимает полминуты.',
+    title: tr('Ваш день', 'Your day'),
+    body: tr('Главное за день: отметьте настроение цветом — без цифр и оценок — и добавьте пару слов, почему так. Это занимает полминуты.', 'The main thing each day: mark your mood with a colour — no numbers, no grades — and add a few words on why. It takes half a minute.'),
   },
   {
     route: '/day',
     target: 'day-partner',
-    title: 'День партнёра',
-    body: 'Откроется, когда вы отметите свой. Так честно: вы открываетесь друг другу одновременно и никто не подглядывает.',
+    title: tr('День партнёра', 'Your partner’s day'),
+    body: tr('Откроется, когда вы отметите свой. Так честно: вы открываетесь друг другу одновременно и никто не подглядывает.', 'It opens once you mark yours. That’s fair: you open up to each other at the same time and nobody peeks.'),
   },
   {
     route: '/day',
     target: 'day-bell',
-    title: 'Уведомления',
-    body: 'Всё, что случилось, пока вас не было: партнёр отметил день, пришло письмо, выполнена просьба. Цифра — сколько нового.',
+    title: tr('Уведомления', 'Notifications'),
+    body: tr('Всё, что случилось, пока вас не было: партнёр отметил день, пришло письмо, выполнена просьба. Цифра — сколько нового.', 'Everything that happened while you were away: your partner marked the day, a letter arrived, a request was done. The number shows what’s new.'),
   },
   {
     route: '/day',
     target: 'island',
-    title: 'Все разделы здесь',
-    body: 'Нажмите на капсулу — она раскроется в список: Сегодня, Переписка, Просьбы, Календарь и Профиль.',
+    title: tr('Все разделы здесь', 'All sections are here'),
+    body: tr('Нажмите на капсулу — она раскроется в список: Сегодня, Переписка, Просьбы, Календарь и Профиль.', 'Tap the capsule and it opens into a list: Today, Messages, Requests, Calendar and Profile.'),
   },
   {
     route: '/day',
     target: 'compose',
-    title: 'Написать партнёру',
-    body: 'Короткая весточка в одно касание — с любого экрана. Можно приложить снимок, голос или песню.',
+    title: tr('Написать партнёру', 'Write to your partner'),
+    body: tr('Короткая весточка в одно касание — с любого экрана. Можно приложить снимок, голос или песню.', 'A short note in one tap, from any screen. You can add a photo, your voice or a song.'),
   },
   {
     route: '/messages',
     target: 'messages-input',
-    title: 'Переписка',
-    body: 'Весточки и письма в одной ленте, а то, что ждёт вас, — наверху. Внизу строка для быстрой записки.',
+    title: tr('Переписка', 'Messages'),
+    body: tr('Весточки и письма в одной ленте, а то, что ждёт вас, — наверху. Внизу строка для быстрой записки.', 'Notes and letters in one feed, with what’s waiting for you on top. At the bottom, a line for a quick note.'),
   },
   {
     route: '/messages',
     target: 'messages-letter',
-    title: 'Письма',
-    body: 'Письмо можно оставить черновиком, отправить к нужному часу или запечатать, пока партнёр не отметит свой день.',
+    title: tr('Письма', 'Letters'),
+    body: tr('Письмо можно оставить черновиком, отправить к нужному часу или запечатать, пока партнёр не отметит свой день.', 'A letter can stay a draft, be sent at a chosen hour, or stay sealed until your partner marks their day.'),
   },
   {
     route: '/tasks',
     target: 'tasks-compose',
-    title: 'Просьбы',
-    body: 'Попросите о чём-то — без требований и напоминаний. Укажите, насколько это важно: за выполнение партнёр получает баллы.',
+    title: tr('Просьбы', 'Requests'),
+    body: tr('Попросите о чём-то — без требований и напоминаний. Укажите, насколько это важно: за выполнение партнёр получает баллы.', 'Ask for something — no demands, no nagging. Say how much it matters: your partner earns points for doing it.'),
   },
   {
     route: '/tasks',
     target: 'exchange-tabs',
-    title: 'Услуги',
-    body: 'Баллы тратятся на то, что предлагает партнёр: ужин, массаж, вечер без посуды — что придумаете сами.',
+    title: tr('Услуги', 'Favours'),
+    body: tr('Баллы тратятся на то, что предлагает партнёр: ужин, массаж, вечер без посуды — что придумаете сами.', 'Points are spent on what your partner offers: dinner, a massage, an evening off the dishes — whatever you come up with.'),
   },
   {
     route: '/calendar',
     target: 'calendar-grid',
-    title: 'Календарь',
-    body: 'Все ваши дни. Видно, когда отметились оба, и в любой день можно вернуться и перечитать.',
+    title: tr('Календарь', 'Calendar'),
+    body: tr('Все ваши дни. Видно, когда отметились оба, и в любой день можно вернуться и перечитать.', 'All your days. You can see when you both marked them, and go back to any day to read it again.'),
   },
   {
     route: '/planerka',
     target: 'planerka-start',
-    title: 'Планёрка',
-    body: 'Раз в неделю садитесь вместе: колесо баланса из семи сфер с объяснением каждой оценки, четыре вопроса друг другу и общие дела.',
+    title: tr('Планёрка', 'Weekly check-in'),
+    body: tr('Раз в неделю садитесь вместе: колесо баланса из семи сфер с объяснением каждой оценки, четыре вопроса друг другу и общие дела.', 'Once a week you sit down together: a balance wheel of seven areas with a reason for each score, four questions for each other, and shared to-dos.'),
   },
   {
     route: '/planerka',
     target: 'planerka-schedule',
-    title: 'Когда встречаетесь',
-    body: 'День и время планёрки настраиваются здесь один раз. В этот день она сама появится на экране «Сегодня».',
+    title: tr('Когда встречаетесь', 'When you meet'),
+    body: tr('День и время планёрки настраиваются здесь один раз. В этот день она сама появится на экране «Сегодня».', 'Set the day and time of the check-in here once. On that day it appears on Today by itself.'),
   },
   {
     route: '/planerka',
     target: 'planerka-views',
-    title: 'История',
-    body: 'Как менялось колесо, что вы отвечали раньше и какие дела ещё ждут — всё по неделям.',
+    title: tr('История', 'History'),
+    body: tr('Как менялось колесо, что вы отвечали раньше и какие дела ещё ждут — всё по неделям.', 'How the wheel changed, what you answered before, and which to-dos are still open — week by week.'),
   },
   {
     route: '/settings',
     target: 'profile-pair',
-    title: 'Вы вдвоём',
-    body: 'Наверху — вы: фото, имя, как к вам обращаться. Ниже — профиль пары: сколько вы вместе, важные даты, ответы друг о друге.',
+    title: tr('Вы вдвоём', 'The two of you'),
+    body: tr('Наверху — вы: фото, имя, как к вам обращаться. Ниже — профиль пары: сколько вы вместе, важные даты, ответы друг о друге.', 'At the top is you: photo, name, how to address you. Below is your couple: how long you’ve been together, important dates, answers about each other.'),
   },
   {
     route: '/settings',
     target: 'profile-settings',
-    title: 'Настройки',
-    body: 'Тема, уведомления и виджеты. Парные настройки меняются только с согласия обоих.',
+    title: tr('Настройки', 'Settings'),
+    body: tr('Тема, язык, уведомления, виджеты и фото для фото-виджета. Парные настройки меняются только с согласия обоих.', 'Theme, language, notifications, widgets and photos for the photo widget. Shared settings change only when you both agree.'),
   },
   {
     route: '/settings',
     target: 'profile-tour',
-    title: 'Вот и всё',
-    body: 'Начните с главного — отметьте сегодняшний день. А пройти обучение ещё раз можно здесь.',
+    title: tr('Вот и всё', 'That’s it'),
+    body: tr('Начните с главного — отметьте сегодняшний день. А пройти обучение ещё раз можно здесь.', 'Start with the main thing — mark today. You can take this tour again here.'),
   },
 ];
 
@@ -392,7 +393,7 @@ function TourOverlay({
       >
         <div className="mb-3 flex items-center justify-between gap-3">
           <span className="text-footnote text-ink-faint tabular-nums" aria-live="polite">
-            {index + 1} из {steps.length}
+            {index + 1} {tr('из', 'of')} {steps.length}
           </span>
           {!last && (
             <button
@@ -400,7 +401,7 @@ function TourOverlay({
               onClick={onClose}
               className="-mr-2 inline-flex h-9 items-center gap-1 rounded-full px-3 text-footnote font-medium text-ink-faint transition-colors hover:bg-sunken hover:text-ink"
             >
-              Пропустить <X className="size-3.5" aria-hidden />
+              {tr('Пропустить', 'Skip')} <X className="size-3.5" aria-hidden />
             </button>
           )}
         </div>
@@ -435,7 +436,7 @@ function TourOverlay({
         <div className="mt-4 flex items-center justify-between gap-2">
           {index > 0 ? (
             <Button variant="ghost" onClick={() => go(-1)}>
-              Назад
+              {tr('Назад', 'Back')}
             </Button>
           ) : (
             <span />
@@ -447,10 +448,10 @@ function TourOverlay({
                 router.push('/day');
               }}
             >
-              Отметить день
+              {tr('Отметить день', 'Mark the day')}
             </Button>
           ) : (
-            <Button onClick={() => go(1)}>{index === 0 ? 'Показать' : 'Далее'}</Button>
+            <Button onClick={() => go(1)}>{index === 0 ? tr('Показать', 'Show me') : tr('Далее', 'Next')}</Button>
           )}
         </div>
       </motion.div>

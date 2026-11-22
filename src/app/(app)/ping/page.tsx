@@ -10,6 +10,7 @@ import { Button, LinkButton } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Field';
 import { Alert } from '@/components/ui/Blocks';
 import { formatDuration, TrackCard, VoiceRecorder } from '@/components/Media';
+import { tr } from '@/lib/i18n';
 
 const EMPTY: PingDraft = { body: '', photo: null, voice: null, track: null };
 
@@ -58,11 +59,11 @@ export default function PingPage() {
             <Send className="size-6" aria-hidden />
           </motion.span>
           <h1 role="status" className="text-lg font-semibold">
-            Весточка ушла
+            {tr('Весточка ушла', 'Note sent')}
           </h1>
           <div className="mt-2 flex flex-wrap justify-center gap-2">
             <LinkButton href="/messages" variant="secondary">
-              <BookOpen className="size-4" aria-hidden /> В переписку
+              <BookOpen className="size-4" aria-hidden /> {tr('В переписку', 'To messages')}
             </LinkButton>
             <Button
               variant="ghost"
@@ -73,7 +74,7 @@ export default function PingPage() {
                 setSent(false);
               }}
             >
-              Ещё одну
+              {tr('Ещё одну', 'Another one')}
             </Button>
           </div>
         </motion.section>
@@ -84,11 +85,11 @@ export default function PingPage() {
   return (
     <div className="mx-auto w-full max-w-xl px-4 pt-6 sm:px-6 md:pt-12">
       <header className="mb-4 flex items-center justify-between gap-3">
-        <h1 className="text-large-title font-bold">Весточка</h1>
+        <h1 className="text-large-title font-bold">{tr('Весточка', 'Note')}</h1>
         <button
           type="button"
           onClick={close}
-          aria-label="Закрыть"
+          aria-label={tr('Закрыть', 'Close')}
           className="tap flex items-center justify-center rounded-lg text-ink-faint hover:bg-sunken hover:text-ink"
         >
           <X className="size-5" aria-hidden />
@@ -97,28 +98,28 @@ export default function PingPage() {
 
       {!partner && (
         <div className="mb-4">
-          <Alert>Партнёр ещё не присоединился — весточка сохранится в летописи и дождётся его.</Alert>
+          <Alert>{tr('Партнёр ещё не присоединился — весточка сохранится в летописи и дождётся его.', 'Your partner hasn’t joined yet — the note will wait for them.')}</Alert>
         </div>
       )}
 
       <div className="space-y-4">
         <Textarea
-          aria-label="Текст весточки"
+          aria-label={tr('Текст весточки', 'Note text')}
           rows={4}
           autoFocus
           value={draft.body}
           onChange={(event) => setDraft({ ...draft, body: event.target.value })}
-          placeholder="Напишите что угодно…"
+          placeholder={tr('Напишите что угодно…', 'Write anything…')}
         />
 
         {photoUrl && (
           <div className="relative overflow-hidden rounded-2xl bg-sunken">
             {/* eslint-disable-next-line @next/next/no-img-element -- local preview of a picked file */}
-            <img src={photoUrl} alt="Выбранный снимок" className="max-h-80 w-full object-cover" />
+            <img src={photoUrl} alt={tr('Выбранный снимок', 'Chosen photo')} className="max-h-80 w-full object-cover" />
             <button
               type="button"
               onClick={() => setDraft({ ...draft, photo: null })}
-              aria-label="Убрать снимок"
+              aria-label={tr('Убрать снимок', 'Remove photo')}
               className="tap absolute top-2 right-2 flex items-center justify-center rounded-full bg-surface/90 text-ink shadow-card"
             >
               <X className="size-4.5" aria-hidden />
@@ -128,12 +129,12 @@ export default function PingPage() {
 
         {draft.voice && voiceUrl && (
           <div className="flex items-center gap-2 rounded-xl bg-sunken py-2 pr-2 pl-3.5">
-            <audio src={voiceUrl} controls className="h-10 min-w-0 flex-1" aria-label="Записанное голосовое" />
+            <audio src={voiceUrl} controls className="h-10 min-w-0 flex-1" aria-label={tr('Записанное голосовое', 'Recorded voice note')} />
             <span className="text-xs text-ink-faint tabular-nums">{formatDuration(draft.voice.ms)}</span>
             <button
               type="button"
               onClick={() => setDraft({ ...draft, voice: null })}
-              aria-label="Убрать голосовое"
+              aria-label={tr('Убрать голосовое', 'Remove voice note')}
               className="tap flex items-center justify-center rounded-lg text-ink-faint hover:bg-surface hover:text-ink"
             >
               <Trash2 className="size-4" aria-hidden />
@@ -148,17 +149,17 @@ export default function PingPage() {
         {trackOpen && !draft.track && (
           <div className="space-y-3 rounded-2xl bg-surface p-4">
             <Input
-              aria-label="Ссылка на трек"
+              aria-label={tr('Ссылка на трек', 'Track link')}
               type="url"
               inputMode="url"
               autoFocus
               value={track.url}
               onChange={(event) => setTrack({ ...track, url: event.target.value })}
-              placeholder="Ссылка из Яндекс Музыки, Spotify, YouTube…"
+              placeholder={tr('Ссылка из Яндекс Музыки, Spotify, YouTube…', 'A link from Spotify, Apple Music, YouTube…')}
             />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Input aria-label="Название" value={track.title} onChange={(event) => setTrack({ ...track, title: event.target.value })} placeholder="Название" />
-              <Input aria-label="Исполнитель" value={track.artist} onChange={(event) => setTrack({ ...track, artist: event.target.value })} placeholder="Исполнитель" />
+              <Input aria-label={tr('Название', 'Title')} value={track.title} onChange={(event) => setTrack({ ...track, title: event.target.value })} placeholder={tr('Название', 'Title')} />
+              <Input aria-label={tr('Исполнитель', 'Artist')} value={track.artist} onChange={(event) => setTrack({ ...track, artist: event.target.value })} placeholder={tr('Исполнитель', 'Artist')} />
             </div>
             <div className="flex gap-2">
               <Button
@@ -169,10 +170,10 @@ export default function PingPage() {
                   setTrackOpen(false);
                 }}
               >
-                Приложить
+                {tr('Приложить', 'Attach')}
               </Button>
               <Button variant="ghost" onClick={() => setTrackOpen(false)}>
-                Отмена
+                {tr('Отмена', 'Cancel')}
               </Button>
             </div>
           </div>
@@ -191,10 +192,10 @@ export default function PingPage() {
             }}
           />
           <Button variant="secondary" onClick={() => fileRef.current?.click()}>
-            <ImageIcon className="size-4" aria-hidden /> {draft.photo ? 'Другой снимок' : 'Снимок'}
+            <ImageIcon className="size-4" aria-hidden /> {draft.photo ? tr('Другой снимок', 'Another photo') : tr('Снимок', 'Photo')}
           </Button>
           <Button variant="secondary" onClick={() => setTrackOpen(true)} disabled={!!draft.track || trackOpen}>
-            <Music className="size-4" aria-hidden /> Музыка
+            <Music className="size-4" aria-hidden /> {tr('Музыка', 'Music')}
           </Button>
           {!draft.voice && <VoiceRecorder onRecorded={(blob, ms) => setDraft((current) => ({ ...current, voice: { blob, ms } }))} />}
         </div>
@@ -213,7 +214,7 @@ export default function PingPage() {
             if (ok) setSent(true);
           }}
         >
-          <Send className="size-4.5" aria-hidden /> Отправить весточку
+          <Send className="size-4.5" aria-hidden /> {tr('Отправить весточку', 'Send the note')}
         </Button>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Field';
 import { Alert, Chip, EmptyState, Loading, Page, SectionHeader } from '@/components/ui/Blocks';
 import { ExchangeHeader } from '@/components/ExchangeHeader';
+import { tr } from '@/lib/i18n';
 
 interface ShopItem {
   id: string;
@@ -63,7 +64,7 @@ export default function StorePage() {
 
     /* A dropped ledger error would render a confident, wrong balance of 0. */
     setError(
-      itemsResult.error || ledgerResult.error ? 'Не удалось загрузить услуги и баллы. Проверьте связь и обновите страницу.' : null,
+      itemsResult.error || ledgerResult.error ? tr('Не удалось загрузить услуги и баллы. Проверьте связь и обновите страницу.', 'Couldn’t load favours and points. Check your connection and reload.') : null,
     );
     setIsLoading(false);
   }, [user, spaceId]);
@@ -84,7 +85,7 @@ export default function StorePage() {
     });
     setBusy(false);
     if (saveError) {
-      setError('Услуга не сохранилась. Попробуйте ещё раз.');
+      setError(tr('Услуга не сохранилась. Попробуйте ещё раз.', 'The favour wasn’t saved. Please try again.'));
       return;
     }
     setTitle('');
@@ -108,7 +109,7 @@ export default function StorePage() {
 
     if (claimError || !claimed || claimed.length === 0) {
       setClaiming(null);
-      setError(claimError ? 'Не получилось попросить об услуге. Попробуйте ещё раз.' : 'Об этой услуге уже попросили.');
+      setError(claimError ? tr('Не получилось попросить об услуге. Попробуйте ещё раз.', 'Couldn’t ask for the favour. Please try again.') : tr('Об этой услуге уже попросили.', 'Someone already asked for this favour.'));
       await load();
       return;
     }
@@ -125,7 +126,7 @@ export default function StorePage() {
     if (ledgerError) {
       /* Never leave a claim standing that was not paid for. */
       await supabase.from('shop_items').update({ is_claimed: false, claimed_by: null, claimed_at: null }).eq('id', item.id);
-      setError('Баллы не списались, услуга осталась свободной. Попробуйте ещё раз.');
+      setError(tr('Баллы не списались, услуга осталась свободной. Попробуйте ещё раз.', 'Points weren’t spent; the favour is still free. Please try again.'));
     } else {
       setError(null);
       flushPush();
@@ -142,7 +143,7 @@ export default function StorePage() {
 
   const withdraw = async (item: ShopItem) => {
     const { error: removeError } = await supabase.from('shop_items').delete().eq('id', item.id).eq('is_claimed', false);
-    if (removeError) setError('Не удалось убрать услугу.');
+    if (removeError) setError(tr('Не удалось убрать услугу.', 'Couldn’t remove the favour.'));
     await load();
   };
 
@@ -157,21 +158,21 @@ export default function StorePage() {
       {composing ? (
         <section className="mb-6 rounded-2xl bg-surface p-5 shadow-card md:p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-headline font-semibold">Новая услуга</h2>
+            <h2 className="text-headline font-semibold">{tr('Новая услуга', 'New favour')}</h2>
             <button
               type="button"
               onClick={() => setComposing(false)}
-              aria-label="Закрыть"
+              aria-label={tr('Закрыть', 'Close')}
               className="tap flex items-center justify-center rounded-lg text-ink-faint hover:bg-sunken hover:text-ink"
             >
               <X className="size-5" aria-hidden />
             </button>
           </div>
           <div className="space-y-4">
-            <Input aria-label="Название" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Например: массаж плеч без разговоров" autoFocus />
-            <Textarea aria-label="Описание" value={description} onChange={(event) => setDescription(event.target.value)} rows={3} placeholder="Подробности, если нужны" />
+            <Input aria-label={tr('Название', 'Title')} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={tr('Например: массаж плеч без разговоров', 'For example: a shoulder massage, no talking')} autoFocus />
+            <Textarea aria-label={tr('Описание', 'Description')} value={description} onChange={(event) => setDescription(event.target.value)} rows={3} placeholder={tr('Подробности, если нужны', 'Details, if needed')} />
             <label className="flex items-center justify-between gap-3 text-subhead">
-              <span className="font-medium">Баллов</span>
+              <span className="font-medium">{tr('Баллов', 'Points')}</span>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -183,7 +184,7 @@ export default function StorePage() {
               />
             </label>
             <Button loading={busy} disabled={!title.trim()} onClick={offer}>
-              Предложить
+              {tr('Предложить', 'Offer')}
             </Button>
           </div>
         </section>
@@ -192,13 +193,13 @@ export default function StorePage() {
       {error && <div className="mb-4"><Alert>{error}</Alert></div>}
 
       {isLoading ? (
-        <Loading label="Загружаем услуги…" />
+        <Loading label={tr('Загружаем услуги…', 'Loading favours…')} />
       ) : (
         <div className="space-y-8">
           <section>
-            <SectionHeader title={partner ? `От ${genitive(name, partner.gender)}` : 'От партнёра'} />
+            <SectionHeader title={partner ? tr(`От ${genitive(name, partner.gender)}`, `From ${name}`) : tr('От партнёра', 'From your partner')} />
             {theirs.length === 0 ? (
-              <EmptyState title="Пока пусто" variant="quiet" />
+              <EmptyState title={tr('Пока пусто', 'Nothing yet')} variant="quiet" />
             ) : (
               <ul className="space-y-3">
                 {theirs.map((item) => (
@@ -209,10 +210,10 @@ export default function StorePage() {
                         {item.description && <p className="mt-1 text-sm text-ink-soft">{item.description}</p>}
                       </div>
                       {item.is_claimed ? (
-                        <Chip>{item.claimed_by === user?.id ? 'Вы попросили' : 'Уже попросили'}</Chip>
+                        <Chip>{item.claimed_by === user?.id ? tr('Вы попросили', 'You asked') : tr('Уже попросили', 'Already asked')}</Chip>
                       ) : (
                         <Button disabled={balance < item.cost_points} loading={claiming === item.id} onClick={() => request(item)}>
-                          Попросить · {item.cost_points}
+                          {tr('Попросить', 'Ask')} · {item.cost_points}
                         </Button>
                       )}
                     </div>
@@ -224,11 +225,11 @@ export default function StorePage() {
 
           <section>
             <SectionHeader
-              title="От вас"
+              title={tr('От вас', 'From you')}
               action={
                 !composing && (
                   <Button variant="ghost" className="!h-9 !px-3" onClick={() => setComposing(true)}>
-                    <Plus className="size-4" aria-hidden /> Добавить
+                    <Plus className="size-4" aria-hidden /> {tr('Добавить', 'Add')}
                   </Button>
                 )
               }
@@ -245,18 +246,18 @@ export default function StorePage() {
                       </div>
                       {item.is_claimed ? (
                         <Chip tone="partner">
-                          {name} {verb(partner?.gender, 'попросил')}
+                          {tr(`${name} ${verb(partner?.gender, 'попросил')}`, `${name} asked`)}
                         </Chip>
                       ) : null}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {item.is_claimed ? (
                         <Button variant="secondary" onClick={() => reoffer(item)}>
-                          <RotateCcw className="size-4" aria-hidden /> Сделано, предложить снова
+                          <RotateCcw className="size-4" aria-hidden /> {tr('Сделано, предложить снова', 'Done, offer again')}
                         </Button>
                       ) : (
                         <Button variant="ghost" onClick={() => withdraw(item)}>
-                          <Trash2 className="size-4" aria-hidden /> Убрать
+                          <Trash2 className="size-4" aria-hidden /> {tr('Убрать', 'Remove')}
                         </Button>
                       )}
                     </div>
