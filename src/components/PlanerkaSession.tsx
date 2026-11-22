@@ -6,7 +6,7 @@ import { ArrowDown, ArrowUp, Check, ChevronDown, Plus, Trash2 } from 'lucide-rea
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts';
 import { displayName } from '@/lib/words';
 import { fmt } from '@/lib/dates';
-import { QUESTIONS, SPHERES, type QuestionKey, type Scores } from '@/lib/planerka';
+import { QUESTIONS, SPHERES, type Comments, type QuestionKey, type Scores, type SphereKey } from '@/lib/planerka';
 import { type PlanTodo, type TodoStatus, usePlanerka } from '@/hooks/usePlanerka';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Segment } from '@/components/ui/Controls';
@@ -82,10 +82,56 @@ function AutoTextarea({ value, onChange, placeholder, label }: { value: string; 
 
 /* ——— Колесо ——— */
 
+/*
+  «Почему так» under a sphere's slider. Folded while empty so seven spheres stay
+  a short list; once it has words it stays open, and opening it puts the cursor in.
+*/
+function SphereComment({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const shown = open || value.trim() !== '';
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value, shown]);
+
+  if (!shown) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+          requestAnimationFrame(() => ref.current?.focus());
+        }}
+        className="tap -ml-1 mt-1 inline-flex items-center gap-1 rounded-lg px-1 text-footnote font-medium text-accent"
+      >
+        <Plus className="size-3.5" aria-hidden />
+        Почему так
+      </button>
+    );
+  }
+  return (
+    <textarea
+      ref={ref}
+      aria-label={`Почему так: ${label}`}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={() => setOpen(false)}
+      placeholder="Почему такая оценка"
+      rows={1}
+      className="mt-2 w-full resize-none rounded-xl border border-transparent bg-sunken px-3 py-2 text-subhead text-ink outline-none transition-[border-color,background-color,box-shadow] placeholder:text-ink-faint focus:border-accent focus:bg-surface focus:shadow-[0_0_0_3px_var(--c-accent-soft)]"
+    />
+  );
+}
+
 function WheelStep({
   planerkaId,
   personId,
   scores,
+  comments,
   note,
   previous,
   onSave,
@@ -93,19 +139,30 @@ function WheelStep({
   planerkaId: string;
   personId: string;
   scores: Scores;
+  comments: Comments;
   note: string;
   previous: Scores | null;
-  onSave: (scores: Scores, note: string) => Promise<void>;
+  onSave: (scores: Scores, comments: Comments, note: string) => Promise<void>;
 }) {
-  /* Scores and the note save as one row, so each save carries the latest of the other. */
+  /* Scores, comments and the note save as one row, so each save carries the latest of the others. */
   const noteRef = useRef(note);
   const scoresRef = useRef(scores);
-  const wheel = useAutosave<Scores>(scores, (next) => onSave(next, noteRef.current), 500);
-  const text = useAutosave<string>(note, (next) => onSave(scoresRef.current, next));
+  const commentsRef = useRef(comments);
+  const wheel = useAutosave<Scores>(scores, (next) => onSave(next, commentsRef.current, noteRef.current), 500);
+  const why = useAutosave<Comments>(comments, (next) => onSave(scoresRef.current, next, noteRef.current));
+  const text = useAutosave<string>(note, (next) => onSave(scoresRef.current, commentsRef.current, next));
   useEffect(() => {
     noteRef.current = text.value;
     scoresRef.current = wheel.value;
+    commentsRef.current = why.value;
   });
+
+  const setComment = (key: SphereKey, value: string) => {
+    const next = { ...why.value };
+    if (value) next[key] = value;
+    else delete next[key];
+    why.change(next);
+  };
 
   const data = SPHERES.map((s) => ({ sphere: s.short, now: wheel.value[s.key] ?? 0, before: previous?.[s.key] ?? 0 }));
 
@@ -155,6 +212,7 @@ function WheelStep({
                   onChange={(e) => wheel.change({ ...wheel.value, [s.key]: Number(e.target.value) })}
                   className={`mt-2 w-full accent-[var(--c-accent)] ${v === undefined ? 'opacity-40' : ''}`}
                 />
+                <SphereComment label={s.label} value={why.value[s.key] ?? ''} onChange={(c) => setComment(s.key, c)} />
               </li>
             );
           })}
@@ -164,7 +222,7 @@ function WheelStep({
       <section className="rounded-2xl bg-surface p-4 shadow-card">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-headline font-semibold">Что было на неделе</h3>
-          <SaveMark saving={wheel.saving || text.saving} saved={wheel.saved || text.saved} />
+          <SaveMark saving={wheel.saving || why.saving || text.saving} saved={wheel.saved || why.saved || text.saved} />
         </div>
         <AutoTextarea label="Заметка к колесу" value={text.value} onChange={text.change} placeholder="События, настроение, что повлияло" />
       </section>
@@ -494,9 +552,10 @@ export function PlanerkaSession({ heldOn }: { heldOn: string }) {
               planerkaId={id}
               personId={personId}
               scores={wheel?.scores ?? {}}
+              comments={wheel?.comments ?? {}}
               note={wheel?.note ?? ''}
               previous={previousWheel}
-              onSave={(scores, note) => saveWheel(id, personId, scores, note)}
+              onSave={(scores, comments, note) => saveWheel(id, personId, scores, comments, note)}
             />
           )}
           {step === 'questions' && (
