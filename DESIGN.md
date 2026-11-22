@@ -201,8 +201,11 @@ battery on the device this product is read on in bed.
 
 **The pair waits.** Loading is the pair mark's two halves as two round
 characters with glints for eyes (`src/components/PairLoader.tsx`): they glance
-at each other and blink, shrink into the three dots of «typing…», roll a wave
-through them, and spring back round. 3.6 s, CSS keyframes only. Used on the
+play a 10 s scene with a temper each — indigo curious and bouncy, amber calmer
+and a little shy: a glance, a hop and a nudge with happy ^ ^ eyes, a look up
+together, the three dots of «typing…», a wide-eyed pop back, a jump answered
+by a jump, a blink in unison. CSS keyframes only, four layers per character
+(position, body, look, eyes). Used on the
 opening screen and in every `Loading` block; buttons keep their small spinner.
 
 **The tour lights the way.** «Обучение» (`src/components/Tour.tsx`) dims the
