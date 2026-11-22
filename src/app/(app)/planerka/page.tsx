@@ -160,6 +160,41 @@ export default function PlanerkaPage() {
                   </li>
                 ))}
               </ul>
+
+              {/* Why each score was what it was — only for one sphere, where the words line up with the line above. */}
+              {sphere !== 'avg' &&
+                planerkas.map((p) => {
+                  const of = (uid: string | undefined) => {
+                    const w = wheelOf(p.id, uid);
+                    const text = w?.comments?.[sphere]?.trim();
+                    return text ? { text, score: w?.scores?.[sphere] } : null;
+                  };
+                  const mine = of(user?.id);
+                  const theirs = of(partner?.id);
+                  if (!mine && !theirs) return null;
+                  return (
+                    <section key={p.id} className="rounded-2xl bg-surface p-4 shadow-card">
+                      <h3 className="mb-2 text-footnote font-semibold text-ink-faint first-letter:uppercase">{fmt(p.held_on, 'd MMMM')}</h3>
+                      {theirs && (
+                        <div className="mb-3 last:mb-0">
+                          <p className="text-footnote font-medium text-partner-ink">
+                            {partnerName}
+                            {typeof theirs.score === 'number' && <span className="tabular-nums"> · {theirs.score}</span>}
+                          </p>
+                          <p className="text-body whitespace-pre-wrap">{theirs.text}</p>
+                        </div>
+                      )}
+                      {mine && (
+                        <div>
+                          <p className="text-footnote font-medium text-accent">
+                            Я{typeof mine.score === 'number' && <span className="tabular-nums"> · {mine.score}</span>}
+                          </p>
+                          <p className="text-body whitespace-pre-wrap">{mine.text}</p>
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
             </div>
           )}
 

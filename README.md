@@ -30,6 +30,8 @@
 5. `supabase/migrations/0005_bepair_partner_profile.sql`
 6. `supabase/migrations/0006_bepair_dates_moon.sql`
 7. `supabase/migrations/0007_bepair_planerka.sql` — планёрка: колесо баланса, вопросы, дела, расписание
+8. `supabase/migrations/0008_bepair_planerka_comments.sql` — комментарии к оценкам колеса
+9. `supabase/migrations/0009_bepair_letters_type_default.sql` — письма снова отправляются (старая колонка `type`)
 
 Все миграции можно запускать повторно — они идемпотентны. `supabase_migration.sql` в корне — старая разовая правка, повторно её не запускайте.
 

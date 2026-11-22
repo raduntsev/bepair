@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useId } from 'react';
 import supabase from '@/lib/supabase';
 import { todayISO } from '@/lib/dates';
 import { flushPush } from '@/lib/push';
@@ -50,6 +50,8 @@ export const STARTER_TEMPLATES = [
 ];
 
 export function useTasks() {
+  /* Two components on one screen may use this hook; a shared channel name would make the second subscription throw. */
+  const instance = useId();
   const { user, spaceId, partner } = useSpaceAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -85,13 +87,13 @@ export function useTasks() {
   useEffect(() => {
     if (!spaceId) return;
     const channel = supabase
-      .channel(`tasks:${spaceId}`)
+      .channel(`tasks:${spaceId}:${instance}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'checklist_items', filter: `space_id=eq.${spaceId}` }, () => load())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [spaceId, load]);
+  }, [spaceId, instance, load]);
 
   /* checklist_items hang off a checklist; one per author per day is enough. */
   const ensureChecklist = useCallback(async () => {

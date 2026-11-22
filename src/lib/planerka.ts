@@ -17,6 +17,8 @@ export const SPHERES = [
 
 export type SphereKey = (typeof SPHERES)[number]['key'];
 export type Scores = Partial<Record<SphereKey, number>>;
+/* Why a sphere got its score — one short note per sphere, keyed like Scores. */
+export type Comments = Partial<Record<SphereKey, string>>;
 
 export const QUESTIONS = [
   { key: 'feel', label: 'Как ты себя чувствуешь в этих отношениях сейчас?' },

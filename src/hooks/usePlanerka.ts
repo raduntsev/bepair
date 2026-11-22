@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useId } from 'react';
 import supabase from '@/lib/supabase';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
-import type { QuestionKey, Scores } from '@/lib/planerka';
+import type { Comments, QuestionKey, Scores } from '@/lib/planerka';
 
 export interface Planerka {
   id: string;
@@ -15,6 +15,7 @@ export interface Wheel {
   planerka_id: string;
   user_id: string;
   scores: Scores;
+  comments: Comments;
   note: string;
   entered_by: string | null;
 }
@@ -53,6 +54,8 @@ export interface PlanerkaSettings {
   from the other phone arrive through Realtime — you see each other type.
 */
 export function usePlanerka() {
+  /* Two components on one screen may use this hook; a shared channel name would make the second subscription throw. */
+  const instance = useId();
   const { user, spaceId } = useSpaceAuth();
   const [planerkas, setPlanerkas] = useState<Planerka[]>([]);
   const [wheels, setWheels] = useState<Wheel[]>([]);
@@ -66,7 +69,7 @@ export function usePlanerka() {
     if (!spaceId) return;
     const [p, w, a, t, s] = await Promise.all([
       supabase.from('planerkas').select('id, held_on').eq('space_id', spaceId).order('held_on', { ascending: false }),
-      supabase.from('planerka_wheels').select('id, planerka_id, user_id, scores, note, entered_by').eq('space_id', spaceId),
+      supabase.from('planerka_wheels').select('id, planerka_id, user_id, scores, comments, note, entered_by').eq('space_id', spaceId),
       supabase.from('planerka_answers').select('id, planerka_id, user_id, question, answer, entered_by').eq('space_id', spaceId),
       supabase
         .from('plan_todos')
@@ -96,7 +99,7 @@ export function usePlanerka() {
     if (!spaceId) return;
     const filter = `space_id=eq.${spaceId}`;
     const channel = supabase
-      .channel(`planerka:${spaceId}`)
+      .channel(`planerka:${spaceId}:${instance}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'planerka_wheels', filter }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'planerka_answers', filter }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'plan_todos', filter }, () => load())
@@ -104,7 +107,7 @@ export function usePlanerka() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [spaceId, load]);
+  }, [spaceId, instance, load]);
 
   /* The session for a date, created on first touch. */
   const ensure = useCallback(
@@ -127,10 +130,10 @@ export function usePlanerka() {
   );
 
   const saveWheel = useCallback(
-    async (planerkaId: string, userId: string, scores: Scores, note: string) => {
+    async (planerkaId: string, userId: string, scores: Scores, comments: Comments, note: string) => {
       if (!spaceId || !user) return;
       const { error: saveError } = await supabase.from('planerka_wheels').upsert(
-        { planerka_id: planerkaId, space_id: spaceId, user_id: userId, scores, note, entered_by: user.id, updated_at: new Date().toISOString() },
+        { planerka_id: planerkaId, space_id: spaceId, user_id: userId, scores, comments, note, entered_by: user.id, updated_at: new Date().toISOString() },
         { onConflict: 'planerka_id,user_id' },
       );
       if (saveError) setError('Колесо не сохранилось. Попробуйте ещё раз.');
