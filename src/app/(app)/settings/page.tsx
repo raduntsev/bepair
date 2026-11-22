@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, Check, Heart, LayoutGrid, Lock, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import { Bell, Check, ChevronRight, GraduationCap, Heart, LayoutGrid, Lock, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import { displayName } from '@/lib/words';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Segment } from '@/components/ui/Controls';
 import { Card, LinkRow, Page, PageHeader, RowGroup, RowIcon, SectionHeader } from '@/components/ui/Blocks';
+import { useTour } from '@/components/Tour';
 import { InviteCard } from '@/components/InviteCard';
 
 type ThemeChoice = 'system' | 'light' | 'dark';
@@ -25,6 +26,7 @@ function readTheme(): ThemeChoice {
 export default function SettingsPage() {
   const { profile, partner, updateProfile, signOut } = useSpaceAuth();
   const { unread } = useNotifications();
+  const tour = useTour();
 
   const [name, setName] = useState(profile?.display_name ?? '');
   const [savedName, setSavedName] = useState(false);
@@ -60,10 +62,12 @@ export default function SettingsPage() {
       <PageHeader title="Профиль" />
 
       <div className="space-y-3">
+        <div data-tour="profile-pair">
         <RowGroup label="Вы вдвоём">
           <LinkRow href="/couple" Icon={Heart} tone="partner" title={partner ? `Вы и ${displayName(partner.display_name)}` : 'Пара'} />
           <LinkRow href="/notifications" Icon={Bell} title="Уведомления" badge={unread || undefined} />
         </RowGroup>
+        </div>
 
         {!partner && <InviteCard />}
 
@@ -122,12 +126,30 @@ export default function SettingsPage() {
         </Card>
 
         <SectionHeader title="Настройки" />
+        <div data-tour="profile-settings">
         <RowGroup label="Настройки">
           <LinkRow href="/settings/paired" Icon={Lock} title="Парные" />
           <LinkRow href="/settings/personal" Icon={UserRound} title="Личные и данные" />
           <LinkRow href="/notifications/settings" Icon={Bell} title="Что присылать" />
           <LinkRow href="/settings/widgets" Icon={LayoutGrid} title="Виджеты" />
         </RowGroup>
+        </div>
+
+        <div data-tour="profile-tour" className="pt-3">
+          <RowGroup label="Помощь">
+            <li>
+              <button
+                type="button"
+                onClick={tour.start}
+                className="flex min-h-13 w-full items-center gap-3.5 px-4 py-2.5 text-left transition-colors hover:bg-sunken focus-visible:bg-sunken active:bg-sunken"
+              >
+                <RowIcon Icon={GraduationCap} tone="neutral" />
+                <span className="min-w-0 flex-1 text-body text-ink">Обучение</span>
+                <ChevronRight className="size-5 shrink-0 text-line-strong" strokeWidth={2.2} aria-hidden />
+              </button>
+            </li>
+          </RowGroup>
+        </div>
 
         <div className="pt-6">
           <Button variant="danger" block onClick={signOut}>

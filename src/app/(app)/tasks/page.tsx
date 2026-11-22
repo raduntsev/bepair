@@ -193,7 +193,7 @@ export default function TasksPage() {
       )}
 
       {/* One field. Weight and templates unfold only once you start — nothing to read before then. */}
-      <section className={`mb-7 rounded-2xl bg-surface shadow-card transition-shadow duration-500 ${composerOpen ? 'ring-2 ring-accent' : ''}`}>
+      <section data-tour="tasks-compose" className={`mb-7 rounded-2xl bg-surface shadow-card transition-shadow duration-500 ${composerOpen ? 'ring-2 ring-accent' : ''}`}>
         <form
           className="p-2"
           onSubmit={(event) => {

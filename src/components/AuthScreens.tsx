@@ -6,6 +6,7 @@ import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Alert } from '@/components/ui/Blocks';
+import { PairLoader } from '@/components/PairLoader';
 import { PairMark } from '@/components/PairMark';
 
 export function Centered({ children }: { children: React.ReactNode }) {
@@ -24,7 +25,7 @@ export function Opening({ label = 'Открываем пространство�
   return (
     <Centered>
       <div role="status" className="flex flex-col items-center gap-4 text-ink-faint">
-        <PairMark className="size-14 animate-pulse" />
+        <PairLoader className="h-14 w-28" />
         <p className="text-sm">{label}</p>
       </div>
     </Centered>

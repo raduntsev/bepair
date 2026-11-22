@@ -228,6 +228,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
           transition={reduce ? instant : open ? GROW : FOLD}
           onPointerEnter={onPointerEnter}
           onPointerLeave={onPointerLeave}
+          data-tour="island"
           className="pointer-events-auto relative overflow-hidden bg-island text-island-ink"
           style={{ boxShadow: 'inset 0 0 0 1px var(--c-island-ring), var(--sh-island)', willChange: 'width, height' }}
         >
@@ -328,6 +329,7 @@ export function Island({ pathname, unread }: { pathname: string; unread: number 
           <Link
             href={COMPOSE}
             aria-label="Написать партнёру"
+            data-tour="compose"
             className="flex size-13 items-center justify-center rounded-full bg-[#5856d6] text-white transition-[filter] duration-300 hover:brightness-110"
             style={{ boxShadow: 'var(--sh-island)' }}
           >

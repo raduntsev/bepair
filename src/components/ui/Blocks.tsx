@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertCircle, Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { AlertCircle, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { PairMark } from '@/components/PairMark';
+import { PairLoader } from '@/components/PairLoader';
 
 export function Page({ children, width = 'narrow' }: { children: React.ReactNode; width?: 'narrow' | 'wide' | 'form' }) {
   const max = width === 'wide' ? 'max-w-5xl' : width === 'form' ? 'max-w-2xl' : 'max-w-2xl';
@@ -94,8 +95,8 @@ export function Alert({ kind = 'error', children }: { kind?: 'error' | 'success'
 
 export function Loading({ label }: { label: string }) {
   return (
-    <div role="status" className="flex items-center justify-center gap-2 py-16 text-ink-faint">
-      <Loader2 className="size-5 animate-spin" aria-hidden />
+    <div role="status" className="flex flex-col items-center justify-center gap-3 py-16 text-ink-faint">
+      <PairLoader className="h-8 w-16" />
       <span className="text-subhead">{label}</span>
     </div>
   );

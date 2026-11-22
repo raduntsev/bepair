@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Island } from '@/components/Island';
+import { TourProvider } from '@/components/Tour';
 
 /*
   No rail, no tab bar, no sub-tabs: the screen belongs to the content, and the
@@ -29,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
+    <TourProvider>
     <div className="min-h-dvh">
       {/* Each screen arrives with a short fade and rise, so a change of section never cuts. */}
       <motion.main
@@ -42,5 +44,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </motion.main>
       <Island pathname={pathname} unread={unread} />
     </div>
+    </TourProvider>
   );
 }

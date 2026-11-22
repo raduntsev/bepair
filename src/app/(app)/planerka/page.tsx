@@ -1,17 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { ChevronRight, Users } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { CalendarClock, ChevronRight, Users, X } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { fmt, todayISO } from '@/lib/dates';
 import { displayName } from '@/lib/words';
 import { QUESTIONS, SPHERES, WEEKDAYS, WEEKDAYS_SHORT, average, type QuestionKey, type SphereKey } from '@/lib/planerka';
-import { usePlanerka } from '@/hooks/usePlanerka';
+import { type PlanerkaSettings, usePlanerka } from '@/hooks/usePlanerka';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Segment } from '@/components/ui/Controls';
-import { Alert, EmptyState, Loading, Page, SectionHeader } from '@/components/ui/Blocks';
+import { Alert, EmptyState, Loading, Page } from '@/components/ui/Blocks';
 import { TIME_TABS, TabbedHeader } from '@/components/TabbedHeader';
 import { TodosBoard } from '@/components/PlanerkaSession';
 
@@ -27,6 +27,8 @@ export default function PlanerkaPage() {
   const [view, setView] = useState<View>('sessions');
   const [question, setQuestion] = useState<QuestionKey>('feel');
   const [sphere, setSphere] = useState<SphereKey | 'avg'>('avg');
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const closeSchedule = useCallback(() => setScheduleOpen(false), []);
   const partnerName = displayName(partner?.display_name);
 
   const today = todayISO();
@@ -50,7 +52,24 @@ export default function PlanerkaPage() {
 
   return (
     <Page>
-      <TabbedHeader id="time" title="Календарь" tabs={TIME_TABS} current="/planerka" />
+      <TabbedHeader
+        id="time"
+        title="Календарь"
+        tabs={TIME_TABS}
+        current="/planerka"
+        action={
+          <button
+            type="button"
+            onClick={() => setScheduleOpen(true)}
+            aria-label="Когда встречаемся"
+            aria-haspopup="dialog"
+            data-tour="planerka-schedule"
+            className="flex size-10 items-center justify-center rounded-full bg-sunken text-ink-soft transition-colors hover:text-ink"
+          >
+            <CalendarClock className="size-5" aria-hidden />
+          </button>
+        }
+      />
 
       {error && (
         <div className="mb-4">
@@ -61,6 +80,7 @@ export default function PlanerkaPage() {
       {/* The session of the day, lit on the couple's day; a quiet way in on any other. */}
       <Link
         href={`/planerka/session?d=${today}`}
+        data-tour="planerka-start"
         className={`mb-6 flex items-center gap-3.5 rounded-2xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken ${isDay || todaySession ? 'focus-ring' : ''}`}
       >
         <span aria-hidden className={`flex size-11 items-center justify-center rounded-full ${isDay || todaySession ? 'bg-accent text-accent-ink' : 'bg-sunken text-ink-soft'}`}>
@@ -75,6 +95,7 @@ export default function PlanerkaPage() {
         <ChevronRight className="size-5 text-line-strong" aria-hidden />
       </Link>
 
+      <div data-tour="planerka-views">
       <Segment
         legend="Показать"
         options={[
@@ -86,6 +107,7 @@ export default function PlanerkaPage() {
         value={view}
         onChange={setView}
       />
+      </div>
 
       {isLoading ? (
         <Loading label="Загружаем планёрки…" />
@@ -233,38 +255,115 @@ export default function PlanerkaPage() {
         </motion.div>
       )}
 
-      <SectionHeader title="Когда встречаемся" />
-      <section className="space-y-3 rounded-2xl bg-surface p-4 shadow-card">
-        <ul className="grid grid-cols-7 gap-1">
-          {WEEKDAYS_SHORT.map((label, day) => ({ label, day }))
-            /* Monday first, as a Russian week starts. */
-            .sort((a, b) => ((a.day + 6) % 7) - ((b.day + 6) % 7))
-            .map(({ label, day }) => (
-              <li key={day}>
-                <button
-                  type="button"
-                  aria-pressed={settings.weekday === day}
-                  aria-label={WEEKDAYS[day]}
-                  onClick={() => saveSettings({ ...settings, weekday: day })}
-                  className={`flex h-10 w-full items-center justify-center rounded-xl text-subhead font-medium transition-colors duration-300 ${
-                    settings.weekday === day ? 'bg-accent text-accent-ink' : 'bg-sunken text-ink-soft hover:text-ink'
-                  }`}
-                >
-                  {label}
-                </button>
-              </li>
-            ))}
-        </ul>
-        <label className="flex items-center justify-between gap-3">
-          <span className="text-body">Время</span>
-          <input
-            type="time"
-            value={settings.at_time}
-            onChange={(e) => e.target.value && saveSettings({ ...settings, at_time: e.target.value })}
-            className="h-10 rounded-xl bg-sunken px-3 text-body text-ink outline-none focus:shadow-[0_0_0_3px_var(--c-accent-soft)]"
-          />
-        </label>
-      </section>
+      <ScheduleSheet open={scheduleOpen} onClose={closeSchedule} settings={settings} onChange={saveSettings} />
     </Page>
+  );
+}
+
+/*
+  When the couple meets is set once and then left alone, so it does not live on
+  the page. The clock in the header opens it as a sheet from the bottom, the
+  same curve as the island; Esc, the scrim or the cross put it away.
+*/
+function ScheduleSheet({
+  open,
+  onClose,
+  settings,
+  onChange,
+}: {
+  open: boolean;
+  onClose: () => void;
+  settings: PlanerkaSettings;
+  onChange: (next: PlanerkaSettings) => void;
+}) {
+  const reduce = useReducedMotion();
+  const panel = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    requestAnimationFrame(() => panel.current?.focus());
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  const transition = reduce ? { duration: 0 } : { duration: 0.55, ease: [0.32, 0.72, 0, 1] as const };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center">
+          <motion.div
+            aria-hidden
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={transition}
+            onClick={onClose}
+            className="absolute inset-0"
+            style={{ backgroundColor: 'var(--c-scrim)' }}
+          />
+          <motion.div
+            ref={panel}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="schedule-title"
+            tabIndex={-1}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={transition}
+            className="relative w-full max-w-lg rounded-t-[1.75rem] bg-surface px-5 pt-4 outline-none"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)', boxShadow: 'var(--sh-lift)' }}
+          >
+            <div aria-hidden className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line-strong" />
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 id="schedule-title" className="text-title-3 font-semibold">
+                Когда встречаемся
+              </h2>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Закрыть"
+                className="flex size-10 items-center justify-center rounded-full bg-sunken text-ink-soft hover:text-ink"
+              >
+                <X className="size-5" aria-hidden />
+              </button>
+            </div>
+            <div className="space-y-4">
+            <ul className="grid grid-cols-7 gap-1">
+              {WEEKDAYS_SHORT.map((label, day) => ({ label, day }))
+                /* Monday first, as a Russian week starts. */
+                .sort((a, b) => ((a.day + 6) % 7) - ((b.day + 6) % 7))
+                .map(({ label, day }) => (
+                  <li key={day}>
+                    <button
+                      type="button"
+                      aria-pressed={settings.weekday === day}
+                      aria-label={WEEKDAYS[day]}
+                      onClick={() => onChange({ ...settings, weekday: day })}
+                      className={`flex h-10 w-full items-center justify-center rounded-xl text-subhead font-medium transition-colors duration-300 ${
+                        settings.weekday === day ? 'bg-accent text-accent-ink' : 'bg-sunken text-ink-soft hover:text-ink'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  </li>
+                ))}
+            </ul>
+            <label className="flex items-center justify-between gap-3">
+              <span className="text-body">Время</span>
+              <input
+                type="time"
+                value={settings.at_time}
+                onChange={(e) => e.target.value && onChange({ ...settings, at_time: e.target.value })}
+                className="h-10 rounded-xl bg-sunken px-3 text-body text-ink outline-none focus:shadow-[0_0_0_3px_var(--c-accent-soft)]"
+              />
+            </label>
+          </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }

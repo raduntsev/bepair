@@ -236,6 +236,7 @@ function DayView() {
         >
           {/* Your day — the one required thing, first and largest. */}
           <section
+            data-tour="day-mood"
             className={`rounded-2xl bg-surface shadow-card transition-[background-color,box-shadow] duration-500 ${ring('day')}`}
             style={{
               backgroundColor: tint ? `color-mix(in srgb, ${tint} 8%, var(--c-surface))` : undefined,
@@ -369,6 +370,7 @@ function DayView() {
             </AutoHeight>
           </section>
 
+          <div data-tour="day-partner">
           <PartnerDayCard
             partner={partner}
             entry={theirs}
@@ -378,6 +380,7 @@ function DayView() {
             justUnsealed={justUnsealed}
             partnerMarked={partnerMarkedToday}
           />
+          </div>
 
           {between && user && (
             <>
