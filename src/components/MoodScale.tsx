@@ -2,6 +2,7 @@
 
 import { useCallback, useRef } from 'react';
 import { moodColor, moodLabel } from '@/lib/mood';
+import { tr } from '@/lib/i18n';
 
 interface MoodScaleProps {
   value: number | null;
@@ -66,11 +67,11 @@ export function MoodScale({ value, onChange, disabled = false }: MoodScaleProps)
         role="slider"
         /* Stays focusable when disabled so a closed day can still be read aloud. */
         tabIndex={0}
-        aria-label="Как прошёл день"
+        aria-label={tr('Как прошёл день', 'How the day went')}
         aria-valuemin={0}
         aria-valuemax={1}
         aria-valuenow={value ?? undefined}
-        aria-valuetext={isSet ? moodLabel(value) : 'не выбрано'}
+        aria-valuetext={isSet ? moodLabel(value) : tr('не выбрано', 'not set')}
         aria-disabled={disabled || undefined}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

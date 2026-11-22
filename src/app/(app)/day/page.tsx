@@ -26,10 +26,11 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useImportantDates } from '@/hooks/useImportantDates';
 import { occursOn, withAnniversary, upcoming } from '@/lib/importantDates';
 import { taskState } from '@/hooks/useTasks';
+import { tr } from '@/lib/i18n';
 
 export default function DayPage() {
   return (
-    <Suspense fallback={<Loading label="Загружаем день…" />}>
+    <Suspense fallback={<Loading label={tr('Загружаем день…', 'Loading the day…')} />}>
       <DayView />
     </Suspense>
   );
@@ -99,7 +100,7 @@ function DatesChip({ date, isToday, togetherSince }: { date: string; isToday: bo
   return (
     <p className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-full bg-accent-soft px-3.5 text-subhead font-medium text-accent-soft-ink">
       <CalendarHeart className="size-4" aria-hidden />
-      {isToday ? 'Сегодня' : 'В этот день'}: {todays.map((o) => o.title).join(', ')}
+      {isToday ? tr('Сегодня', 'Today') : tr('В этот день', 'On this day')}: {todays.map((o) => o.title).join(', ')}
     </p>
   );
 }
@@ -176,7 +177,7 @@ function DayView() {
   /* Once the day is marked it folds into one line; «Изменить» unfolds it again. */
   const showEditor = !isClosed && (!mine || editing);
   /* A question from today's set stands in for any instruction about what to write. */
-  const notePrompt = promptsFor(date, 1)[0] ?? 'Заметка';
+  const notePrompt = promptsFor(date, 1)[0] ?? tr('Заметка', 'Note');
   /* Only for those who turned it on, and only for women — a man's profile never shows it. */
   const showCycle = isToday && !!profile?.cycle_tracking && profile?.gender === 'f' && !!user;
 
@@ -223,14 +224,14 @@ function DayView() {
     <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-8 sm:px-6 md:pt-12">
       <PageHeader
         eyebrow={longDate(date)}
-        title={isToday ? 'Сегодня' : fmt(date, 'd MMMM')}
-        back={isToday ? undefined : { href: '/day', label: 'Сегодня' }}
+        title={isToday ? tr('Сегодня', 'Today') : fmt(date, 'd MMMM')}
+        back={isToday ? undefined : { href: '/day', label: tr('Сегодня', 'Today') }}
         action={
           isToday ? (
             <Link
               href="/notifications"
               data-tour="day-bell"
-              aria-label={unread > 0 ? `Уведомления, новых: ${unread}` : 'Уведомления'}
+              aria-label={unread > 0 ? tr(`Уведомления, новых: ${unread}`, `Notifications, ${unread} new`) : tr('Уведомления', 'Notifications')}
               className="relative flex size-11 items-center justify-center rounded-full bg-surface text-ink-soft shadow-card transition-colors hover:text-ink"
             >
               <Bell className="size-5" aria-hidden />
@@ -248,7 +249,7 @@ function DayView() {
       </div>
 
       {isLoading ? (
-        <Loading label="Загружаем день…" />
+        <Loading label={tr('Загружаем день…', 'Loading the day…')} />
       ) : (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
@@ -277,13 +278,13 @@ function DayView() {
                 >
                   {showEditor ? (
                     <>
-                      <h2 className="mb-5 text-headline font-semibold">Как прошёл день?</h2>
+                      <h2 className="mb-5 text-headline font-semibold">{tr('Как прошёл день?', 'How was your day?')}</h2>
 
                       <MoodScale value={mood} onChange={setMood} />
 
                       <div className="mt-4">
                         <label htmlFor="note" className="sr-only">
-                          Заметка
+                          {tr('Заметка', 'Note')}
                         </label>
                         <Textarea
                           id="note"
@@ -307,7 +308,7 @@ function DayView() {
                             cycleValue ? 'bg-ink text-surface' : 'bg-sunken text-ink-soft hover:text-ink'
                           }`}
                         >
-                          <Droplet className="size-4" aria-hidden /> День цикла
+                          <Droplet className="size-4" aria-hidden /> {tr('День цикла', 'Cycle day')}
                         </button>
                       )}
 
@@ -331,11 +332,11 @@ function DayView() {
                                   setEditing(false);
                                 }}
                               >
-                                Отмена
+                                {tr('Отмена', 'Cancel')}
                               </Button>
                             )}
                             <Button size="lg" className="min-w-0 flex-1" loading={saving} disabled={mood === null || !isDirty} onClick={onSave}>
-                              {mine ? 'Сохранить' : 'Отметить день'}
+                              {mine ? tr('Сохранить', 'Save') : tr('Отметить день', 'Mark the day')}
                             </Button>
                           </motion.div>
                         )}
@@ -350,19 +351,19 @@ function DayView() {
                           style={{ backgroundColor: moodColor(mine.mood) }}
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="text-footnote text-ink-faint">Ваш день</p>
+                          <p className="text-footnote text-ink-faint">{tr('Ваш день', 'Your day')}</p>
                           <h2 className="flex items-center gap-1.5 text-headline font-semibold">
                             <span className="first-letter:uppercase">{moodLabel(mine.mood)}</span>
-                            {showCycle && cycle.stored && <Droplet className="size-4 text-ink-faint" aria-label="День цикла" />}
+                            {showCycle && cycle.stored && <Droplet className="size-4 text-ink-faint" aria-label={tr('День цикла', 'Cycle day')} />}
                           </h2>
                         </div>
                         <span role="status" aria-live="polite" className="contents">
-                          {justSaved && <Check className="size-5 text-accent" aria-label="Сохранено" />}
+                          {justSaved && <Check className="size-5 text-accent" aria-label={tr('Сохранено', 'Saved')} />}
                         </span>
                         {!isClosed && (
                           <Button
                             variant="ghost"
-                            aria-label="Изменить"
+                            aria-label={tr('Изменить', 'Edit')}
                             className="!size-10 !rounded-full !px-0"
                             onClick={() => {
                               setEditing(true);
@@ -378,7 +379,7 @@ function DayView() {
                   ) : (
                     <div className="flex items-center gap-3.5 text-ink-faint">
                       <span aria-hidden className="size-11 shrink-0 rounded-full border-2 border-dashed border-line-strong" />
-                      <h2 className="text-headline font-semibold">Не отмечен</h2>
+                      <h2 className="text-headline font-semibold">{tr('Не отмечен', 'Not marked')}</h2>
                     </div>
                   )}
 
@@ -406,7 +407,7 @@ function DayView() {
 
           {between && user && (
             <>
-              <SectionHeader title="Между вами" />
+              <SectionHeader title={tr('Между вами', 'Between you')} />
               <div className="flex flex-col gap-3">
                 {planerkaDay && (
                   <Link
@@ -417,7 +418,7 @@ function DayView() {
                       <Users className="size-4.5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-body font-semibold">{planerkaStarted ? 'Продолжить планёрку' : 'Планёрка'}</span>
+                      <span className="block text-body font-semibold">{planerkaStarted ? tr('Продолжить планёрку', 'Continue the check-in') : tr('Планёрка', 'Weekly check-in')}</span>
                       <span className="block text-footnote text-ink-faint">{planerka.settings.at_time}</span>
                     </span>
                     <ChevronRight className="size-5 text-line-strong" aria-hidden />
@@ -432,7 +433,7 @@ function DayView() {
                       <ListTodo className="size-4.5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-body font-semibold">Дела с планёрки</span>
+                      <span className="block text-body font-semibold">{tr('Дела с планёрки', 'Check-in to-dos')}</span>
                     </span>
                     <span className="min-w-6 rounded-full bg-sunken px-2 text-center text-footnote leading-6 font-semibold text-ink-soft">{myOpenTodos}</span>
                     <ChevronRight className="size-5 text-line-strong" aria-hidden />
@@ -448,7 +449,7 @@ function DayView() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-body font-semibold">
-                        {letters === 1 ? `Письмо от ${genitive(partnerName, partner?.gender ?? null)}` : `Писем: ${letters}`}
+                        {letters === 1 ? tr(`Письмо от ${genitive(partnerName, partner?.gender ?? null)}`, `A letter from ${partnerName}`) : tr(`Писем: ${letters}`, `${letters} letters`)}
                       </span>
                     </span>
                     <ChevronRight className="size-5 text-line-strong" aria-hidden />

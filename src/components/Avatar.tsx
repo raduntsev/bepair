@@ -6,6 +6,7 @@ import { useSignedUrl } from '@/components/Media';
 import { BUCKET, squareImage, uploadMedia } from '@/lib/media';
 import supabase from '@/lib/supabase';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { tr } from '@/lib/i18n';
 
 /*
   A person's circle: their photo if they set one, otherwise the first letter of
@@ -66,7 +67,7 @@ export function AvatarPicker({ className = 'size-20 text-title-1' }: { className
       <button
         type="button"
         onClick={() => input.current?.click()}
-        aria-label="Поменять фото"
+        aria-label={tr('Поменять фото', 'Change photo')}
         className="group relative rounded-full focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-soft"
       >
         <Avatar path={profile?.avatar_url} name={profile?.display_name ?? ''} who="me" className={className} />
@@ -90,7 +91,7 @@ export function AvatarPicker({ className = 'size-20 text-title-1' }: { className
       />
       {failed && (
         <p role="alert" className="text-footnote text-danger">
-          Фото не загрузилось
+          {tr('Фото не загрузилось', 'The photo didn’t upload')}
         </p>
       )}
     </div>

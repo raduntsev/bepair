@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Field';
 import { Toggle } from '@/components/ui/Controls';
 import { VoiceRecorder } from '@/components/Media';
+import { tr } from '@/lib/i18n';
 
 /* The letter editor, shared by «Переписка». Moved out of the old letters page unchanged in behaviour. */
 function localInputValue(iso: string | null) {
@@ -25,7 +26,7 @@ export function LetterComposer({
   onClose: () => void;
   onSave: (input: LetterInput, id?: string) => Promise<boolean>;
 }) {
-  const [title, setTitle] = useState(initial?.title === 'Без темы' ? '' : (initial?.title ?? ''));
+  const [title, setTitle] = useState((initial?.title === 'Без темы' || initial?.title === 'No subject') ? '' : (initial?.title ?? ''));
   const [content, setContent] = useState(initial?.content ?? '');
   const [deliverAt, setDeliverAt] = useState(localInputValue(initial?.deliver_at ?? null));
   const [revealAfterDay, setRevealAfterDay] = useState(initial?.reveal_after_day ?? true);
@@ -43,7 +44,7 @@ export function LetterComposer({
     setBusy(status === 'draft' ? 'draft' : 'send');
     const ok = await onSave(
       {
-        title: title.trim() || 'Без темы',
+        title: title.trim() || tr('Без темы', 'No subject'),
         content,
         status,
         deliverAt: status === 'scheduled' ? new Date(deliverAt).toISOString() : null,
@@ -60,11 +61,11 @@ export function LetterComposer({
   return (
     <section className="rounded-2xl bg-surface shadow-card">
       <div className="flex items-center justify-between px-5 pt-5 md:px-6">
-        <h1 className="text-large-title font-bold">{initial ? 'Черновик' : 'Письмо'}</h1>
+        <h1 className="text-large-title font-bold">{initial ? tr('Черновик', 'Draft') : tr('Письмо', 'Letter')}</h1>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Закрыть"
+          aria-label={tr('Закрыть', 'Close')}
           className="tap flex items-center justify-center rounded-lg text-ink-faint hover:bg-sunken hover:text-ink"
         >
           <X className="size-5" aria-hidden />
@@ -72,13 +73,13 @@ export function LetterComposer({
       </div>
 
       <div className="space-y-4 px-5 pt-4 pb-5 md:px-6">
-        <Input aria-label="Тема" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Тема" />
+        <Input aria-label={tr('Тема', 'Subject')} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={tr('Тема', 'Subject')} />
         <Textarea
-          aria-label="Текст письма"
+          aria-label={tr('Текст письма', 'Letter text')}
           value={content}
           onChange={(event) => setContent(event.target.value)}
           rows={9}
-          placeholder="Письмо"
+          placeholder={tr('Письмо', 'Letter')}
           className="measure"
         />
 
@@ -87,10 +88,10 @@ export function LetterComposer({
             {keep.map((item) => (
               <li key={item.path} className="flex items-center gap-2 rounded-xl bg-sunken px-3.5 py-2 text-sm">
                 <Paperclip className="size-4 text-ink-soft" aria-hidden />
-                <span className="min-w-0 flex-1 truncate">{item.name ?? 'Вложение'}</span>
+                <span className="min-w-0 flex-1 truncate">{item.name ?? tr('Вложение', 'Attachment')}</span>
                 <button
                   type="button"
-                  aria-label={`Убрать ${item.name ?? 'вложение'}`}
+                  aria-label={tr(`Убрать ${item.name ?? 'вложение'}`, `Remove ${item.name ?? 'attachment'}`)}
                   onClick={() => setKeep(keep.filter((k) => k.path !== item.path))}
                   className="tap flex items-center justify-center rounded-lg text-ink-faint hover:text-ink"
                 >
@@ -99,14 +100,14 @@ export function LetterComposer({
               </li>
             ))}
             {files.map((file, index) => {
-              const name = 'name' in file ? (file as File).name : 'Голосовое';
+              const name = 'name' in file ? (file as File).name : tr('Голосовое', 'Voice note');
               return (
                 <li key={`${name}-${index}`} className="flex items-center gap-2 rounded-xl bg-sunken px-3.5 py-2 text-sm">
                   <Paperclip className="size-4 text-ink-soft" aria-hidden />
                   <span className="min-w-0 flex-1 truncate">{name}</span>
                   <button
                     type="button"
-                    aria-label={`Убрать ${name}`}
+                    aria-label={tr(`Убрать ${name}`, `Remove ${name}`)}
                     onClick={() => setFiles(files.filter((_, i) => i !== index))}
                     className="tap flex items-center justify-center rounded-lg text-ink-faint hover:text-ink"
                   >
@@ -132,7 +133,7 @@ export function LetterComposer({
             }}
           />
           <Button variant="secondary" onClick={() => fileRef.current?.click()}>
-            <Paperclip className="size-4" aria-hidden /> Фото, видео, аудио
+            <Paperclip className="size-4" aria-hidden /> {tr('Фото, видео, аудио', 'Photo, video, audio')}
           </Button>
           <VoiceRecorder onRecorded={(blob) => setFiles((current) => [...current, blob])} />
         </div>
@@ -142,19 +143,19 @@ export function LetterComposer({
         <div className="flex items-start justify-between gap-4">
           <div className="text-sm">
             <p className="font-medium" id="reveal-label">
-              Открыть после его дня
+              {tr('Открыть после его дня', 'Open after their day')}
             </p>
           </div>
-          <Toggle checked={revealAfterDay} onChange={setRevealAfterDay} label="Открыть после того, как партнёр отметит свой день" />
+          <Toggle checked={revealAfterDay} onChange={setRevealAfterDay} label={tr('Открыть после того, как партнёр отметит свой день', 'Open once your partner marks their day')} />
         </div>
 
         <label className="block text-sm">
-          <span className="mb-1.5 block font-medium">Отправить позже</span>
+          <span className="mb-1.5 block font-medium">{tr('Отправить позже', 'Send later')}</span>
           <span className="flex gap-2">
             <Input type="datetime-local" min={minDate} value={deliverAt} onChange={(event) => setDeliverAt(event.target.value)} className="max-w-xs" />
             {deliverAt && (
               <Button variant="ghost" onClick={() => setDeliverAt('')}>
-                Сбросить
+                {tr('Сбросить', 'Clear')}
               </Button>
             )}
           </span>
@@ -162,10 +163,10 @@ export function LetterComposer({
 
         <div className="flex flex-wrap gap-3">
           <Button loading={busy === 'send'} disabled={!hasBody || busy !== null} onClick={() => submit(scheduled ? 'scheduled' : 'delivered')}>
-            {scheduled ? 'Запланировать' : 'Отправить'}
+            {scheduled ? tr('Запланировать', 'Schedule') : tr('Отправить', 'Send')}
           </Button>
           <Button variant="secondary" loading={busy === 'draft'} disabled={!hasBody || busy !== null} onClick={() => submit('draft')}>
-            В черновики
+            {tr('В черновики', 'Save as draft')}
           </Button>
         </div>
       </div>

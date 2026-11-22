@@ -8,6 +8,7 @@ import { timeIn } from '@/lib/dates';
 import { displayName, genitive, verb } from '@/lib/words';
 import type { DayEntry } from '@/hooks/useCoupleDay';
 import type { Partner } from '@/hooks/useSpaceAuth';
+import { tr } from '@/lib/i18n';
 
 interface PartnerDayCardProps {
   partner: Partner | null;
@@ -57,7 +58,7 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
               <span className="flex size-11 items-center justify-center rounded-full bg-accent-soft">
                 <UserPlus className="size-5" aria-hidden />
               </span>
-              Позвать партнёра
+              {tr('Позвать партнёра', 'Invite your partner')}
             </Link>
           </motion.section>
         )}
@@ -77,20 +78,20 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
                 <Lock className="size-4.5" aria-hidden />
                 {partnerMarked && isToday && (
                   <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-partner ring-2 ring-surface">
-                    <span className="sr-only">уже отмечен</span>
+                    <span className="sr-only">{tr('уже отмечен', 'already marked')}</span>
                   </span>
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-footnote text-ink-faint">День</p>
-                <h2 className="text-headline font-semibold">{genitive(name, partner?.gender ?? null)}</h2>
+                <p className="text-footnote text-ink-faint">{tr('День', 'Day')}</p>
+                <h2 className="text-headline font-semibold">{tr(genitive(name, partner?.gender ?? null), name)}</h2>
               </div>
             </div>
             <div aria-hidden className="mt-4 space-y-2 blur-[3px] select-none">
               <div className="h-3 w-11/12 rounded-full bg-sunken" />
               <div className="h-3 w-3/4 rounded-full bg-sunken" />
             </div>
-            <span className="sr-only">Откроется, когда вы отметите свой день.</span>
+            <span className="sr-only">{tr('Откроется, когда вы отметите свой день.', 'Opens once you mark your own day.')}</span>
             {clockLine}
           </motion.section>
         )}
@@ -109,7 +110,7 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
               <div className="min-w-0 flex-1">
                 <p className="text-footnote text-ink-faint">{name}</p>
                 <h2 className="text-headline font-semibold text-ink-faint">
-                  {isToday ? 'Ещё не' : 'Не'} {verb(partner?.gender, 'отметил')}
+                  {tr(`${isToday ? 'Ещё не' : 'Не'} ${verb(partner?.gender, 'отметил')}`, isToday ? 'Not marked yet' : 'Not marked')}
                 </h2>
               </div>
             </div>
@@ -151,7 +152,7 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
                   href="/ping"
                   className="inline-flex h-10 items-center gap-2 rounded-full bg-sunken px-4 text-subhead font-semibold text-accent transition-colors hover:bg-line"
                 >
-                  <Reply className="size-4" aria-hidden /> Ответить
+                  <Reply className="size-4" aria-hidden /> {tr('Ответить', 'Reply')}
                 </Link>
               )}
               {clockLine}

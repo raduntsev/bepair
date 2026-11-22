@@ -1,3 +1,5 @@
+import { tr } from '@/lib/i18n';
+
 /*
   Moon phases without any external service. The four principal phases are
   computed with Meeus, «Astronomical Algorithms», ch. 49 (main periodic terms):
@@ -100,10 +102,10 @@ export function phasesBetween(from: Date, to: Date): PhaseEvent[] {
 }
 
 export const PRINCIPAL_LABEL: Record<Principal, string> = {
-  new: 'новолуние',
-  first: 'первая четверть',
-  full: 'полнолуние',
-  last: 'последняя четверть',
+  new: tr('новолуние', 'new moon'),
+  first: tr('первая четверть', 'first quarter'),
+  full: tr('полнолуние', 'full moon'),
+  last: tr('последняя четверть', 'last quarter'),
 };
 
 export interface MoonToday {
@@ -132,19 +134,19 @@ export function moonAt(when: Date): MoonToday {
   const age = phase * 29.53;
   const label =
     age < 1.5 || age > 28.03
-      ? 'новолуние'
+      ? tr('новолуние', 'new moon')
       : age < 6.2
-        ? 'растущий серп'
+        ? tr('растущий серп', 'waxing crescent')
         : age < 8.9
-          ? 'первая четверть'
+          ? tr('первая четверть', 'first quarter')
           : age < 13.3
-            ? 'растущая луна'
+            ? tr('растущая луна', 'waxing gibbous')
             : age < 16.3
-              ? 'полнолуние'
+              ? tr('полнолуние', 'full moon')
               : age < 20.6
-                ? 'убывающая луна'
+                ? tr('убывающая луна', 'waning gibbous')
                 : age < 23.4
-                  ? 'последняя четверть'
-                  : 'убывающий серп';
+                  ? tr('последняя четверть', 'last quarter')
+                  : tr('убывающий серп', 'waning crescent');
   return { phase, lit, waxing, label };
 }

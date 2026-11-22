@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Field';
 import { Alert } from '@/components/ui/Blocks';
 import { PairLoader } from '@/components/PairLoader';
 import { PairMark } from '@/components/PairMark';
+import { tr } from '@/lib/i18n';
 
 export function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -21,7 +22,7 @@ export function Panel({ children }: { children: React.ReactNode }) {
   return <div className="rounded-2xl bg-surface p-6 shadow-card md:p-7">{children}</div>;
 }
 
-export function Opening({ label = 'Открываем пространство…' }: { label?: string }) {
+export function Opening({ label = tr('Открываем пространство…', 'Opening your space…') }: { label?: string }) {
   return (
     <Centered>
       <div role="status" className="flex flex-col items-center gap-4 text-ink-faint">
@@ -47,7 +48,7 @@ function GoogleButton() {
         setBusy(false);
       }}
     >
-      Продолжить с Google
+      {tr('Продолжить с Google', 'Continue with Google')}
     </Button>
   );
 }
@@ -62,18 +63,18 @@ export function LoginPanel({ intro }: { intro?: string }) {
     <Centered>
       <div className="mb-8 flex flex-col items-center text-center">
         <PairMark className="mb-5 size-16" />
-        <h1 className="text-3xl font-semibold tracking-tight">Впаре</h1>
-        <p className="mt-2 text-sm text-ink-soft">{intro ?? 'Общее ежедневное пространство для двоих'}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{tr('Впаре', 'Bepair')}</h1>
+        <p className="mt-2 text-sm text-ink-soft">{intro ?? tr('Общее ежедневное пространство для двоих', 'A shared daily space for two')}</p>
       </div>
 
       <Panel>
         {sent ? (
           <div className="flex flex-col items-center gap-3 py-2 text-center">
             <MailCheck className="size-7 text-accent" aria-hidden />
-            <p className="font-medium">Ссылка отправлена</p>
-            <p className="text-sm text-ink-soft">Откройте письмо на {email}. Загляните в спам, если его не видно.</p>
+            <p className="font-medium">{tr('Ссылка отправлена', 'Link sent')}</p>
+            <p className="text-sm text-ink-soft">{tr(`Откройте письмо на ${email}. Загляните в спам, если его не видно.`, `Open the email sent to ${email}. Check spam if you can’t see it.`)}</p>
             <Button variant="ghost" onClick={() => setSent(false)}>
-              Другой адрес
+              {tr('Другой адрес', 'Another address')}
             </Button>
           </div>
         ) : (
@@ -81,7 +82,7 @@ export function LoginPanel({ intro }: { intro?: string }) {
             <GoogleButton />
             <div className="flex items-center gap-3 text-xs text-ink-faint" aria-hidden>
               <span className="h-px flex-1 bg-line" />
-              или по ссылке на почту
+              {tr('или по ссылке на почту', 'or with a link by email')}
               <span className="h-px flex-1 bg-line" />
             </div>
             <form
@@ -95,7 +96,7 @@ export function LoginPanel({ intro }: { intro?: string }) {
               className="space-y-3"
             >
               <label htmlFor="email" className="sr-only">
-                Почта
+                {tr('Почта', 'Email')}
               </label>
               <Input
                 id="email"
@@ -111,7 +112,7 @@ export function LoginPanel({ intro }: { intro?: string }) {
                 placeholder="you@example.com"
               />
               <Button type="submit" size="lg" block loading={busy} disabled={!email}>
-                Войти по ссылке <ArrowRight className="size-4" aria-hidden />
+                {tr('Войти по ссылке', 'Sign in with a link')} <ArrowRight className="size-4" aria-hidden />
               </Button>
             </form>
             {error && <Alert>{error}</Alert>}
@@ -130,14 +131,14 @@ export function SpaceChoice() {
   return (
     <Centered>
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Почти всё</h1>
-        <p className="mt-2 text-sm text-ink-soft">Создайте пространство и позовите партнёра — или войдите по его коду.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{tr('Почти всё', 'Almost there')}</h1>
+        <p className="mt-2 text-sm text-ink-soft">{tr('Создайте пространство и позовите партнёра — или войдите по его коду.', 'Create a space and invite your partner — or join with their code.')}</p>
       </div>
 
       <div className="space-y-4">
         <Panel>
-          <h2 className="font-semibold">Создать пространство</h2>
-          <p className="mt-1.5 mb-5 text-sm text-ink-soft">Вы получите код приглашения, который можно отправить партнёру.</p>
+          <h2 className="font-semibold">{tr('Создать пространство', 'Create a space')}</h2>
+          <p className="mt-1.5 mb-5 text-sm text-ink-soft">{tr('Вы получите код приглашения, который можно отправить партнёру.', 'You’ll get an invite code to send to your partner.')}</p>
           <Button
             size="lg"
             block
@@ -149,13 +150,13 @@ export function SpaceChoice() {
               setBusy(null);
             }}
           >
-            <Plus className="size-5" aria-hidden /> Создать
+            <Plus className="size-5" aria-hidden /> {tr('Создать', 'Create')}
           </Button>
         </Panel>
 
         <Panel>
-          <h2 className="font-semibold">У меня есть код</h2>
-          <p className="mt-1.5 mb-5 text-sm text-ink-soft">Введите код, который прислал партнёр.</p>
+          <h2 className="font-semibold">{tr('У меня есть код', 'I have a code')}</h2>
+          <p className="mt-1.5 mb-5 text-sm text-ink-soft">{tr('Введите код, который прислал партнёр.', 'Enter the code your partner sent you.')}</p>
           <form
             onSubmit={async (event) => {
               event.preventDefault();
@@ -166,7 +167,7 @@ export function SpaceChoice() {
             className="flex gap-2"
           >
             <Input
-              aria-label="Код приглашения"
+              aria-label={tr('Код приглашения', 'Invite code')}
               value={code}
               autoCapitalize="none"
               autoCorrect="off"
@@ -174,11 +175,11 @@ export function SpaceChoice() {
                 setCode(event.target.value);
                 if (error) clearError();
               }}
-              placeholder="Код приглашения"
+              placeholder={tr('Код приглашения', 'Invite code')}
               className="min-w-0 flex-1"
             />
             <Button type="submit" variant="secondary" loading={busy === 'join'} disabled={!code.trim() || busy !== null}>
-              Войти
+              {tr('Войти', 'Join')}
             </Button>
           </form>
         </Panel>
@@ -187,7 +188,7 @@ export function SpaceChoice() {
 
         <div className="flex justify-center">
           <Button variant="ghost" onClick={signOut}>
-            Выйти из аккаунта
+            {tr('Выйти из аккаунта', 'Sign out')}
           </Button>
         </div>
       </div>

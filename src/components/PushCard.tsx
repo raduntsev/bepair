@@ -7,6 +7,7 @@ import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { isNative } from '@/lib/native';
 import { nativePushStatus, subscribeNativePush, unsubscribeNativePush } from '@/lib/nativePushClient';
 import { Button } from '@/components/ui/Button';
+import { tr } from '@/lib/i18n';
 
 type Status = 'checking' | 'on' | 'off' | 'denied' | 'unsupported' | 'unconfigured' | 'ios-install';
 
@@ -35,13 +36,13 @@ function WebPushCard() {
   }, []);
 
   const copy: Record<Status, string> = {
-    checking: 'Проверяем это устройство…',
-    on: 'На это устройство приходят уведомления. Весточки — сразу, остальное — по настройкам ниже.',
-    off: 'Включите, чтобы весточки и новости партнёра приходили, даже когда приложение закрыто.',
-    denied: 'Браузер запретил уведомления для этого сайта. Разрешите их в настройках браузера и обновите страницу.',
-    unsupported: 'Этот браузер не умеет присылать уведомления. Лента ниже всё равно обновляется сама.',
-    unconfigured: 'Push пока не настроен на сервере: нужен ключ VAPID. Лента в приложении работает и без него.',
-    'ios-install': 'На iPhone уведомления работают только у приложения на экране «Домой»: «Поделиться» → «На экран Домой», затем откройте Впаре оттуда.',
+    checking: tr('Проверяем это устройство…', 'Checking this device…'),
+    on: tr('На это устройство приходят уведомления. Весточки — сразу, остальное — по настройкам ниже.', 'Notifications arrive on this device. Notes at once, the rest as set below.'),
+    off: tr('Включите, чтобы весточки и новости партнёра приходили, даже когда приложение закрыто.', 'Turn on to get notes and news from your partner even when the app is closed.'),
+    denied: tr('Браузер запретил уведомления для этого сайта. Разрешите их в настройках браузера и обновите страницу.', 'The browser blocked notifications for this site. Allow them in browser settings and reload.'),
+    unsupported: tr('Этот браузер не умеет присылать уведомления. Лента ниже всё равно обновляется сама.', 'This browser can’t send notifications. The feed still updates by itself.'),
+    unconfigured: tr('Push пока не настроен на сервере: нужен ключ VAPID. Лента в приложении работает и без него.', 'Push isn’t set up on the server yet (needs a VAPID key). The in-app feed works without it.'),
+    'ios-install': tr('На iPhone уведомления работают только у приложения на экране «Домой»: «Поделиться» → «На экран Домой», затем откройте Впаре оттуда.', 'On iPhone, notifications only work for the app on the Home Screen: Share → Add to Home Screen, then open Bepair from there.'),
   };
 
   return (
@@ -49,11 +50,11 @@ function WebPushCard() {
       <div className="flex items-start gap-3">
         <BellRing className="mt-0.5 size-5 shrink-0 text-ink-soft" aria-hidden />
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold">Уведомления на этом устройстве</h2>
+          <h2 className="font-semibold">{tr('Уведомления на этом устройстве', 'Notifications on this device')}</h2>
           <p className="mt-1.5 text-sm text-ink-soft" role="status">
             {copy[status]}
           </p>
-          {failed && <p className="mt-2 text-sm text-danger">Не получилось подписаться. Попробуйте ещё раз.</p>}
+          {failed && <p className="mt-2 text-sm text-danger">{tr('Не получилось подписаться. Попробуйте ещё раз.', 'Couldn’t subscribe. Please try again.')}</p>}
           {(status === 'on' || status === 'off') && (
             <div className="mt-4">
               {status === 'on' ? (
@@ -67,7 +68,7 @@ function WebPushCard() {
                     setStatus('off');
                   }}
                 >
-                  <Check className="size-4" aria-hidden /> Включено — выключить
+                  <Check className="size-4" aria-hidden /> {tr('Включено — выключить', 'On — turn off')}
                 </Button>
               ) : (
                 <Button
@@ -84,7 +85,7 @@ function WebPushCard() {
                     else setFailed(true);
                   }}
                 >
-                  Включить уведомления
+                  {tr('Включить уведомления', 'Turn on notifications')}
                 </Button>
               )}
             </div>
@@ -107,11 +108,11 @@ function NativePushCard() {
   }, []);
 
   const copy = {
-    checking: 'Проверяем телефон…',
-    on: 'Уведомления приходят на этот телефон. Весточки — сразу, остальное — по настройкам ниже.',
-    off: 'Включите, чтобы весточки и новости партнёра приходили, даже когда приложение закрыто.',
-    denied: 'Уведомления для Впаре выключены в настройках телефона. Включите их там и вернитесь сюда.',
-    unavailable: 'В этой сборке приложения push пока не подключён. Уведомления приходят в браузере на этом телефоне, а статус дня можно вывести на экран блокировки в разделе «Виджеты».',
+    checking: tr('Проверяем телефон…', 'Checking the phone…'),
+    on: tr('Уведомления приходят на этот телефон. Весточки — сразу, остальное — по настройкам ниже.', 'Notifications arrive on this phone. Notes at once, the rest as set below.'),
+    off: tr('Включите, чтобы весточки и новости партнёра приходили, даже когда приложение закрыто.', 'Turn on to get notes and news from your partner even when the app is closed.'),
+    denied: tr('Уведомления для Впаре выключены в настройках телефона. Включите их там и вернитесь сюда.', 'Notifications for Bepair are off in phone settings. Turn them on there and come back.'),
+    unavailable: tr('В этой сборке приложения push пока не подключён. Уведомления приходят в браузере на этом телефоне, а статус дня можно вывести на экран блокировки в разделе «Виджеты».', 'Push isn’t connected in this build yet. Notifications come through the browser on this phone, and the day’s status can go on the lock screen in Widgets.'),
   };
 
   return (
@@ -119,11 +120,11 @@ function NativePushCard() {
       <div className="flex items-start gap-3">
         <BellRing className="mt-0.5 size-5 shrink-0 text-ink-soft" aria-hidden />
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold">Уведомления на этом телефоне</h2>
+          <h2 className="font-semibold">{tr('Уведомления на этом телефоне', 'Notifications on this phone')}</h2>
           <p className="mt-1.5 text-sm text-ink-soft" role="status">
             {copy[status]}
           </p>
-          {failed && <p className="mt-2 text-sm text-danger">Не получилось подключить уведомления. Попробуйте ещё раз чуть позже.</p>}
+          {failed && <p className="mt-2 text-sm text-danger">{tr('Не получилось подключить уведомления. Попробуйте ещё раз чуть позже.', 'Couldn’t turn on notifications. Try again a little later.')}</p>}
           {(status === 'on' || status === 'off') && (
             <div className="mt-4">
               <Button
@@ -148,10 +149,10 @@ function NativePushCard() {
               >
                 {status === 'on' ? (
                   <>
-                    <Check className="size-4" aria-hidden /> Включено — выключить
+                    <Check className="size-4" aria-hidden /> {tr('Включено — выключить', 'On — turn off')}
                   </>
                 ) : (
-                  'Включить уведомления'
+                  tr('Включить уведомления', 'Turn on notifications')
                 )}
               </Button>
             </div>

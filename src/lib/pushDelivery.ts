@@ -59,7 +59,7 @@ export async function claimAndDeliver(admin: SupabaseClient, spaceId: string | n
   const [{ data: profiles }, { data: subscriptions }] = await Promise.all([
     admin
       .from('profiles')
-      .select('id, display_name, gender, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound')
+      .select('id, display_name, gender, lang, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound')
       .in('id', people),
     admin.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth, kind').in('user_id', [...new Set(rows.map((r) => r.user_id))]),
   ]);
@@ -77,12 +77,13 @@ export async function claimAndDeliver(admin: SupabaseClient, spaceId: string | n
     if (pref && recipient[pref] === false) continue;
 
     const actor = row.actor_id ? byId.get(row.actor_id) : undefined;
-    const name = displayName(actor?.display_name as string | undefined);
-    const body = noticeText({ kind: row.kind, payload: row.payload }, name, actor?.gender as 'm' | 'f' | null);
+    const lang = recipient.lang === 'en' ? 'en' : 'ru';
+    const name = displayName(actor?.display_name as string | undefined, lang === 'en' ? 'Partner' : 'Партнёр');
+    const body = noticeText({ kind: row.kind, payload: row.payload }, name, actor?.gender as 'm' | 'f' | null, lang);
     const silent = row.kind !== 'ping' && recipient.notify_sound === false;
 
     const push: PushMessage = {
-      title: 'Впаре',
+      title: lang === 'en' ? 'Bepair' : 'Впаре',
       body,
       url: noticeHref(row.kind, row.payload),
       tag: row.kind === 'day' || row.kind.startsWith('remind_') ? row.kind : row.id,

@@ -7,6 +7,7 @@ import { Alert } from '@/components/ui/Blocks';
 import { Centered, ConfigNotice, LoginPanel, MigrationNotice, Opening, Panel, SpaceChoice } from '@/components/AuthScreens';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
+import { tr } from '@/lib/i18n';
 
 function readInvite() {
   try {
@@ -55,7 +56,7 @@ export function AuthGate({ children, requireOnboarded = true }: { children: Reac
           <Alert>{error}</Alert>
           <div className="mt-4">
             <Button variant="secondary" onClick={refresh}>
-              Попробовать снова
+              {tr('Попробовать снова', 'Try again')}
             </Button>
           </div>
         </Panel>
@@ -63,7 +64,7 @@ export function AuthGate({ children, requireOnboarded = true }: { children: Reac
     );
   }
 
-  if (joining) return <Opening label="Входим в пространство партнёра…" />;
+  if (joining) return <Opening label={tr('Входим в пространство партнёра…', 'Joining your partner’s space…')} />;
   if (!hasSpace) return <SpaceChoice />;
   if (mustOnboard) return <Opening />;
 

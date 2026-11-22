@@ -29,6 +29,7 @@ export interface Profile {
   notify_letters: boolean;
   notify_sound: boolean;
   widget_hide_colors: boolean;
+  lang: 'ru' | 'en';
 }
 
 export interface Partner {
@@ -52,7 +53,7 @@ export interface SpaceSettings {
 }
 
 const PROFILE_COLUMNS =
-  'id, space_id, display_name, avatar_url, timezone, gender, onboarded_at, cycle_tracking, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound, widget_hide_colors';
+  'id, space_id, display_name, avatar_url, timezone, gender, onboarded_at, cycle_tracking, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound, widget_hide_colors, lang';
 
 export const INVITE_KEY = 'bepair-invite';
 

@@ -5,6 +5,7 @@ import { moodHex, moodLabel } from './mood';
 import { streaks } from './streak';
 import { displayName, verb, type Gender } from './words';
 import { fmt, plural, sentence } from './dates';
+import { inLang, tr, trIn, type Lang } from '@/lib/i18n';
 
 /*
   What a home-screen widget shows. Built on the server with the service role,
@@ -40,21 +41,23 @@ function localDate(timezone: string | null) {
 export async function buildSnapshot(admin: SupabaseClient, userId: string): Promise<WidgetSnapshot | null> {
   const { data: me } = await admin
     .from('profiles')
-    .select('id, space_id, display_name, gender, timezone, widget_hide_colors')
+    .select('id, space_id, display_name, gender, timezone, widget_hide_colors, lang')
     .eq('id', userId)
     .maybeSingle();
   if (!me) return null;
 
   const today = localDate(me.timezone);
   const hideMood = !!me.widget_hide_colors;
-  const myName = displayName(me.display_name, 'Вы');
+  const lang: Lang = me.lang === 'en' ? 'en' : 'ru';
+  const myName = displayName(me.display_name, trIn(lang, 'Вы', 'You'));
 
-  const base: WidgetSnapshot = {
+  /* Text is composed in the owner's language; inLang blocks hold no await. */
+  const base: WidgetSnapshot = inLang(lang, () => ({
     v: 1,
     date: today,
     dateLabel: sentence(fmt(today, 'EEEEEE, d MMMM')),
-    headline: 'Как прошёл день?',
-    sub: 'Отметьте его цветом',
+    headline: tr('Как прошёл день?', 'How was your day?'),
+    sub: tr('Отметьте его цветом', 'Mark it with a colour'),
     me: { name: myName, marked: false, color: null, label: null },
     partner: null,
     together: null,
@@ -62,10 +65,10 @@ export async function buildSnapshot(admin: SupabaseClient, userId: string): Prom
     waiting: { letters: 0, tasks: 0 },
     hideMood,
     updatedAt: new Date().toISOString(),
-  };
+  }));
 
   if (!me.space_id) {
-    return { ...base, headline: 'Создайте пространство', sub: 'Откройте Впаре, чтобы начать' };
+    return { ...base, headline: trIn(lang, 'Создайте пространство', 'Create your space'), sub: trIn(lang, 'Откройте Впаре, чтобы начать', 'Open Bepair to begin') };
   }
 
   const since = new Date(Date.now() - 400 * 24 * 3600 * 1000).toISOString().slice(0, 10);
@@ -96,27 +99,30 @@ export async function buildSnapshot(admin: SupabaseClient, userId: string): Prom
     ? differenceInCalendarDays(parseISO(today), parseISO(settings.together_since)) + 1
     : null;
 
+  return inLang(lang, () => compose());
+
+  function compose(): WidgetSnapshot {
   const show = (mood: number | undefined | null) => (mood == null || hideMood ? null : moodHex(mood));
   const word = (mood: number | undefined | null) => (mood == null || hideMood ? null : moodLabel(mood));
 
   const snapshot: WidgetSnapshot = {
     ...base,
     me: { name: myName, marked: !!mine, color: show(mine?.mood), label: word(mine?.mood) },
-    together: togetherDays && togetherDays > 0 ? { days: togetherDays, label: `${plural(togetherDays, 'день', 'дня', 'дней')} вместе` } : null,
+    together: togetherDays && togetherDays > 0 ? { days: togetherDays, label: tr(`${plural(togetherDays, 'день', 'дня', 'дней')} вместе`, `${togetherDays === 1 ? 'day' : 'days'} together`) } : null,
     streak: {
       enabled: settings?.count_streak ?? true,
       current: run.current,
       best: run.best,
-      label: run.current > 0 ? `${plural(run.current, 'день', 'дня', 'дней')} подряд` : 'серия впереди',
+      label: run.current > 0 ? tr(`${plural(run.current, 'день', 'дня', 'дней')} подряд`, `${run.current === 1 ? 'day' : 'days'} in a row`) : tr('серия впереди', 'the run is ahead'),
     },
     waiting: { letters: lettersResult.count ?? 0, tasks: (forMeResult.count ?? 0) + (doneResult.count ?? 0) },
   };
 
   if (!partner) {
-    return { ...snapshot, headline: mine ? 'День отмечен' : 'Как прошёл день?', sub: 'Позовите партнёра — код в настройках' };
+    return { ...snapshot, headline: mine ? tr('День отмечен', 'Day marked') : tr('Как прошёл день?', 'How was your day?'), sub: tr('Позовите партнёра — код в настройках', 'Invite your partner — the code is in settings') };
   }
 
-  const name = displayName(partner.display_name);
+  const name = displayName(partner!.display_name);
   snapshot.partner = {
     name,
     marked: !!theirs,
@@ -127,19 +133,22 @@ export async function buildSnapshot(admin: SupabaseClient, userId: string): Prom
 
   if (!mine) {
     if (theirs && revealFirst) {
-      snapshot.headline = `${name} ${verb(partner.gender, 'отметил')} день`;
-      snapshot.sub = 'Отметьте свой — и он откроется';
+      snapshot.headline = tr(`${name} ${verb(partner!.gender, 'отметил')} день`, `${name} marked the day`);
+      snapshot.sub = tr('Отметьте свой — и он откроется', 'Mark yours and it opens');
     } else {
-      snapshot.headline = 'Как прошёл день?';
-      snapshot.sub = 'Отметьте его цветом';
+      snapshot.headline = tr('Как прошёл день?', 'How was your day?');
+      snapshot.sub = tr('Отметьте его цветом', 'Mark it with a colour');
     }
   } else if (!theirs) {
-    snapshot.headline = `${name} ещё не ${verb(partner.gender, 'отметил')} день`;
-    snapshot.sub = snapshot.me.label ? `Ваш день: ${snapshot.me.label}` : 'Ваш день отмечен';
+    snapshot.headline = tr(`${name} ещё не ${verb(partner!.gender, 'отметил')} день`, `${name} hasn’t marked the day yet`);
+    snapshot.sub = snapshot.me.label ? tr(`Ваш день: ${snapshot.me.label}`, `Your day: ${snapshot.me.label}`) : tr('Ваш день отмечен', 'Your day is marked');
   } else {
-    snapshot.headline = snapshot.partner.label ? `${name}: день ${snapshot.partner.label}` : `${name} ${verb(partner.gender, 'отметил')} день`;
-    snapshot.sub = snapshot.me.label ? `Ваш: ${snapshot.me.label}` : 'Вы оба отметились';
+    snapshot.headline = snapshot.partner.label
+      ? tr(`${name}: день ${snapshot.partner.label}`, `${name}: a ${snapshot.partner.label} day`)
+      : tr(`${name} ${verb(partner!.gender, 'отметил')} день`, `${name} marked the day`);
+    snapshot.sub = snapshot.me.label ? tr(`Ваш: ${snapshot.me.label}`, `Yours: ${snapshot.me.label}`) : tr('Вы оба отметились', 'You both marked the day');
   }
 
   return snapshot;
+  }
 }

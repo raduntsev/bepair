@@ -1,3 +1,5 @@
+import { tr } from '@/lib/i18n';
+
 /*
   Mood is stored as a float 0..1 and read as colour, never as a number.
   A 1–10 readout was rejected deliberately: it makes days comparable.
@@ -39,11 +41,11 @@ export function moodColor(value: number): string {
 }
 
 export function moodLabel(value: number): string {
-  if (value < 0.2) return 'лёгкий';
-  if (value < 0.4) return 'спокойный';
-  if (value < 0.6) return 'обычный';
-  if (value < 0.8) return 'непростой';
-  return 'тяжёлый';
+  if (value < 0.2) return tr('лёгкий', 'light');
+  if (value < 0.4) return tr('спокойный', 'calm');
+  if (value < 0.6) return tr('обычный', 'ordinary');
+  if (value < 0.8) return tr('непростой', 'not easy');
+  return tr('тяжёлый', 'heavy');
 }
 
 /*
