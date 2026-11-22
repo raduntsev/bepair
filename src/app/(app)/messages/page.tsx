@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowUp, Clock, FileText, Lock, Mail, Plus, Search, Trash2, X } from 'lucide-react';
@@ -139,6 +140,16 @@ export default function MessagesPage() {
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [text, setText] = useState('');
+  /* The island renders #island-slot on this screen; the note bar is portalled into it. */
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    let frame = requestAnimationFrame(function find() {
+      const el = document.getElementById('island-slot');
+      if (el) setSlot(el);
+      else frame = requestAnimationFrame(find);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -189,7 +200,7 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 pt-6 sm:px-6 md:pt-12" style={{ paddingBottom: '5rem' }}>
+    <div className="mx-auto w-full max-w-2xl px-4 pt-6 sm:px-6 md:pt-12" style={{ paddingBottom: '1rem' }}>
       <header className="mb-4">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-large-title font-bold">{tr('Переписка', 'Messages')}</h1>
@@ -287,55 +298,57 @@ export default function MessagesPage() {
       )}
       <div ref={bottomRef} />
 
-      {/* Input bar: a note in one line, sitting just above the island. */}
-      <form
-        data-tour="messages-input"
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendText();
-        }}
-        className="fixed inset-x-0 z-40 flex justify-center px-3"
-        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 4.5rem)' }}
-      >
-        <div className="material flex w-full max-w-2xl items-center gap-2 rounded-full p-1.5 shadow-lift">
-          <Link
-            href="/ping"
-            aria-label={tr('Весточка со снимком, голосом или музыкой', 'A note with a photo, voice or music')}
-            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sunken text-ink-soft transition-colors hover:text-ink"
+      {/* Input bar: a note in one line, in the island's own row (see Island.tsx). */}
+      {slot &&
+        createPortal(
+          <form
+            data-tour="messages-input"
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendText();
+            }}
           >
-            <Plus className="size-5" aria-hidden />
-          </Link>
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={tr('Весточка', 'Note')}
-            aria-label={tr('Текст весточки', 'Note text')}
-            disabled={!partner}
-            className="h-10 min-w-0 flex-1 bg-transparent px-1 text-body text-ink outline-none placeholder:text-ink-faint"
-          />
-          {text.trim() ? (
-            <button
-              type="submit"
-              aria-label={tr('Отправить', 'Send')}
-              disabled={sending}
-              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-opacity disabled:opacity-50"
-            >
-              <ArrowUp className="size-5" strokeWidth={2.4} aria-hidden />
-            </button>
-          ) : (
-            <Link
-              href="/messages/letter"
-              aria-label={tr('Написать письмо', 'Write a letter')}
-              data-tour="messages-letter"
-              className={`flex size-10 shrink-0 items-center justify-center rounded-full bg-sunken text-ink-soft transition-colors hover:text-ink ${
-                !partner ? 'pointer-events-none opacity-40' : ''
-              }`}
-            >
-              <Mail className="size-5" aria-hidden />
-            </Link>
-          )}
-        </div>
-      </form>
+            <div className="material flex h-13 w-full items-center gap-2 rounded-full p-1.5" style={{ boxShadow: 'var(--sh-island)' }}>
+              <Link
+                href="/ping"
+                aria-label={tr('Весточка со снимком, голосом или музыкой', 'A note with a photo, voice or music')}
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sunken text-ink-soft transition-colors hover:text-ink"
+              >
+                <Plus className="size-5" aria-hidden />
+              </Link>
+              <input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={tr('Весточка', 'Note')}
+                aria-label={tr('Текст весточки', 'Note text')}
+                disabled={!partner}
+                className="h-10 min-w-0 flex-1 bg-transparent px-1 text-body text-ink outline-none placeholder:text-ink-faint"
+              />
+              {text.trim() ? (
+                <button
+                  type="submit"
+                  aria-label={tr('Отправить', 'Send')}
+                  disabled={sending}
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink transition-opacity disabled:opacity-50"
+                >
+                  <ArrowUp className="size-5" strokeWidth={2.4} aria-hidden />
+                </button>
+              ) : (
+                <Link
+                  href="/messages/letter"
+                  aria-label={tr('Написать письмо', 'Write a letter')}
+                  data-tour="messages-letter"
+                  className={`flex size-10 shrink-0 items-center justify-center rounded-full bg-sunken text-ink-soft transition-colors hover:text-ink ${
+                    !partner ? 'pointer-events-none opacity-40' : ''
+                  }`}
+                >
+                  <Mail className="size-5" aria-hidden />
+                </Link>
+              )}
+            </div>
+          </form>,
+          slot,
+        )}
     </div>
   );
 }

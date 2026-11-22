@@ -81,6 +81,9 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
   compact list of the five sections — Сегодня · Переписка · Просьбы ·
   Календарь · Профиль — on Apple's sheet curve (0.56 s in, 0.46 s out);
   content waits for the shape on the way in and leaves first on the way out.
+- **In «Переписка» the island shares its row** with the note bar: the capsule
+  shrinks to its icon and the bar fills the rest (portalled into
+  `#island-slot`), so nothing at the bottom stacks on anything.
 - **Five sections, each one question.** Переписка is letters and notes in
   one feed, with what waits for you on top. Просьбы holds Просьбы and Услуги
   as two tabs under one balance. Профиль is the pair, notifications and all
@@ -207,6 +210,10 @@ together, the three dots of «typing…», a wide-eyed pop back, a jump answered
 by a jump, a blink in unison. CSS keyframes only, four layers per character
 (position, body, look, eyes). Used on the
 opening screen and in every `Loading` block; buttons keep their small spinner.
+Empty states show the same pair in an idle 7 s scene (glance, blink, nudge,
+squint, sway — never the dots, since nothing loads). The pair is the one
+exception to reduced motion: phones switch it on with battery saving, and a
+frozen pair reads as a broken picture; their motion is small and in place.
 
 **The tour lights the way.** «Обучение» (`src/components/Tour.tsx`) dims the
 app and lights one real element at a time, with a card beside it. The light is
