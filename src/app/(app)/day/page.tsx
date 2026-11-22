@@ -11,7 +11,6 @@ import { moodColor, moodLabel } from '@/lib/mood';
 import { fmt, longDate, todayISO } from '@/lib/dates';
 import { MoodScale } from '@/components/MoodScale';
 import { PartnerDayCard } from '@/components/PartnerDayCard';
-import { Counters } from '@/components/Counters';
 import { DoneForMe, MyTasks } from '@/components/DayTasks';
 import { Button } from '@/components/ui/Button';
 import { AutoHeight } from '@/components/ui/AutoHeight';
@@ -447,15 +446,6 @@ function DayView() {
             </>
           )}
 
-
-          {isToday && mine && partner && (
-            <Counters
-              togetherSince={settings?.together_since ?? null}
-              showStreak={settings?.count_streak ?? true}
-              current={presence.current}
-              best={presence.best}
-            />
-          )}
         </motion.div>
       )}
     </div>

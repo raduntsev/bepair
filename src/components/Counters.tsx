@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
-import { daysWord, fmt, plural, todayISO } from '@/lib/dates';
+import { fmt, plural, todayISO } from '@/lib/dates';
 
 /*
-  Two small tiles at the foot of «Сегодня», after the Fitness summary. Days together is a
+  Two small tiles on the couple's profile. Days together is a
   quiet fact about the couple, not an engagement metric; the run shows a
   coincidence, and the longest run sits next to it so a gap never reads as a loss.
 */
@@ -41,10 +41,10 @@ export function Counters({
 
       {showStreak && (
         <section className="rounded-2xl bg-surface p-4 shadow-card">
-          <p className="text-footnote font-medium text-partner-ink">Подряд оба</p>
+          <p className="text-footnote font-medium text-partner-ink">Отмечаете вместе</p>
           <p className="mt-1 text-title-1 font-bold tabular-nums">{current}</p>
           <p className="text-footnote text-ink-faint">
-            {best > current ? `рекорд — ${best}` : daysWord(current)}
+            {plural(current, 'день', 'дня', 'дней')} подряд{best > current ? ` · рекорд ${best}` : ''}
           </p>
         </section>
       )}
