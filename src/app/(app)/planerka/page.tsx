@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { CalendarClock, ChevronRight, Users, X } from 'lucide-react';
+import { CalendarClock, Check, ChevronRight, Users, X } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { fmt, todayISO } from '@/lib/dates';
 import { displayName } from '@/lib/words';
@@ -34,6 +34,7 @@ export default function PlanerkaPage() {
   const today = todayISO();
   const isDay = new Date().getDay() === settings.weekday;
   const todaySession = planerkas.find((p) => p.held_on === today);
+  const closedToday = !!todaySession && wheels.some((w) => w.planerka_id === todaySession.id && w.user_id === user?.id && !!w.closed_at);
 
   const wheelOf = (planerkaId: string, userId: string | undefined) => wheels.find((w) => w.planerka_id === planerkaId && w.user_id === userId);
 
@@ -81,13 +82,13 @@ export default function PlanerkaPage() {
       <Link
         href={`/planerka/session?d=${today}`}
         data-tour="planerka-start"
-        className={`mb-6 flex items-center gap-3.5 rounded-2xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken ${isDay || todaySession ? 'focus-ring' : ''}`}
+        className={`mb-6 flex items-center gap-3.5 rounded-2xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken ${(isDay || todaySession) && !closedToday ? 'focus-ring' : ''}`}
       >
         <span aria-hidden className={`flex size-11 items-center justify-center rounded-full ${isDay || todaySession ? 'bg-accent text-accent-ink' : 'bg-sunken text-ink-soft'}`}>
-          <Users className="size-5" />
+          {closedToday ? <Check className="size-5" strokeWidth={2.6} /> : <Users className="size-5" />}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-headline font-semibold">{todaySession ? 'Продолжить планёрку' : isDay ? 'Планёрка сегодня' : 'Начать планёрку'}</span>
+          <span className="block text-headline font-semibold">{closedToday ? 'Планёрка проведена' : todaySession ? 'Продолжить планёрку' : isDay ? 'Планёрка сегодня' : 'Начать планёрку'}</span>
           <span className="block text-footnote text-ink-faint">
             {isDay || todaySession ? fmt(today, 'd MMMM') : `${WEEKDAYS[settings.weekday]}, ${settings.at_time}`}
           </span>

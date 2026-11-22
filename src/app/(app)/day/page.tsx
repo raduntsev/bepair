@@ -189,8 +189,12 @@ function DayView() {
     else on the screen does. The order is the instruction — no captions.
   */
   /* The couple's planerka day: the session waits here, after your own day. */
-  const planerkaDay = isToday && new Date().getDay() === planerka.settings.weekday;
-  const planerkaStarted = planerka.planerkas.some((p) => p.held_on === date);
+  const todaysPlanerka = planerka.planerkas.find((p) => p.held_on === date);
+  const planerkaStarted = !!todaysPlanerka;
+  /* Once you have closed your part, the session leaves your «Сегодня» — whatever your partner is still doing. */
+  const planerkaClosed =
+    !!todaysPlanerka && planerka.wheels.some((w) => w.planerka_id === todaysPlanerka.id && w.user_id === user?.id && !!w.closed_at);
+  const planerkaDay = isToday && new Date().getDay() === planerka.settings.weekday && !planerkaClosed;
   const myOpenTodos = user
     ? planerka.todos.filter((t) => t.status !== 'done' && (t.owner_id === user.id || t.owner_id === null)).length
     : 0;

@@ -18,6 +18,8 @@ export interface Wheel {
   comments: Comments;
   note: string;
   entered_by: string | null;
+  /* Set when this person said «my part is done»; null while still filling in. */
+  closed_at: string | null;
 }
 
 export interface Answer {
@@ -69,7 +71,7 @@ export function usePlanerka() {
     if (!spaceId) return;
     const [p, w, a, t, s] = await Promise.all([
       supabase.from('planerkas').select('id, held_on').eq('space_id', spaceId).order('held_on', { ascending: false }),
-      supabase.from('planerka_wheels').select('id, planerka_id, user_id, scores, comments, note, entered_by').eq('space_id', spaceId),
+      supabase.from('planerka_wheels').select('id, planerka_id, user_id, scores, comments, note, entered_by, closed_at').eq('space_id', spaceId),
       supabase.from('planerka_answers').select('id, planerka_id, user_id, question, answer, entered_by').eq('space_id', spaceId),
       supabase
         .from('plan_todos')
@@ -142,6 +144,20 @@ export function usePlanerka() {
     [spaceId, user, load],
   );
 
+  /* Only the columns sent are written, so closing never touches the scores. */
+  const closePart = useCallback(
+    async (planerkaId: string, userId: string, closed: boolean) => {
+      if (!spaceId || !user) return;
+      const { error: saveError } = await supabase.from('planerka_wheels').upsert(
+        { planerka_id: planerkaId, space_id: spaceId, user_id: userId, closed_at: closed ? new Date().toISOString() : null },
+        { onConflict: 'planerka_id,user_id' },
+      );
+      if (saveError) setError('Не получилось закрыть планёрку. Попробуйте ещё раз.');
+      else await load();
+    },
+    [spaceId, user, load],
+  );
+
   const saveAnswer = useCallback(
     async (planerkaId: string, userId: string, question: QuestionKey, answer: string) => {
       if (!spaceId || !user) return;
@@ -207,6 +223,7 @@ export function usePlanerka() {
     error,
     ensure,
     saveWheel,
+    closePart,
     saveAnswer,
     addTodo,
     updateTodo,

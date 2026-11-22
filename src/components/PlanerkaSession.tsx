@@ -4,13 +4,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, Check, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts';
-import { displayName } from '@/lib/words';
+import { displayName, verb } from '@/lib/words';
 import { fmt } from '@/lib/dates';
 import { QUESTIONS, SPHERES, type Comments, type QuestionKey, type Scores, type SphereKey } from '@/lib/planerka';
 import { type PlanTodo, type TodoStatus, usePlanerka } from '@/hooks/usePlanerka';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Segment } from '@/components/ui/Controls';
 import { Alert, Loading } from '@/components/ui/Blocks';
+import { Button } from '@/components/ui/Button';
 
 const EASE = [0.32, 0.72, 0, 1] as const;
 
@@ -456,13 +457,91 @@ export function TodosBoard({ planerkaId }: { planerkaId: string | null }) {
   );
 }
 
+/* ——— Закрыть свою часть ——— */
+
+/*
+  The session has no single end: each of you closes your own part when you are
+  done, and it leaves that person's «Сегодня». Closing is reversible — you can
+  open your part again and keep writing.
+*/
+function ClosePart({
+  isMine,
+  name,
+  gender,
+  closed,
+  other,
+  busy,
+  onToggle,
+}: {
+  isMine: boolean;
+  name: string;
+  gender: 'm' | 'f' | null;
+  closed: boolean;
+  other: { name: string; gender: 'm' | 'f' | null; closed: boolean; you: boolean } | null;
+  busy: boolean;
+  onToggle: (closed: boolean) => Promise<void>;
+}) {
+  const otherLine = other
+    ? other.you
+      ? other.closed
+        ? 'Вы свою часть уже закрыли'
+        : 'Вы ещё заполняете'
+      : other.closed
+        ? `${other.name} тоже ${verb(other.gender, 'закончил')}`
+        : `${other.name} ещё заполняет`
+    : null;
+
+  return (
+    <section className="rounded-2xl bg-surface p-4 shadow-card">
+      <AnimatePresence mode="wait" initial={false}>
+        {closed ? (
+          <motion.div
+            key="closed"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.3, ease: EASE }}
+            className="flex items-center gap-3"
+          >
+            <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-ink">
+              <Check className="size-5" strokeWidth={2.6} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-body font-semibold">{isMine ? 'Ваша часть закрыта' : `${name}: часть закрыта`}</span>
+              {otherLine && <span className="block text-footnote text-ink-faint">{otherLine}</span>}
+            </span>
+            <Button variant="ghost" loading={busy} onClick={() => onToggle(false)}>
+              Открыть
+            </Button>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="open"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.3, ease: EASE }}
+          >
+            <Button block size="lg" loading={busy} onClick={() => onToggle(true)}>
+              <Check className="size-5" aria-hidden />
+              {isMine ? `Я ${verb(gender, 'закончил')}` : `${name} ${verb(gender, 'закончил')}`}
+            </Button>
+            {otherLine && <p className="mt-2 text-center text-footnote text-ink-faint">{otherLine}</p>}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
 /* ——— Сессия ——— */
 
 type Step = 'wheel' | 'questions' | 'todos';
 
 export function PlanerkaSession({ heldOn }: { heldOn: string }) {
-  const { user, partner } = useSpaceAuth();
-  const { planerkas, wheels, answers, isLoading, error, ensure, saveWheel, saveAnswer } = usePlanerka();
+  const { user, partner, profile } = useSpaceAuth();
+  const { planerkas, wheels, answers, isLoading, error, ensure, saveWheel, closePart, saveAnswer } = usePlanerka();
+  const [closing, setClosing] = useState(false);
   const [step, setStep] = useState<Step>('wheel');
   const [whose, setWhose] = useState<'me' | 'partner'>('me');
   const [planerkaId, setPlanerkaId] = useState<string | null>(null);
@@ -575,6 +654,29 @@ export function PlanerkaSession({ heldOn }: { heldOn: string }) {
           {step === 'todos' && <TodosBoard planerkaId={id} />}
         </motion.div>
       </AnimatePresence>
+
+      <ClosePart
+        isMine={whose === 'me'}
+        name={whose === 'me' ? 'Я' : partnerName}
+        gender={whose === 'me' ? (profile?.gender ?? null) : (partner?.gender ?? null)}
+        closed={!!wheel?.closed_at}
+        other={
+          partner
+            ? {
+                name: whose === 'me' ? partnerName : 'Вы',
+                gender: whose === 'me' ? (partner.gender ?? null) : (profile?.gender ?? null),
+                closed: !!wheels.find((w) => w.planerka_id === id && w.user_id === (whose === 'me' ? partner.id : user?.id))?.closed_at,
+                you: whose !== 'me',
+              }
+            : null
+        }
+        busy={closing}
+        onToggle={async (next) => {
+          setClosing(true);
+          await closePart(id, personId, next);
+          setClosing(false);
+        }}
+      />
     </div>
   );
 }
