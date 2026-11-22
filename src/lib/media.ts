@@ -69,3 +69,22 @@ export async function squareImage(file: Blob, size = 512): Promise<Blob> {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('no-blob'))), 'image/jpeg', 0.86),
   );
 }
+
+/*
+  Album photos are scaled on the phone to at most 1600 px on the long side:
+  sharp on any widget, a few hundred KB instead of a camera's 10 MB.
+*/
+export async function fitImage(file: Blob, longSide = 1600): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, longSide / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('no-canvas');
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('no-blob'))), 'image/jpeg', 0.86),
+  );
+}

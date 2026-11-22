@@ -1,13 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { EyeOff, LockKeyhole, Smartphone, Trash2 } from 'lucide-react';
+import { EyeOff, Images, LockKeyhole, Smartphone, Trash2 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { relativeStamp } from '@/lib/dates';
 import { WidgetBridge, clearWidgets, isNative, nativePlatform, refreshWidgets } from '@/lib/native';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Button } from '@/components/ui/Button';
-import { Card, Page, PageHeader, RowGroup, SwitchRow } from '@/components/ui/Blocks';
+import { Card, LinkRow, Page, PageHeader, RowGroup, SwitchRow } from '@/components/ui/Blocks';
 
 interface Device {
   id: string;
@@ -114,6 +114,10 @@ export default function WidgetSettingsPage() {
             </div>
           </Card>
         )}
+
+        <RowGroup label="Фото">
+          <LinkRow href="/album" Icon={Images} tone="partner" title="Фото для виджета" sub="Общий альбом: виджет «Фото» показывает его на обоих телефонах" />
+        </RowGroup>
 
         <RowGroup label="Что видно на виджете">
           <SwitchRow

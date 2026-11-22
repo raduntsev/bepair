@@ -13,4 +13,8 @@
     <string name="widget_setup_headline">Откройте Впаре</string>
     <string name="widget_setup_sub">Войдите — и здесь появится ваш день</string>
     <string name="widget_loading">Загружаем день…</string>
+    <string name="widget_photo_name">Фото</string>
+    <string name="widget_photo_description">Ваши общие фото — по одному, сменяются каждые три часа</string>
+    <string name="widget_photo_empty">Добавьте общие фото в приложении</string>
+    <string name="widget_photo_loading">Загружаем фото…</string>
 </resources>

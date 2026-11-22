@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
-import { Bell, Check, ChevronRight, GraduationCap, LayoutGrid, Lock, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import { Bell, Check, ChevronRight, GraduationCap, Images, LayoutGrid, Lock, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import { displayName } from '@/lib/words';
 import { plural, todayISO } from '@/lib/dates';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
@@ -148,6 +148,7 @@ export default function SettingsPage() {
           <RowGroup label="Приложение">
             <LinkRow href="/notifications/settings" Icon={Bell} title="Уведомления" />
             <LinkRow href="/settings/widgets" Icon={LayoutGrid} title="Виджеты" />
+            <LinkRow href="/album" Icon={Images} tone="partner" title="Фото для виджета" />
           </RowGroup>
 
           <SectionHeader title="Пара и данные" />

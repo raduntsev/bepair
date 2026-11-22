@@ -39,7 +39,7 @@ export const DESTINATIONS: Destination[] = [
   { href: '/messages', label: 'Переписка', Icon: MessageCircle, also: ['/letters', '/chronicle', '/ping'] },
   { href: '/tasks', label: 'Просьбы', Icon: ListChecks, also: ['/store'] },
   { href: '/calendar', label: 'Календарь', Icon: CalendarDays, also: ['/planerka'] },
-  { href: '/settings', label: 'Профиль', Icon: UserRound, also: ['/couple'] },
+  { href: '/settings', label: 'Профиль', Icon: UserRound, also: ['/couple', '/album'] },
 ];
 
 const COMPOSE = '/ping';

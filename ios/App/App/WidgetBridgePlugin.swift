@@ -45,6 +45,14 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         defaults?.removeObject(forKey: "token")
         defaults?.removeObject(forKey: "api")
         defaults?.removeObject(forKey: "snapshot")
+        // The «Фото» widget's stored photo goes too (see PhotoStore in the widget).
+        defaults?.removeObject(forKey: "photo_etag")
+        defaults?.removeObject(forKey: "photo_empty")
+        if let photo = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: "group.app.bepair.vpare")?
+            .appendingPathComponent("widget_photo.jpg") {
+            try? FileManager.default.removeItem(at: photo)
+        }
         reload()
         call.resolve()
     }
