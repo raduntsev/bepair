@@ -48,6 +48,8 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         // The «Фото» widget's stored photo goes too (see PhotoStore in the widget).
         defaults?.removeObject(forKey: "photo_etag")
         defaults?.removeObject(forKey: "photo_empty")
+        // And the «Дела» widget's list.
+        defaults?.removeObject(forKey: "tasks")
         if let photo = FileManager.default
             .containerURL(forSecurityApplicationGroupIdentifier: "group.app.bepair.vpare")?
             .appendingPathComponent("widget_photo.jpg") {

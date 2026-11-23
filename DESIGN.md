@@ -206,17 +206,20 @@ on the wordmark in the rail). A logo revolving all day is noise, and it costs
 battery on the device this product is read on in bed.
 
 **The pair waits.** Loading is the pair mark's two halves as two round
-characters with glints for eyes (`src/components/PairLoader.tsx`): they glance
-play a 10 s scene with a temper each — indigo curious and bouncy, amber calmer
-and a little shy: a glance, a hop and a nudge with happy ^ ^ eyes, a look up
-together, the three dots of «typing…», a wide-eyed pop back, a jump answered
-by a jump, a blink in unison. CSS keyframes only, four layers per character
-(position, body, look, eyes). Used on the
-opening screen and in every `Loading` block; buttons keep their small spinner.
-Empty states show the same pair in an idle 7 s scene (glance, blink, nudge,
-squint, sway — never the dots, since nothing loads). The pair is the one
-exception to reduced motion: phones switch it on with battery saving, and a
-frozen pair reads as a broken picture; their motion is small and in place.
+characters with glints for eyes (`src/components/PairLoader.tsx`), indigo
+curious and bouncy, amber calmer and a little shy. Not one loop but a
+repertoire, drawn at random per mount and never the same scene twice in a row:
+*talk* (nudge, look up, the three dots of «typing…», jump for joy), *ball*
+(tossed from head to head), *swap* (leapfrog and back), *hug* (roll together,
+squeeze, a heart) and *seesaw* (hops in turns, a spin, dizzy wobble). Empty
+states draw from calmer scenes where nothing turns into dots: *idle*, *nap*
+(dozing, amber leans in, indigo wakes and smiles) and *peek* (eyes meet, both
+look away, peek again). CSS keyframes only, four layers per character
+(position, body, look, eyes), each scene a `pair-loader--<scene>` class with
+its own `--pl-dur`. The pair is 160 px wide in `Loading`, 128 px in empty
+states; buttons keep their small spinner. The pair is the one exception to
+reduced motion: phones switch it on with battery saving, and a frozen pair
+reads as a broken picture; their motion is small and in place.
 
 **The tour lights the way.** «Обучение» (`src/components/Tour.tsx`) dims the
 app and lights one real element at a time, with a card beside it. The light is
@@ -285,6 +288,20 @@ buying the partner.
 Task states are **ждёт выполнения → выполнено, партнёр ещё не видел → выполнено**.
 The middle state means the partner has not noticed yet — never "on review", or
 the product becomes an acceptance process.
+
+## Today's to-dos
+
+«Сегодня» always carries one «Дела на сегодня» card under the partner's day:
+what the partner asked of you (ticked right there), what you asked of them with
+«ждёт» / «сделано», and a folded «Предложить дело на сегодня» row that opens
+into a composer in place — text, four suggestions, weight. Requests you have not
+thanked for yet stay in their own card under «Между вами».
+
+The «Дела» widget (Android and iOS, medium and large) shows the same open
+requests. Its circle ticks one off from the home screen: on Android at once,
+sent by a WorkManager job that waits for a network; on iOS 17+ through an App
+Intent (older iOS opens the app). It is the one write a widget key may make —
+`POST /api/widget/tasks`, only for a request addressed to the key's owner.
 
 ## Deleting all data
 

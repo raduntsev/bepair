@@ -11,7 +11,7 @@ import { moodColor, moodLabel } from '@/lib/mood';
 import { fmt, longDate, todayISO } from '@/lib/dates';
 import { MoodScale } from '@/components/MoodScale';
 import { PartnerDayCard } from '@/components/PartnerDayCard';
-import { DoneForMe, MyTasks } from '@/components/DayTasks';
+import { DoneForMe, TodayTasks } from '@/components/DayTasks';
 import { Button } from '@/components/ui/Button';
 import { AutoHeight } from '@/components/ui/AutoHeight';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -111,7 +111,7 @@ function DayView() {
   const { user, profile, settings } = useSpaceAuth();
 
   const { partner, mine, theirs, isLoading, error, save, isUnlocked, isToday } = useCoupleDay(date);
-  const { tasks, complete, acknowledge, error: taskError } = useTasks();
+  const { tasks, templates, add: addTask, complete, acknowledge, error: taskError } = useTasks();
   const planerka = usePlanerka();
   const presence = usePresence();
   const { unread } = useNotifications();
@@ -218,7 +218,7 @@ function DayView() {
                 : null;
   const ring = (key: typeof focus) => (focus === key ? 'focus-ring' : '');
   const between =
-    isToday && !!user && (planerkaDay || myOpenTodos > 0 || letters > 0 || thanks > 0 || askedOfMe > 0 || !!taskError);
+    isToday && !!user && (planerkaDay || myOpenTodos > 0 || letters > 0 || thanks > 0 || !!taskError);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-8 sm:px-6 md:pt-12">
@@ -405,6 +405,13 @@ function DayView() {
           />
           </div>
 
+          {/* The day's to-dos: always here on today, so asking never needs another screen. */}
+          {isToday && user && partner && (
+            <div className={`rounded-2xl ${ring('asked')}`}>
+              <TodayTasks tasks={tasks} templates={templates} userId={user.id} partner={partner} onComplete={complete} onAdd={addTask} />
+            </div>
+          )}
+
           {between && user && (
             <>
               <SectionHeader title={tr('Между вами', 'Between you')} />
@@ -458,11 +465,6 @@ function DayView() {
                 {thanks > 0 && (
                   <div className={`rounded-2xl ${ring('thanks')}`}>
                     <DoneForMe tasks={tasks} userId={user.id} partner={partner} myGender={profile?.gender} onAcknowledge={acknowledge} />
-                  </div>
-                )}
-                {askedOfMe > 0 && (
-                  <div className={`rounded-2xl ${ring('asked')}`}>
-                    <MyTasks tasks={tasks} userId={user.id} onComplete={complete} />
                   </div>
                 )}
                 {taskError && <Alert>{taskError}</Alert>}

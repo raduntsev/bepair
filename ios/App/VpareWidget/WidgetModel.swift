@@ -1,3 +1,4 @@
+import AppIntents
 import Foundation
 import UIKit
 import WidgetKit
@@ -278,6 +279,153 @@ struct PhotoProvider: TimelineProvider {
             let now = Date()
             let next = Date(timeIntervalSince1970: (now.timeIntervalSince1970 / period).rounded(.up) * period + 60)
             completion(Timeline(entries: [PhotoEntry(date: now, state: state)], policy: .after(next)))
+        }
+    }
+}
+
+// MARK: - «Дела»
+
+/// What the partner asked of you (src/app/api/widget/tasks/route.ts): open
+/// requests first, then those done today. Wording arrives ready-made.
+struct TasksPayload: Codable, Equatable {
+    struct Item: Codable, Equatable, Identifiable {
+        let id: String
+        let content: String
+        let points: Int
+        let done: Bool
+    }
+
+    let title: String
+    let empty: String
+    let left: String
+    let open: Int
+    let items: [Item]
+
+    static let sample = TasksPayload(
+        title: "Дела на сегодня",
+        empty: "",
+        left: "осталось 2",
+        open: 2,
+        items: [
+            Item(id: "1", content: "Приготовить ужин", points: 3, done: false),
+            Item(id: "2", content: "Забрать заказ", points: 2, done: false),
+            Item(id: "3", content: "Разобрать посуду", points: 2, done: true),
+        ]
+    )
+}
+
+enum TasksStore {
+    private static var defaults: UserDefaults? { UserDefaults(suiteName: WidgetStore.appGroup) }
+
+    static var cached: TasksPayload? {
+        guard let data = defaults?.data(forKey: "tasks") else { return nil }
+        return try? JSONDecoder().decode(TasksPayload.self, from: data)
+    }
+
+    static func save(_ data: Data) {
+        defaults?.set(data, forKey: "tasks")
+    }
+
+    static func clear() {
+        defaults?.removeObject(forKey: "tasks")
+    }
+}
+
+enum TasksState: Equatable {
+    case setup
+    case loading
+    case ready(TasksPayload)
+}
+
+struct TasksEntry: TimelineEntry {
+    let date: Date
+    let state: TasksState
+}
+
+enum TasksAPI {
+    /// GET {api}/api/widget/tasks — or, with an id, POST to tick that request off.
+    static func fetch(completing id: String? = nil) async -> TasksState {
+        guard let token = WidgetStore.token, let api = WidgetStore.api, let url = URL(string: api + "/api/widget/tasks") else {
+            return .setup
+        }
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let id = id {
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try? JSONEncoder().encode(["id": id])
+        }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if status == 401 {
+                WidgetStore.clear()
+                TasksStore.clear()
+                return .setup
+            }
+            if status == 200, let payload = try? JSONDecoder().decode(TasksPayload.self, from: data) {
+                TasksStore.save(data)
+                return .ready(payload)
+            }
+            // Gone or not yours: the fresh list puts the row right.
+            if id != nil, status == 404 || status == 400 { return await fetch() }
+        } catch {
+            // offline: fall back to the last good list below
+        }
+        if let cached = TasksStore.cached { return .ready(cached) }
+        return .loading
+    }
+}
+
+/// The circle in a «Дела» row. Runs in the widget's process; WidgetKit redraws
+/// the widget when it returns, already with the server's fresh list.
+@available(iOS 17.0, *)
+struct CompleteTaskIntent: AppIntent {
+    static var title: LocalizedStringResource = "Отметить дело"
+    static var isDiscoverable: Bool = false
+
+    @Parameter(title: "Дело")
+    var taskId: String
+
+    init() {}
+
+    init(taskId: String) {
+        self.taskId = taskId
+    }
+
+    func perform() async throws -> some IntentResult {
+        _ = await TasksAPI.fetch(completing: taskId)
+        // The day widgets count open requests too.
+        WidgetCenter.shared.reloadTimelines(ofKind: "VpareCouple")
+        return .result()
+    }
+}
+
+struct TasksProvider: TimelineProvider {
+    func placeholder(in context: Context) -> TasksEntry {
+        TasksEntry(date: Date(), state: .ready(.sample))
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (TasksEntry) -> Void) {
+        if context.isPreview {
+            completion(TasksEntry(date: Date(), state: .ready(.sample)))
+        } else if let cached = TasksStore.cached {
+            completion(TasksEntry(date: Date(), state: .ready(cached)))
+        } else {
+            completion(TasksEntry(date: Date(), state: WidgetStore.isConfigured ? .loading : .setup))
+        }
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<TasksEntry>) -> Void) {
+        Task {
+            let state = await TasksAPI.fetch()
+            let now = Date()
+            // Every 15 minutes, and right after midnight when «сегодня» starts over.
+            let soon = now.addingTimeInterval(15 * 60)
+            let midnight = Calendar.current.nextDate(after: now, matching: DateComponents(hour: 0, minute: 1), matchingPolicy: .nextTime) ?? soon
+            completion(Timeline(entries: [TasksEntry(date: now, state: state)], policy: .after(min(soon, midnight))))
         }
     }
 }

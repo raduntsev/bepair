@@ -3,9 +3,11 @@ import { createHash } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 /*
-  Shared by every widget endpoint: a widget authorises with its own read-only
-  key, never a session. Returns the service client and the key's owner, or the
-  response to send instead.
+  Shared by every widget endpoint: a widget authorises with its own key, never
+  a session. The key reads the owner's own widget data; the one thing it may
+  change is ticking off a request made to its owner (/api/widget/tasks).
+  Returns the service client and the key's owner, or the response to send
+  instead.
 */
 export async function authorizeWidget(
   request: Request,

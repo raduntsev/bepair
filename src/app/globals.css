@@ -570,20 +570,24 @@
   */
   .pair-loader {
     overflow: visible;
+    /* One loop of the scene; each scene sets its own. */
+    --pl-dur: 10s;
   }
   .pair-loader__pos,
   .pair-loader__body,
   .pair-loader__look,
   .pair-loader__eyes,
   .pair-loader__happy,
-  .pair-loader__mid {
+  .pair-loader__mid,
+  .pair-loader__heart {
     transform-box: fill-box;
     transform-origin: center;
-    animation-duration: 10s;
+    animation-duration: var(--pl-dur);
     animation-iteration-count: infinite;
     animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1);
   }
-  .pair-loader__happy {
+  .pair-loader__happy,
+  .pair-loader__heart {
     opacity: 0;
   }
   .pair-loader__mid {
@@ -737,15 +741,11 @@
   }
 
   /* ——— Idle: the same two, nothing loading (empty states), 7 s ——— */
+  .pair-loader--idle {
+    --pl-dur: 7s;
+  }
   .pair-loader--idle .pair-loader__mid {
     display: none;
-  }
-  .pair-loader--idle .pair-loader__pos,
-  .pair-loader--idle .pair-loader__body,
-  .pair-loader--idle .pair-loader__look,
-  .pair-loader--idle .pair-loader__eyes,
-  .pair-loader--idle .pair-loader__happy {
-    animation-duration: 7s;
   }
   .pair-loader--idle .pair-loader__pos--you { animation-name: pl-idle-pos-you; }
   .pair-loader--idle .pair-loader__body--you { animation-name: pl-idle-body-you; }
@@ -839,6 +839,669 @@
     69%, 100% { opacity: 0; }
   }
 
+  /*
+    ——— More scenes (see PairLoader.tsx). Each overrides the layers' animation
+    names with two-class selectors, so the talk scene above stays the default.
+    Positions: you sit at x 34, your partner at x 86; touching is 34 apart.
+  */
+
+  /* ——— Ball: tossed from head to head, 9 s ——— */
+  .pair-loader--ball {
+    --pl-dur: 9s;
+  }
+  .pair-loader--ball .pair-loader__mid {
+    opacity: 1;
+    fill: var(--c-ink-soft);
+    animation-name: pl-ball;
+    animation-timing-function: linear;
+  }
+  .pair-loader--ball .pair-loader__pos--you { animation-name: pl-ball-pos-you; }
+  .pair-loader--ball .pair-loader__body--you { animation-name: pl-ball-body-you; }
+  .pair-loader--ball .pair-loader__look--you { animation-name: pl-ball-look-you; }
+  .pair-loader--ball .pair-loader__eyes--you { animation-name: pl-ball-eyes-you; }
+  .pair-loader--ball .pair-loader__happy--you { animation-name: pl-ball-happy; }
+  .pair-loader--ball .pair-loader__pos--partner { animation-name: pl-ball-pos-partner; }
+  .pair-loader--ball .pair-loader__body--partner { animation-name: pl-ball-body-partner; }
+  .pair-loader--ball .pair-loader__look--partner { animation-name: pl-ball-look-partner; }
+  .pair-loader--ball .pair-loader__eyes--partner { animation-name: pl-ball-eyes-partner; }
+  .pair-loader--ball .pair-loader__happy--partner { animation-name: pl-ball-happy; }
+
+  @keyframes pl-ball {
+    0% { transform: translate(-26px, -22px); }
+    4% { transform: translate(-24px, -22px); }
+    8% { transform: translate(-27px, -22px); }
+    12% { transform: translate(-26px, -24px); }
+    15% { transform: translate(-13px, -42px); }
+    18% { transform: translate(0, -48px); }
+    21% { transform: translate(13px, -42px); }
+    24% { transform: translate(26px, -22px); }
+    26% { transform: translate(26px, -18px); }
+    28% { transform: translate(26px, -22px); }
+    31% { transform: translate(28px, -22px); }
+    34% { transform: translate(24px, -22px); }
+    38% { transform: translate(26px, -24px); }
+    41% { transform: translate(13px, -42px); }
+    44% { transform: translate(0, -48px); }
+    47% { transform: translate(-13px, -42px); }
+    50% { transform: translate(-26px, -22px); }
+    52% { transform: translate(-26px, -18px); }
+    54%, 60% { transform: translate(-26px, -22px); }
+    64% { transform: translate(-26px, -46px); }
+    67% { transform: translate(-26px, -54px); }
+    70% { transform: translate(-26px, -46px); }
+    74%, 100% { transform: translate(-26px, -22px); }
+  }
+  @keyframes pl-ball-pos-you {
+    0%, 10% { transform: translate(0, 0); }
+    12% { transform: translate(0, -6px); }
+    14%, 60% { transform: translate(0, 0); }
+    63% { transform: translate(0, -5px); }
+    65%, 76% { transform: translate(0, 0); }
+    79% { transform: translate(0, -9px); }
+    82%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-ball-body-you {
+    0%, 8% { transform: scale(1, 1); }
+    10% { transform: scale(1.1, 0.9); }
+    12% { transform: scale(0.94, 1.06); }
+    15%, 49% { transform: scale(1, 1); }
+    51% { transform: scale(1.12, 0.88); }
+    54%, 60% { transform: scale(1, 1); }
+    62% { transform: scale(1.08, 0.92); }
+    64%, 72% { transform: scale(1, 1); }
+    74% { transform: scale(1.1, 0.9); }
+    77% { transform: scale(1.08, 0.92); }
+    79% { transform: scale(0.92, 1.08); }
+    82% { transform: scale(1.08, 0.92); }
+    85%, 100% { transform: scale(1, 1); }
+  }
+  @keyframes pl-ball-look-you {
+    0%, 12% { transform: translate(0, -3px); }
+    18% { transform: translate(2px, -3px); }
+    24%, 38% { transform: translate(3px, -1px); }
+    44% { transform: translate(2px, -3px); }
+    50%, 74% { transform: translate(0, -3px); }
+    78%, 88% { transform: translate(3px, 1px); }
+    94%, 100% { transform: translate(0, -3px); }
+  }
+  @keyframes pl-ball-eyes-you {
+    0%, 64% { transform: scale(1, 1); opacity: 1; }
+    67%, 70% { transform: scale(1.3, 1.3); opacity: 1; }
+    73%, 75% { transform: scale(1, 1); opacity: 1; }
+    76%, 88% { transform: scale(1, 1); opacity: 0; }
+    89%, 92% { transform: scale(1, 1); opacity: 1; }
+    93.5% { transform: scale(1, 0.1); opacity: 1; }
+    95%, 100% { transform: scale(1, 1); opacity: 1; }
+  }
+  @keyframes pl-ball-happy {
+    0%, 75% { opacity: 0; }
+    76%, 88% { opacity: 1; }
+    89%, 100% { opacity: 0; }
+  }
+  @keyframes pl-ball-pos-partner {
+    0%, 36% { transform: translate(0, 0); }
+    38% { transform: translate(0, -6px); }
+    40%, 80% { transform: translate(0, 0); }
+    83% { transform: translate(0, -10px); }
+    86%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-ball-body-partner {
+    0%, 23% { transform: rotate(0deg) scale(1, 1); }
+    25% { transform: rotate(0deg) scale(1.12, 0.88); }
+    28% { transform: rotate(0deg) scale(1, 1); }
+    31% { transform: rotate(6deg) scale(1, 1); }
+    34% { transform: rotate(-6deg) scale(1, 1); }
+    36% { transform: rotate(0deg) scale(1.1, 0.9); }
+    38% { transform: rotate(0deg) scale(0.94, 1.06); }
+    41%, 80% { transform: rotate(0deg) scale(1, 1); }
+    82% { transform: rotate(0deg) scale(1.1, 0.9); }
+    83% { transform: rotate(0deg) scale(0.9, 1.1); }
+    86% { transform: rotate(0deg) scale(1.1, 0.9); }
+    89%, 100% { transform: rotate(0deg) scale(1, 1); }
+  }
+  @keyframes pl-ball-look-partner {
+    0%, 10% { transform: translate(-3px, 1px); }
+    15% { transform: translate(-3px, -3px); }
+    20% { transform: translate(-1px, -3px); }
+    24%, 38% { transform: translate(0, -3px); }
+    44% { transform: translate(-2px, -3px); }
+    50%, 62% { transform: translate(-3px, 0); }
+    67%, 72% { transform: translate(-3px, -3px); }
+    78%, 100% { transform: translate(-3px, 1px); }
+  }
+  @keyframes pl-ball-eyes-partner {
+    0%, 6% { transform: scale(1, 1); opacity: 1; }
+    7% { transform: scale(1, 0.1); opacity: 1; }
+    8%, 64% { transform: scale(1, 1); opacity: 1; }
+    67%, 70% { transform: scale(1.3, 1.3); opacity: 1; }
+    73%, 75% { transform: scale(1, 1); opacity: 1; }
+    76%, 88% { transform: scale(1, 1); opacity: 0; }
+    89%, 92% { transform: scale(1, 1); opacity: 1; }
+    93.5% { transform: scale(1, 0.1); opacity: 1; }
+    95%, 100% { transform: scale(1, 1); opacity: 1; }
+  }
+
+  /* ——— Swap: leapfrog over each other and back, 9 s ——— */
+  .pair-loader--swap {
+    --pl-dur: 9s;
+  }
+  .pair-loader--swap .pair-loader__mid,
+  .pair-loader--hug .pair-loader__mid,
+  .pair-loader--seesaw .pair-loader__mid {
+    display: none;
+  }
+  .pair-loader--swap .pair-loader__pos--you { animation-name: pl-swap-pos-you; }
+  .pair-loader--swap .pair-loader__body--you { animation-name: pl-swap-body-you; }
+  .pair-loader--swap .pair-loader__look--you { animation-name: pl-swap-look-you; }
+  .pair-loader--swap .pair-loader__eyes--you { animation-name: pl-swap-eyes; }
+  .pair-loader--swap .pair-loader__happy--you { animation-name: pl-swap-happy; }
+  .pair-loader--swap .pair-loader__pos--partner { animation-name: pl-swap-pos-partner; }
+  .pair-loader--swap .pair-loader__body--partner { animation-name: pl-swap-body-partner; }
+  .pair-loader--swap .pair-loader__look--partner { animation-name: pl-swap-look-partner; }
+  .pair-loader--swap .pair-loader__eyes--partner { animation-name: pl-swap-eyes; }
+  .pair-loader--swap .pair-loader__happy--partner { animation-name: pl-swap-happy; }
+
+  @keyframes pl-swap-pos-you {
+    0%, 12% { transform: translate(0, 0); }
+    14.5% { transform: translate(13px, -26px); }
+    17% { transform: translate(26px, -36px); }
+    19.5% { transform: translate(39px, -26px); }
+    22%, 44% { transform: translate(52px, 0); }
+    46% { transform: translate(52px, 3px); }
+    52%, 78% { transform: translate(0, 0); }
+    80% { transform: translate(0, -8px); }
+    82% { transform: translate(0, 0); }
+    84% { transform: translate(0, -8px); }
+    86%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-swap-body-you {
+    0%, 8% { transform: scale(1, 1); }
+    11% { transform: scale(1.12, 0.88); }
+    13% { transform: scale(0.92, 1.08); }
+    17% { transform: scale(1, 1); }
+    22% { transform: scale(1.14, 0.86); }
+    25%, 43% { transform: scale(1, 1); }
+    46%, 50% { transform: scale(1.12, 0.78); }
+    54%, 78% { transform: scale(1, 1); }
+    79% { transform: scale(1.08, 0.92); }
+    80% { transform: scale(0.94, 1.06); }
+    82% { transform: scale(1.08, 0.92); }
+    84% { transform: scale(0.94, 1.06); }
+    86% { transform: scale(1.06, 0.94); }
+    89%, 100% { transform: scale(1, 1); }
+  }
+  @keyframes pl-swap-look-you {
+    0%, 2% { transform: translate(0, 0); }
+    5%, 12% { transform: translate(3px, 1px); }
+    17% { transform: translate(3px, 3px); }
+    24%, 44% { transform: translate(-3px, 1px); }
+    48% { transform: translate(-1px, -3px); }
+    54%, 60% { transform: translate(3px, 1px); }
+    66%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-swap-eyes {
+    0%, 26% { transform: scale(1, 1); opacity: 1; }
+    28%, 38% { transform: scale(1, 1); opacity: 0; }
+    39%, 52% { transform: scale(1, 1); opacity: 1; }
+    54%, 56% { transform: scale(1.3, 1.3); opacity: 1; }
+    59%, 78% { transform: scale(1, 1); opacity: 1; }
+    79%, 87% { transform: scale(1, 1); opacity: 0; }
+    88%, 93% { transform: scale(1, 1); opacity: 1; }
+    94.5% { transform: scale(1, 0.1); opacity: 1; }
+    96%, 100% { transform: scale(1, 1); opacity: 1; }
+  }
+  @keyframes pl-swap-happy {
+    0%, 27% { opacity: 0; }
+    28%, 38% { opacity: 1; }
+    39%, 78% { opacity: 0; }
+    79%, 87% { opacity: 1; }
+    88%, 100% { opacity: 0; }
+  }
+  @keyframes pl-swap-pos-partner {
+    0%, 13% { transform: translate(0, 0); }
+    15% { transform: translate(0, 3px); }
+    22%, 43% { transform: translate(-52px, 0); }
+    44.5% { transform: translate(-39px, -26px); }
+    47% { transform: translate(-26px, -34px); }
+    49.5% { transform: translate(-13px, -26px); }
+    52%, 80% { transform: translate(0, 0); }
+    82% { transform: translate(0, -8px); }
+    84% { transform: translate(0, 0); }
+    86% { transform: translate(0, -8px); }
+    88%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-swap-body-partner {
+    0%, 12% { transform: rotate(0deg) scale(1, 1); }
+    15%, 19% { transform: rotate(0deg) scale(1.12, 0.78); }
+    23% { transform: rotate(0deg) scale(1, 1); }
+    30% { transform: rotate(-8deg) scale(1, 1); }
+    34% { transform: rotate(6deg) scale(1, 1); }
+    38%, 40% { transform: rotate(0deg) scale(1, 1); }
+    42% { transform: rotate(0deg) scale(1.12, 0.88); }
+    44% { transform: rotate(0deg) scale(0.92, 1.08); }
+    48% { transform: rotate(0deg) scale(1, 1); }
+    52% { transform: rotate(0deg) scale(1.14, 0.86); }
+    55%, 80% { transform: rotate(0deg) scale(1, 1); }
+    81% { transform: rotate(0deg) scale(1.08, 0.92); }
+    82% { transform: rotate(0deg) scale(0.94, 1.06); }
+    84% { transform: rotate(0deg) scale(1.08, 0.92); }
+    86% { transform: rotate(0deg) scale(0.94, 1.06); }
+    88% { transform: rotate(0deg) scale(1.06, 0.94); }
+    91%, 100% { transform: rotate(0deg) scale(1, 1); }
+  }
+  @keyframes pl-swap-look-partner {
+    0%, 4% { transform: translate(0, 0); }
+    7%, 12% { transform: translate(-3px, 1px); }
+    16% { transform: translate(-1px, -3px); }
+    24%, 41% { transform: translate(3px, 1px); }
+    47% { transform: translate(3px, 3px); }
+    54%, 60% { transform: translate(-3px, 1px); }
+    66%, 100% { transform: translate(0, 0); }
+  }
+
+  /* ——— Hug: roll together, squeeze, a heart, 8 s ——— */
+  .pair-loader--hug {
+    --pl-dur: 8s;
+  }
+  .pair-loader--hug .pair-loader__heart { animation-name: pl-hug-heart; }
+  .pair-loader--hug .pair-loader__pos--you { animation-name: pl-hug-pos-you; }
+  .pair-loader--hug .pair-loader__body--you { animation-name: pl-hug-body-you; }
+  .pair-loader--hug .pair-loader__look--you { animation-name: pl-hug-look-you; }
+  .pair-loader--hug .pair-loader__eyes--you { animation-name: pl-hug-eyes; }
+  .pair-loader--hug .pair-loader__happy--you { animation-name: pl-hug-happy; }
+  .pair-loader--hug .pair-loader__pos--partner { animation-name: pl-hug-pos-partner; }
+  .pair-loader--hug .pair-loader__body--partner { animation-name: pl-hug-body-partner; }
+  .pair-loader--hug .pair-loader__look--partner { animation-name: pl-hug-look-partner; }
+  .pair-loader--hug .pair-loader__eyes--partner { animation-name: pl-hug-eyes-partner; }
+  .pair-loader--hug .pair-loader__happy--partner { animation-name: pl-hug-happy; }
+
+  @keyframes pl-hug-heart {
+    0%, 28% { transform: translate(0, 4px) scale(0); opacity: 0; }
+    31% { transform: translate(0, 0) scale(1.3); opacity: 1; }
+    34% { transform: translate(0, -1px) scale(0.9); opacity: 1; }
+    37% { transform: translate(0, -2px) scale(1.1); opacity: 1; }
+    40% { transform: translate(0, -3px) scale(0.95); opacity: 1; }
+    48% { transform: translate(0, -10px) scale(1); opacity: 0; }
+    100% { transform: translate(0, -10px) scale(0); opacity: 0; }
+  }
+  @keyframes pl-hug-pos-you {
+    0%, 12% { transform: translate(0, 0); }
+    22% { transform: translate(8px, 0); }
+    26%, 44% { transform: translate(9.5px, 0); }
+    56%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-hug-body-you {
+    0%, 4% { transform: rotate(0deg) scale(1, 1); }
+    8% { transform: rotate(0deg) scale(1.03, 0.97); }
+    12% { transform: rotate(0deg) scale(1, 1); }
+    22% { transform: rotate(28deg) scale(1, 1); }
+    26% { transform: rotate(8deg) scale(0.9, 1.06); }
+    30% { transform: rotate(8deg) scale(0.86, 1.08); }
+    34% { transform: rotate(8deg) scale(0.9, 1.06); }
+    38% { transform: rotate(8deg) scale(0.86, 1.08); }
+    44% { transform: rotate(8deg) scale(0.92, 1.05); }
+    56% { transform: rotate(-20deg) scale(1, 1); }
+    60%, 100% { transform: rotate(0deg) scale(1, 1); }
+  }
+  @keyframes pl-hug-look-you {
+    0%, 8% { transform: translate(0, 0); }
+    12%, 24% { transform: translate(3px, 1px); }
+    48% { transform: translate(3px, 1px); }
+    58% { transform: translate(0, 0); }
+    64%, 80% { transform: translate(3px, 1px); }
+    86%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-hug-eyes {
+    0%, 26% { transform: scale(1, 1); opacity: 1; }
+    27%, 46% { transform: scale(1, 1); opacity: 0; }
+    47%, 87% { transform: scale(1, 1); opacity: 1; }
+    88.5% { transform: scale(1, 0.1); opacity: 1; }
+    90%, 100% { transform: scale(1, 1); opacity: 1; }
+  }
+  @keyframes pl-hug-happy {
+    0%, 26% { opacity: 0; }
+    27%, 46% { opacity: 1; }
+    47%, 100% { opacity: 0; }
+  }
+  @keyframes pl-hug-pos-partner {
+    0%, 12% { transform: translate(0, 0); }
+    22% { transform: translate(-8px, 0); }
+    26%, 44% { transform: translate(-9.5px, 0); }
+    56%, 72% { transform: translate(0, 0); }
+    74.5% { transform: translate(0, -7px); }
+    77%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-hug-body-partner {
+    0%, 6% { transform: rotate(0deg) scale(1, 1); }
+    10% { transform: rotate(0deg) scale(1.03, 0.97); }
+    12% { transform: rotate(0deg) scale(1, 1); }
+    22% { transform: rotate(-28deg) scale(1, 1); }
+    26% { transform: rotate(-8deg) scale(0.9, 1.06); }
+    30% { transform: rotate(-8deg) scale(0.86, 1.08); }
+    34% { transform: rotate(-8deg) scale(0.9, 1.06); }
+    38% { transform: rotate(-8deg) scale(0.86, 1.08); }
+    44% { transform: rotate(-8deg) scale(0.92, 1.05); }
+    56% { transform: rotate(20deg) scale(1, 1); }
+    60%, 72% { transform: rotate(0deg) scale(1, 1); }
+    73% { transform: rotate(0deg) scale(1.08, 0.92); }
+    74.5% { transform: rotate(0deg) scale(0.94, 1.06); }
+    77% { transform: rotate(0deg) scale(1.08, 0.92); }
+    80%, 100% { transform: rotate(0deg) scale(1, 1); }
+  }
+  @keyframes pl-hug-look-partner {
+    0%, 10% { transform: translate(0, 0); }
+    14%, 48% { transform: translate(-3px, 1px); }
+    58%, 64% { transform: translate(0, 0); }
+    66%, 70% { transform: translate(-3px, 1px); }
+    72%, 80% { transform: translate(0, 3px); }
+    86%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-hug-eyes-partner {
+    0%, 26% { transform: scale(1, 1); opacity: 1; }
+    27%, 46% { transform: scale(1, 1); opacity: 0; }
+    47%, 87% { transform: scale(1, 1); opacity: 1; }
+    88.5% { transform: scale(1, 0.1); opacity: 1; }
+    90%, 100% { transform: scale(1, 1); opacity: 1; }
+  }
+
+  /* ——— Seesaw: hop in turns, faster, spin, dizzy, 8 s ——— */
+  .pair-loader--seesaw {
+    --pl-dur: 8s;
+  }
+  .pair-loader--seesaw .pair-loader__pos--you { animation-name: pl-see-pos-you; }
+  .pair-loader--seesaw .pair-loader__body--you { animation-name: pl-see-body-you; }
+  .pair-loader--seesaw .pair-loader__look--you { animation-name: pl-see-look-you; }
+  .pair-loader--seesaw .pair-loader__eyes--you { animation-name: pl-see-eyes; }
+  .pair-loader--seesaw .pair-loader__happy--you { animation-name: pl-see-happy; }
+  .pair-loader--seesaw .pair-loader__pos--partner { animation-name: pl-see-pos-partner; }
+  .pair-loader--seesaw .pair-loader__body--partner { animation-name: pl-see-body-partner; }
+  .pair-loader--seesaw .pair-loader__look--partner { animation-name: pl-see-look-partner; }
+  .pair-loader--seesaw .pair-loader__eyes--partner { animation-name: pl-see-eyes; }
+  .pair-loader--seesaw .pair-loader__happy--partner { animation-name: pl-see-happy; }
+
+  @keyframes pl-see-pos-you {
+    0%, 4% { transform: translate(0, 0); }
+    7% { transform: translate(0, -12px); }
+    10%, 16% { transform: translate(0, 0); }
+    19% { transform: translate(0, -12px); }
+    22%, 28% { transform: translate(0, 0); }
+    30% { transform: translate(0, -10px); }
+    32%, 36% { transform: translate(0, 0); }
+    38% { transform: translate(0, -10px); }
+    40%, 46% { transform: translate(0, 0); }
+    52% { transform: translate(0, -14px); }
+    58%, 76% { transform: translate(0, 0); }
+    79% { transform: translate(0, -9px); }
+    82%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-see-body-you {
+    0%, 3% { transform: rotate(0deg) scale(1, 1); }
+    4% { transform: rotate(0deg) scale(1.1, 0.9); }
+    6% { transform: rotate(0deg) scale(0.94, 1.06); }
+    10% { transform: rotate(0deg) scale(1.08, 0.92); }
+    12%, 15% { transform: rotate(0deg) scale(1, 1); }
+    16% { transform: rotate(0deg) scale(1.1, 0.9); }
+    18% { transform: rotate(0deg) scale(0.94, 1.06); }
+    22% { transform: rotate(0deg) scale(1.08, 0.92); }
+    24%, 27% { transform: rotate(0deg) scale(1, 1); }
+    28% { transform: rotate(0deg) scale(1.1, 0.9); }
+    32% { transform: rotate(0deg) scale(1.08, 0.92); }
+    34%, 35% { transform: rotate(0deg) scale(1, 1); }
+    36% { transform: rotate(0deg) scale(1.1, 0.9); }
+    40% { transform: rotate(0deg) scale(1.08, 0.92); }
+    44% { transform: rotate(0deg) scale(1.12, 0.88); }
+    46% { transform: rotate(0deg) scale(0.92, 1.08); }
+    58% { transform: rotate(360deg) scale(1, 1); }
+    60% { transform: rotate(360deg) scale(1.1, 0.9); }
+    63% { transform: rotate(368deg) scale(1, 1); }
+    66% { transform: rotate(354deg) scale(1, 1); }
+    69% { transform: rotate(364deg) scale(1, 1); }
+    72%, 76% { transform: rotate(360deg) scale(1, 1); }
+    77% { transform: rotate(360deg) scale(1.08, 0.92); }
+    79% { transform: rotate(360deg) scale(0.94, 1.06); }
+    82% { transform: rotate(360deg) scale(1.08, 0.92); }
+    85%, 99.99% { transform: rotate(360deg) scale(1, 1); }
+    100% { transform: rotate(0deg) scale(1, 1); }
+  }
+  @keyframes pl-see-look-you {
+    0%, 10% { transform: translate(3px, 1px); }
+    13%, 16% { transform: translate(3px, -3px); }
+    22%, 28% { transform: translate(3px, 1px); }
+    32%, 35% { transform: translate(3px, -3px); }
+    40%, 44% { transform: translate(3px, 1px); }
+    60% { transform: translate(3px, 0); }
+    62% { transform: translate(0, 3px); }
+    64% { transform: translate(-3px, 0); }
+    66% { transform: translate(0, -3px); }
+    68% { transform: translate(3px, 0); }
+    70% { transform: translate(0, 3px); }
+    74%, 100% { transform: translate(3px, 1px); }
+  }
+  @keyframes pl-see-eyes {
+    0%, 46% { transform: scale(1, 1); opacity: 1; }
+    48%, 56% { transform: scale(1, 0.15); opacity: 1; }
+    59%, 72% { transform: scale(1.2, 1.2); opacity: 1; }
+    75%, 76% { transform: scale(1, 1); opacity: 1; }
+    77%, 88% { transform: scale(1, 1); opacity: 0; }
+    89%, 93% { transform: scale(1, 1); opacity: 1; }
+    94.5% { transform: scale(1, 0.1); opacity: 1; }
+    96%, 100% { transform: scale(1, 1); opacity: 1; }
+  }
+  @keyframes pl-see-happy {
+    0%, 76% { opacity: 0; }
+    77%, 88% { opacity: 1; }
+    89%, 100% { opacity: 0; }
+  }
+  @keyframes pl-see-pos-partner {
+    0%, 10% { transform: translate(0, 0); }
+    13% { transform: translate(0, -12px); }
+    16%, 22% { transform: translate(0, 0); }
+    25% { transform: translate(0, -12px); }
+    28%, 32% { transform: translate(0, 0); }
+    34% { transform: translate(0, -10px); }
+    36%, 40% { transform: translate(0, 0); }
+    42% { transform: translate(0, -10px); }
+    44%, 46% { transform: translate(0, 0); }
+    52% { transform: translate(0, -14px); }
+    58%, 78% { transform: translate(0, 0); }
+    81% { transform: translate(0, -9px); }
+    84%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-see-body-partner {
+    0%, 9% { transform: rotate(0deg) scale(1, 1); }
+    10% { transform: rotate(0deg) scale(1.1, 0.9); }
+    12% { transform: rotate(0deg) scale(0.94, 1.06); }
+    16% { transform: rotate(0deg) scale(1.08, 0.92); }
+    18%, 21% { transform: rotate(0deg) scale(1, 1); }
+    22% { transform: rotate(0deg) scale(1.1, 0.9); }
+    24% { transform: rotate(0deg) scale(0.94, 1.06); }
+    28% { transform: rotate(0deg) scale(1.08, 0.92); }
+    30%, 31% { transform: rotate(0deg) scale(1, 1); }
+    32% { transform: rotate(0deg) scale(1.1, 0.9); }
+    36% { transform: rotate(0deg) scale(1.08, 0.92); }
+    38%, 39% { transform: rotate(0deg) scale(1, 1); }
+    40% { transform: rotate(0deg) scale(1.1, 0.9); }
+    44% { transform: rotate(0deg) scale(1.12, 0.88); }
+    46% { transform: rotate(0deg) scale(0.92, 1.08); }
+    58% { transform: rotate(-360deg) scale(1, 1); }
+    60% { transform: rotate(-360deg) scale(1.1, 0.9); }
+    63% { transform: rotate(-368deg) scale(1, 1); }
+    66% { transform: rotate(-354deg) scale(1, 1); }
+    69% { transform: rotate(-364deg) scale(1, 1); }
+    72%, 78% { transform: rotate(-360deg) scale(1, 1); }
+    79% { transform: rotate(-360deg) scale(1.08, 0.92); }
+    81% { transform: rotate(-360deg) scale(0.94, 1.06); }
+    84% { transform: rotate(-360deg) scale(1.08, 0.92); }
+    87%, 99.99% { transform: rotate(-360deg) scale(1, 1); }
+    100% { transform: rotate(0deg) scale(1, 1); }
+  }
+  @keyframes pl-see-look-partner {
+    0%, 4% { transform: translate(-3px, 1px); }
+    7%, 10% { transform: translate(-3px, -3px); }
+    16%, 22% { transform: translate(-3px, 1px); }
+    25%, 28% { transform: translate(-3px, -3px); }
+    34%, 36% { transform: translate(-3px, -3px); }
+    40%, 44% { transform: translate(-3px, 1px); }
+    60% { transform: translate(-3px, 0); }
+    62% { transform: translate(0, -3px); }
+    64% { transform: translate(3px, 0); }
+    66% { transform: translate(0, 3px); }
+    68% { transform: translate(-3px, 0); }
+    70% { transform: translate(0, -3px); }
+    74%, 100% { transform: translate(-3px, 1px); }
+  }
+
+  /* ——— Nap (empty states): dozing side by side, 9 s ——— */
+  .pair-loader--idle.pair-loader--nap {
+    --pl-dur: 9s;
+  }
+  .pair-loader--nap .pair-loader__pos--you { animation-name: pl-nap-pos-you; }
+  .pair-loader--nap .pair-loader__body--you { animation-name: pl-nap-body-you; }
+  .pair-loader--nap .pair-loader__look--you { animation-name: pl-nap-look-you; }
+  .pair-loader--nap .pair-loader__eyes--you { animation-name: pl-nap-eyes-you; }
+  .pair-loader--nap .pair-loader__happy--you { animation-name: pl-nap-happy-you; }
+  .pair-loader--nap .pair-loader__pos--partner { animation-name: pl-nap-pos-partner; }
+  .pair-loader--nap .pair-loader__body--partner { animation-name: pl-nap-body-partner; }
+  .pair-loader--nap .pair-loader__look--partner { animation-name: pl-nap-look-partner; }
+  .pair-loader--nap .pair-loader__eyes--partner { animation-name: pl-nap-eyes-partner; }
+  .pair-loader--nap .pair-loader__happy--partner { animation-name: pl-nap-happy-partner; }
+
+  @keyframes pl-nap-pos-you {
+    0%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-nap-body-you {
+    0%, 20%, 40% { transform: scale(1, 1); }
+    10%, 30% { transform: scale(1.04, 0.96); }
+    46% { transform: scale(0.96, 1.05); }
+    50%, 70% { transform: scale(1, 1); }
+    80%, 100% { transform: scale(1, 1); }
+    90% { transform: scale(1.04, 0.96); }
+  }
+  @keyframes pl-nap-look-you {
+    0%, 44% { transform: translate(0, 2px); }
+    48%, 52% { transform: translate(0, -1px); }
+    56%, 66% { transform: translate(3px, 1px); }
+    74%, 100% { transform: translate(0, 2px); }
+  }
+  @keyframes pl-nap-eyes-you {
+    0%, 44% { transform: scale(1, 0.15); opacity: 1; }
+    47%, 58% { transform: scale(1, 1); opacity: 1; }
+    59%, 66% { transform: scale(1, 1); opacity: 0; }
+    67%, 70% { transform: scale(1, 1); opacity: 1; }
+    76%, 100% { transform: scale(1, 0.15); opacity: 1; }
+  }
+  @keyframes pl-nap-happy-you {
+    0%, 58% { opacity: 0; }
+    59%, 66% { opacity: 1; }
+    67%, 100% { opacity: 0; }
+  }
+  @keyframes pl-nap-pos-partner {
+    0%, 6% { transform: translate(0, 0); }
+    18%, 82% { transform: translate(-5px, 2px); }
+    94%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-nap-body-partner {
+    0%, 6% { transform: rotate(0deg) scale(1, 1); }
+    18% { transform: rotate(-14deg) scale(1, 1); }
+    25% { transform: rotate(-14deg) scale(1.03, 0.97); }
+    32% { transform: rotate(-14deg) scale(1, 1); }
+    39% { transform: rotate(-14deg) scale(1.03, 0.97); }
+    46%, 58% { transform: rotate(-14deg) scale(1, 1); }
+    62% { transform: rotate(-16deg) scale(1.05, 0.95); }
+    66% { transform: rotate(-14deg) scale(1, 1); }
+    74% { transform: rotate(-14deg) scale(1.03, 0.97); }
+    82% { transform: rotate(-14deg) scale(1, 1); }
+    86% { transform: rotate(-4deg) scale(1, 1); }
+    90% { transform: rotate(4deg) scale(1, 1); }
+    94%, 100% { transform: rotate(0deg) scale(1, 1); }
+  }
+  @keyframes pl-nap-look-partner {
+    0%, 100% { transform: translate(-1px, 2px); }
+  }
+  @keyframes pl-nap-eyes-partner {
+    0%, 100% { transform: scale(1, 0.15); opacity: 1; }
+  }
+  @keyframes pl-nap-happy-partner {
+    0%, 100% { opacity: 0; }
+  }
+
+  /* ——— Peek (empty states): eyes meet, both look away, peek again, 7 s ——— */
+  .pair-loader--peek .pair-loader__pos--you { animation-name: pl-peek-pos-you; }
+  .pair-loader--peek .pair-loader__body--you { animation-name: pl-peek-body-you; }
+  .pair-loader--peek .pair-loader__look--you { animation-name: pl-peek-look-you; }
+  .pair-loader--peek .pair-loader__eyes--you { animation-name: pl-peek-eyes-you; }
+  .pair-loader--peek .pair-loader__happy--you { animation-name: pl-peek-happy; }
+  .pair-loader--peek .pair-loader__pos--partner { animation-name: pl-peek-pos-partner; }
+  .pair-loader--peek .pair-loader__body--partner { animation-name: pl-peek-body-partner; }
+  .pair-loader--peek .pair-loader__look--partner { animation-name: pl-peek-look-partner; }
+  .pair-loader--peek .pair-loader__eyes--partner { animation-name: pl-peek-eyes-partner; }
+  .pair-loader--peek .pair-loader__happy--partner { animation-name: pl-peek-happy; }
+
+  @keyframes pl-peek-pos-you {
+    0%, 38% { transform: translate(0, 0); }
+    44%, 54% { transform: translate(4px, 0); }
+    62%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-peek-body-you {
+    0%, 12% { transform: scale(1, 1); }
+    16% { transform: scale(1.03, 0.97); }
+    22% { transform: scale(1, 1); }
+    25% { transform: scale(0.96, 1.04); }
+    28%, 56% { transform: scale(1, 1); }
+    60% { transform: scale(1.05, 0.95); }
+    64%, 100% { transform: scale(1, 1); }
+  }
+  @keyframes pl-peek-look-you {
+    0%, 8% { transform: translate(0, -2px); }
+    14%, 22% { transform: translate(3px, 1px); }
+    24%, 36% { transform: translate(-3px, 0); }
+    42%, 54% { transform: translate(3px, 1px); }
+    72%, 100% { transform: translate(0, -2px); }
+  }
+  @keyframes pl-peek-eyes-you {
+    0%, 22% { transform: scale(1, 1); opacity: 1; }
+    23% { transform: scale(1.25, 1.25); opacity: 1; }
+    25%, 55% { transform: scale(1, 1); opacity: 1; }
+    56%, 68% { transform: scale(1, 1); opacity: 0; }
+    69%, 88% { transform: scale(1, 1); opacity: 1; }
+    90% { transform: scale(1, 0.1); opacity: 1; }
+    92%, 100% { transform: scale(1, 1); opacity: 1; }
+  }
+  @keyframes pl-peek-happy {
+    0%, 55% { opacity: 0; }
+    56%, 68% { opacity: 1; }
+    69%, 100% { opacity: 0; }
+  }
+  @keyframes pl-peek-pos-partner {
+    0%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes pl-peek-body-partner {
+    0%, 20% { transform: rotate(0deg) scale(1, 1); }
+    24% { transform: rotate(6deg) scale(0.95, 0.95); }
+    36% { transform: rotate(4deg) scale(0.96, 0.96); }
+    44%, 52% { transform: rotate(0deg) scale(1, 1); }
+    58% { transform: rotate(-7deg) scale(1, 1); }
+    62% { transform: rotate(6deg) scale(1, 1); }
+    66% { transform: rotate(-3deg) scale(1, 1); }
+    70%, 100% { transform: rotate(0deg) scale(1, 1); }
+  }
+  @keyframes pl-peek-look-partner {
+    0%, 12% { transform: translate(0, -2px); }
+    18%, 22% { transform: translate(-3px, 1px); }
+    24%, 46% { transform: translate(3px, 2px); }
+    50%, 56% { transform: translate(-3px, 1px); }
+    72%, 100% { transform: translate(0, -2px); }
+  }
+  @keyframes pl-peek-eyes-partner {
+    0%, 4% { transform: scale(1, 1); opacity: 1; }
+    5% { transform: scale(1, 0.1); opacity: 1; }
+    6%, 22% { transform: scale(1, 1); opacity: 1; }
+    23% { transform: scale(1.25, 1.25); opacity: 1; }
+    25%, 55% { transform: scale(1, 1); opacity: 1; }
+    56%, 68% { transform: scale(1, 1); opacity: 0; }
+    69%, 100% { transform: scale(1, 1); opacity: 1; }
+  }
+
   @keyframes pair-loader-mid {
     0%, 37% { transform: translate(0, 0) scale(0); }
     40% { transform: translate(0, 0) scale(1); }
@@ -917,16 +1580,10 @@
   .pair-loader .pair-loader__look,
   .pair-loader .pair-loader__eyes,
   .pair-loader .pair-loader__happy,
-  .pair-loader .pair-loader__mid {
-    animation-duration: 10s !important;
+  .pair-loader .pair-loader__mid,
+  .pair-loader .pair-loader__heart {
+    animation-duration: var(--pl-dur) !important;
     animation-iteration-count: infinite !important;
-  }
-  .pair-loader--idle .pair-loader__pos,
-  .pair-loader--idle .pair-loader__body,
-  .pair-loader--idle .pair-loader__look,
-  .pair-loader--idle .pair-loader__eyes,
-  .pair-loader--idle .pair-loader__happy {
-    animation-duration: 7s !important;
   }
 }
 

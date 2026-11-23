@@ -90,6 +90,57 @@ public final class WidgetApi {
         }
     }
 
+    /** The «Дела» widget's list from {api}/api/widget/tasks. */
+    public static Result refreshTasks(Context context) {
+        return tasks(context, "GET", null);
+    }
+
+    /** Ticks one request off; the answer is the fresh list. */
+    public static Result completeTask(Context context, String id) {
+        return tasks(context, "POST", "{\"id\":\"" + id.replaceAll("[^0-9a-fA-F-]", "") + "\"}");
+    }
+
+    private static Result tasks(Context context, String method, String body) {
+        String token = WidgetStore.token(context);
+        String api = WidgetStore.api(context);
+        if (token == null || api == null) return Result.NOT_CONFIGURED;
+
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(api + "/api/widget/tasks").openConnection();
+            connection.setRequestMethod(method);
+            connection.setConnectTimeout(10_000);
+            connection.setReadTimeout(15_000);
+            connection.setRequestProperty("Authorization", "Bearer " + token);
+            connection.setRequestProperty("Accept", "application/json");
+            if (body != null) {
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.getOutputStream().write(body.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int status = connection.getResponseCode();
+            if (status == 401) {
+                WidgetStore.clear(context);
+                TasksStore.clear(context);
+                return Result.REVOKED;
+            }
+            /* Gone or not yours: nothing to retry; a fresh list puts the row right. */
+            if (status == 404 || status == 400) {
+                if (body != null) tasks(context, "GET", null);
+                return Result.REVOKED;
+            }
+            if (status != 200) return Result.FAILED;
+
+            String text = read(connection.getInputStream());
+            return TasksStore.save(context, text) ? Result.OK : Result.FAILED;
+        } catch (Exception e) {
+            return Result.FAILED;
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
+    }
+
     private static byte[] readBytes(InputStream stream) throws java.io.IOException {
         try (InputStream in = stream; ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[16384];

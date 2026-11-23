@@ -30,7 +30,7 @@ export interface WidgetSnapshot {
   updatedAt: string;
 }
 
-function localDate(timezone: string | null) {
+export function localDate(timezone: string | null) {
   try {
     return new Intl.DateTimeFormat('en-CA', { timeZone: timezone || 'UTC' }).format(new Date());
   } catch {

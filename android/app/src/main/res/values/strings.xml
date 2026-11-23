@@ -17,4 +17,9 @@
     <string name="widget_photo_description">Ваши общие фото — по одному, сменяются каждые три часа</string>
     <string name="widget_photo_empty">Добавьте общие фото в приложении</string>
     <string name="widget_photo_loading">Загружаем фото…</string>
+    <string name="widget_tasks_name">Дела</string>
+    <string name="widget_tasks_description">Что партнёр попросил сделать сегодня — отмечайте прямо отсюда</string>
+    <string name="widget_tasks_title">Дела на сегодня</string>
+    <string name="widget_tasks_loading">Загружаем дела…</string>
+    <string name="widget_tasks_mark">Отметить выполненным: %1$s</string>
 </resources>

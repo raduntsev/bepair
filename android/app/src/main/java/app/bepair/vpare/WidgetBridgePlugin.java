@@ -14,6 +14,7 @@ import com.getcapacitor.annotation.PermissionCallback;
 
 import app.bepair.vpare.widget.LockStatus;
 import app.bepair.vpare.widget.PhotoStore;
+import app.bepair.vpare.widget.TasksStore;
 import app.bepair.vpare.widget.WidgetRefreshWorker;
 import app.bepair.vpare.widget.WidgetRenderer;
 import app.bepair.vpare.widget.WidgetStore;
@@ -52,6 +53,7 @@ public class WidgetBridgePlugin extends Plugin {
     public void clear(PluginCall call) {
         WidgetStore.clear(getContext());
         PhotoStore.clear(getContext());
+        TasksStore.clear(getContext());
         WidgetRenderer.updateAll(getContext());
         call.resolve();
     }
