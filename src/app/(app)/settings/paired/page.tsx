@@ -10,6 +10,7 @@ import { useSpaceAuth, type SpaceSettings } from '@/hooks/useSpaceAuth';
 import { Button } from '@/components/ui/Button';
 import { Alert, Page, PageHeader, RowGroup, SwitchRow } from '@/components/ui/Blocks';
 import { tr } from '@/lib/i18n';
+import { ResetSpace } from '@/components/ResetSpace';
 
 type Key = 'reveal_first' | 'chronicle_deletable' | 'long_distance' | 'count_streak';
 
@@ -26,7 +27,8 @@ export default function PairedSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const name = displayName(partner?.display_name);
 
-  const pending = settings?.pending_key ? settings : null;
+  /* Deleting everything has its own block below; this one is for the switches. */
+  const pending = settings?.pending_key && settings.pending_key !== 'reset_space' ? settings : null;
   const pendingMine = pending?.pending_by === user?.id;
 
   const call = async (fn: () => PromiseLike<{ error: unknown }>) => {
@@ -96,6 +98,8 @@ export default function PairedSettingsPage() {
       )}
 
       {!partner && <p className="mt-4 text-sm text-ink-faint">{tr('Пока вы в пространстве один, изменения применяются сразу.', 'While you’re alone in the space, changes apply at once.')}</p>}
+
+      <ResetSpace />
     </Page>
   );
 }

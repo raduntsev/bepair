@@ -35,6 +35,7 @@
 10. `supabase/migrations/0010_bepair_planerka_close.sql` — каждый закрывает свою часть планёрки
 11. `supabase/migrations/0011_bepair_album.sql` — общий альбом для фото-виджета
 12. `supabase/migrations/0012_bepair_lang.sql` — язык каждого (русский / английский) для уведомлений
+13. `supabase/migrations/0013_bepair_reset_space.sql` — удаление всех данных пары по согласию обоих
 
 Все миграции можно запускать повторно — они идемпотентны. `supabase_migration.sql` в корне — старая разовая правка, повторно её не запускайте.
 
