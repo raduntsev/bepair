@@ -33,6 +33,7 @@ public class WidgetRefreshWorker extends Worker {
         Context context = getApplicationContext();
         WidgetApi.Result result = WidgetApi.refresh(context);
         WidgetApi.Result photo = PhotoRenderer.ids(context).length > 0 ? WidgetApi.refreshPhoto(context) : WidgetApi.Result.OK;
+        if (TasksRenderer.ids(context).length > 0) WidgetApi.refreshTasks(context);
         WidgetRenderer.updateAll(context);
         return result == WidgetApi.Result.FAILED || photo == WidgetApi.Result.FAILED ? Result.retry() : Result.success();
     }

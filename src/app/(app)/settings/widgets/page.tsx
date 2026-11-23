@@ -23,13 +23,13 @@ const HOW_TO = {
   ios: [
     tr('Нажмите и подержите пустое место на экране «Домой», пока значки не задрожат.', 'Touch and hold an empty spot on the Home Screen until the icons jiggle.'),
     tr('Нажмите «Изменить» → «Добавить виджет» и найдите «Впаре».', 'Tap Edit → Add Widget and find Bepair.'),
-    tr('Выберите размер: маленький — ваш день и день партнёра, средний — ещё дни вместе и серия. «Фото» — ваши общие снимки.', 'Pick a size: small shows both your days, medium adds the run. “Photo” shows your shared photos.'),
+    tr('Выберите размер: маленький — ваш день и день партнёра, средний — ещё дни вместе и серия. «Фото» — ваши общие снимки, «Дела» — о чём попросил партнёр.', 'Pick a size: small shows both your days, medium adds the run. “Photo” shows your shared photos, “To-dos” what your partner asked of you.'),
     tr('Для экрана блокировки: подержите экран блокировки → «Настроить» → «Виджеты».', 'For the Lock Screen: touch and hold it → Customize → Widgets.'),
   ],
   android: [
     tr('Нажмите и подержите пустое место на рабочем столе.', 'Touch and hold an empty spot on the home screen.'),
     tr('Выберите «Виджеты» и найдите «Впаре».', 'Choose Widgets and find Bepair.'),
-    tr('Перетащите «День», «Пара» или «Фото» на рабочий стол.', 'Drag Day, Couple or Photo onto the home screen.'),
+    tr('Перетащите «День», «Пара», «Фото» или «Дела» на рабочий стол.', 'Drag Day, Couple, Photo or To-dos onto the home screen.'),
   ],
 };
 

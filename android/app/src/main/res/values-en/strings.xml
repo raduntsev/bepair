@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- English for phones set to English; the sentences inside widgets come from the server in the owner's language. -->
+<resources>
+    <string name="widget_day_name">Day</string>
+    <string name="widget_day_description">Your day and your partner’s, at a glance</string>
+    <string name="widget_couple_name">Couple</string>
+    <string name="widget_couple_description">The day, your run and quick actions</string>
+    <string name="widget_action_day">Mark</string>
+    <string name="widget_action_ping">Note</string>
+    <string name="widget_setup_headline">Open Bepair</string>
+    <string name="widget_setup_sub">Sign in and your day will appear here</string>
+    <string name="widget_loading">Loading the day…</string>
+    <string name="widget_photo_name">Photo</string>
+    <string name="widget_photo_description">Your shared photos, one at a time, changing every three hours</string>
+    <string name="widget_photo_empty">Add shared photos in the app</string>
+    <string name="widget_photo_loading">Loading the photo…</string>
+    <string name="widget_tasks_name">To-dos</string>
+    <string name="widget_tasks_description">What your partner asked of you today — tick it off right here</string>
+    <string name="widget_tasks_title">Today’s to-dos</string>
+    <string name="widget_tasks_loading">Loading to-dos…</string>
+    <string name="widget_tasks_mark">Mark as done: %1$s</string>
+</resources>

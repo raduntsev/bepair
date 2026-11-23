@@ -13,4 +13,5 @@
     <color name="widget_partner">#E8A552</color>
     <color name="widget_partner_ink">#F0B56B</color>
     <color name="widget_partner_soft">#2B2116</color>
+    <color name="widget_check_ring">#545458</color>
 </resources>

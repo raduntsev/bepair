@@ -95,7 +95,7 @@ export function Alert({ kind = 'error', children }: { kind?: 'error' | 'success'
 export function Loading({ label }: { label: string }) {
   return (
     <div role="status" className="flex flex-col items-center justify-center gap-3 py-16 text-ink-faint">
-      <PairLoader className="h-12 w-24" />
+      <PairLoader className="h-20 w-40" />
       <span className="text-subhead">{label}</span>
     </div>
   );
@@ -119,7 +119,7 @@ export function EmptyState({
   return (
     <section className="rounded-2xl bg-surface px-6 py-10 text-center shadow-card">
       {/* The pair, alive and waiting with you; the quiet mark only where nothing should move. */}
-      <PairLoader mode="idle" className="mx-auto h-14 w-28" />
+      <PairLoader mode="idle" className="mx-auto h-16 w-32" />
       <h2 className="mt-4 text-headline font-semibold">{title}</h2>
       {children && <p className="mx-auto mt-1.5 max-w-sm text-subhead text-ink-faint">{children}</p>}
       {action && <div className="mt-5 flex justify-center">{action}</div>}

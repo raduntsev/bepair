@@ -26,7 +26,7 @@ export function Opening({ label = tr('Открываем пространств�
   return (
     <Centered>
       <div role="status" className="flex flex-col items-center gap-4 text-ink-faint">
-        <PairLoader className="h-14 w-28" />
+        <PairLoader className="h-20 w-40" />
         <p className="text-sm" suppressHydrationWarning>
           {label}
         </p>

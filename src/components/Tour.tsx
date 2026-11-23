@@ -52,6 +52,12 @@ const STEPS: TourStep[] = [
   },
   {
     route: '/day',
+    target: 'day-tasks',
+    title: tr('Дела на сегодня', 'Today’s to-dos'),
+    body: tr('О чём попросил партнёр — отмечайте прямо здесь. А снизу можно предложить дело партнёру — оно сразу придёт уведомлением.', 'What your partner asked of you — tick it off right here. Below, you can suggest a to-do for them: it shows up on their screen with a notification.'),
+  },
+  {
+    route: '/day',
     target: 'day-bell',
     title: tr('Уведомления', 'Notifications'),
     body: tr('Всё, что случилось, пока вас не было: партнёр отметил день, пришло письмо, выполнена просьба. Цифра — сколько нового.', 'Everything that happened while you were away: your partner marked the day, a letter arrived, a request was done. The number shows what’s new.'),

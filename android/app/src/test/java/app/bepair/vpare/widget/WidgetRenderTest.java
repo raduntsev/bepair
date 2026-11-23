@@ -33,7 +33,7 @@ import app.bepair.vpare.R;
  */
 @RunWith(RobolectricTestRunner.class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = 35, qualifiers = "xxhdpi")
+@Config(sdk = 35, qualifiers = "ru-xxhdpi")
 public class WidgetRenderTest {
 
     private static final String SEALED =
@@ -130,6 +130,52 @@ public class WidgetRenderTest {
         preview(inflate(false), false, "dark-day-sealed");
         use(OPEN);
         preview(inflate(true), true, "dark-couple-open");
+    }
+
+    private static final String TASKS =
+        "{\"v\":1,\"title\":\"Дела на сегодня\",\"empty\":\"Аня пока ни о чём не просит\",\"left\":\"осталось 2\",\"open\":2,"
+            + "\"items\":[{\"id\":\"00000000-0000-0000-0000-000000000001\",\"content\":\"Приготовить ужин\",\"points\":3,\"done\":false},"
+            + "{\"id\":\"00000000-0000-0000-0000-000000000002\",\"content\":\"Забрать заказ\",\"points\":2,\"done\":false},"
+            + "{\"id\":\"00000000-0000-0000-0000-000000000003\",\"content\":\"Разобрать посуду\",\"points\":2,\"done\":true}],"
+            + "\"updatedAt\":\"2026-10-29T12:00:00Z\"}";
+
+    private View inflateTasks() {
+        Context context = context();
+        return TasksRenderer.render(context).apply(context, new FrameLayout(context));
+    }
+
+    @Test
+    public void tasksListOpenThenDone() {
+        use(null);
+        TasksStore.clear(context());
+        TasksStore.save(context(), TASKS);
+        View tasks = inflateTasks();
+        assertEquals("Дела на сегодня", text(tasks, R.id.tasks_title));
+        assertEquals("осталось 2", text(tasks, R.id.tasks_left));
+        assertEquals(View.VISIBLE, tasks.findViewById(R.id.task_row_0).getVisibility());
+        assertEquals("Приготовить ужин", text(tasks, R.id.task_text_0));
+        assertEquals(View.VISIBLE, tasks.findViewById(R.id.task_done_2).getVisibility());
+        assertEquals(View.GONE, tasks.findViewById(R.id.task_row_3).getVisibility());
+        preview(tasks, true, "tasks");
+
+        /* A tap shows as done at once and the count follows, before the server answers. */
+        TasksStore.addPending(context(), "00000000-0000-0000-0000-000000000001");
+        View ticked = inflateTasks();
+        assertEquals(View.VISIBLE, ticked.findViewById(R.id.task_done_0).getVisibility());
+        assertEquals("осталось 1", text(ticked, R.id.tasks_left));
+        preview(ticked, true, "tasks-ticked");
+        TasksStore.clear(context());
+    }
+
+    @Test
+    public void tasksEmptySaysSo() {
+        use(null);
+        TasksStore.clear(context());
+        TasksStore.save(context(), TASKS.replaceAll("\\[.*\\]", "[]"));
+        View tasks = inflateTasks();
+        assertEquals(View.VISIBLE, tasks.findViewById(R.id.tasks_empty).getVisibility());
+        assertEquals("Аня пока ни о чём не просит", text(tasks, R.id.tasks_empty));
+        TasksStore.clear(context());
     }
 
     /* Draws the inflated widget on a wallpaper-ish backdrop at launcher cell sizes. */
