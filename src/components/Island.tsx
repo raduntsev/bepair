@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { CalendarDays, ChevronUp, ListChecks, MessageCircle, PenLine, Sun, UserRound } from 'lucide-react';
+import { BookOpen, CalendarDays, ChevronUp, ListChecks, MessageCircle, PenLine, Sun, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { tr } from '@/lib/i18n';
 
@@ -32,14 +32,16 @@ export interface Destination {
 }
 
 /*
-  Five places, each one a different question: what is today, what did we say
-  to each other, what did we ask of each other, when, and who are we.
+  Six places, each one a different question: what is today, what did we say
+  to each other, what did we ask of each other, when, what am I learning about
+  myself, and who are we.
 */
 export const DESTINATIONS: Destination[] = [
   { href: '/day', label: tr('Сегодня', 'Today'), Icon: Sun, also: ['/notifications'] },
   { href: '/messages', label: tr('Переписка', 'Messages'), Icon: MessageCircle, also: ['/letters', '/chronicle', '/ping'] },
   { href: '/tasks', label: tr('Просьбы', 'Requests'), Icon: ListChecks, also: ['/store'] },
   { href: '/calendar', label: tr('Календарь', 'Calendar'), Icon: CalendarDays, also: ['/planerka'] },
+  { href: '/courses', label: tr('Курсы', 'Courses'), Icon: BookOpen, also: ['/journal'] },
   { href: '/settings', label: tr('Профиль', 'Profile'), Icon: UserRound, also: ['/couple', '/album'] },
 ];
 

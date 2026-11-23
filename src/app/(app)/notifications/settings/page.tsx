@@ -7,12 +7,16 @@ import { ReminderSettings } from '@/components/ReminderSettings';
 import { useReminders } from '@/hooks/useReminders';
 import { PushCard } from '@/components/PushCard';
 import { InstallCard } from '@/components/InstallCard';
+import { useCourses } from '@/hooks/useCourses';
+import { CourseReminder } from '@/components/courses/CourseSettings';
+import { displayName } from '@/lib/words';
 import { tr } from '@/lib/i18n';
 
 type Key = keyof Pick<Profile, 'notify_pings' | 'notify_day' | 'notify_tasks' | 'notify_letters' | 'notify_sound'>;
 
 export default function NotificationSettingsPage() {
-  const { profile, updateProfile } = useSpaceAuth();
+  const { profile, partner, updateProfile } = useSpaceAuth();
+  const courses = useCourses();
   const set = (key: Key) => (next: boolean) => updateProfile({ [key]: next });
   const { reminders, available, error: reminderError, update: updateReminders } = useReminders();
 
@@ -31,6 +35,16 @@ export default function NotificationSettingsPage() {
             <ReminderSettings value={reminders} onChange={updateReminders} />
             <p className="px-1 text-sm text-ink-faint">{tr('По вашему местному времени, не чаще раза в день. Если повода нет — напоминания не будет.', 'In your local time, at most once a day. No reason, no reminder.')}</p>
             {reminderError && <Alert>{reminderError}</Alert>}
+          </section>
+        )}
+
+        {courses.available && !courses.isLoading && courses.myPrefs && (
+          <section aria-labelledby="courses-title" className="space-y-2">
+            <h2 id="courses-title" className="px-1 pt-2 text-sm font-medium text-ink-soft">
+              {tr('Курсы', 'Courses')}
+            </h2>
+            <CourseReminder store={courses} partnerName={partner ? displayName(partner.display_name) : undefined} />
+            {courses.error && <Alert>{courses.error}</Alert>}
           </section>
         )}
 

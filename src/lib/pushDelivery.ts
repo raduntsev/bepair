@@ -65,6 +65,15 @@ export async function claimAndDeliver(admin: SupabaseClient, spaceId: string | n
   ]);
 
   const byId = new Map((profiles ?? []).map((p) => [p.id as string, p as Record<string, unknown>]));
+
+  /* A partner's course steps have their own switch, kept beside the course settings (0015). */
+  const courseKinds = new Set<NoticeKind>(['course_step', 'course_shared']);
+  const courseReaders = [...new Set(rows.filter((r) => courseKinds.has(r.kind)).map((r) => r.user_id))];
+  const mutedCourse = new Set<string>();
+  if (courseReaders.length > 0) {
+    const { data: prefs } = await admin.from('course_prefs').select('user_id, notify_partner').in('user_id', courseReaders);
+    for (const p of prefs ?? []) if (p.notify_partner === false) mutedCourse.add(p.user_id as string);
+  }
   if (webReady()) webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC!, VAPID_PRIVATE!);
 
   let sent = 0;
@@ -75,6 +84,7 @@ export async function claimAndDeliver(admin: SupabaseClient, spaceId: string | n
     if (!recipient) continue;
     const pref = pushPreference(row.kind);
     if (pref && recipient[pref] === false) continue;
+    if (courseKinds.has(row.kind) && mutedCourse.has(row.user_id)) continue;
 
     const actor = row.actor_id ? byId.get(row.actor_id) : undefined;
     const lang = recipient.lang === 'en' ? 'en' : 'ru';
