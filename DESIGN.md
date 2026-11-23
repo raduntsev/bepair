@@ -60,7 +60,9 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
 - **Apple-style grouped cards on a grey ground** (`#F2F2F7` / pure black in
   dark). `rounded-2xl` (22px), `bg-surface`, `shadow-card`, **no border** — the
   ground separates them. Lists use `RowGroup` + `LinkRow`/`SwitchRow`: inset
-  grouped, 30px tinted icon tile, hairline separators that start at the text.
+  grouped, 30px icon tile in the indigo accent — every row the same, because a
+  second colour on a settings row would have to mean something and amber
+  already means the partner — hairline separators that start at the text.
 - **Four type sizes, no more:** 28 (title), 17 (body and headings), 15
   (secondary), 13 (small). Every Apple-style and Tailwind size token resolves
   to one of them in `globals.css`, so a stray `text-lg` cannot add a fifth.

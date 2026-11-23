@@ -168,13 +168,13 @@ export default function SettingsPage() {
           <RowGroup label={tr('Приложение', 'App')}>
             <LinkRow href="/notifications/settings" Icon={Bell} title={tr('Уведомления', 'Notifications')} />
             <LinkRow href="/settings/widgets" Icon={LayoutGrid} title={tr('Виджеты', 'Widgets')} />
-            <LinkRow href="/album" Icon={Images} tone="partner" title={tr('Фото для виджета', 'Photos for the widget')} />
+            <LinkRow href="/album" Icon={Images} title={tr('Фото для виджета', 'Photos for the widget')} />
           </RowGroup>
 
           <SectionHeader title={tr('Пара и данные', 'Couple and data')} />
           <RowGroup label={tr('Пара и данные', 'Couple and data')}>
-            <LinkRow href="/settings/paired" Icon={Lock} tone="partner" title={tr('Парные настройки', 'Shared settings')} />
-            <LinkRow href="/settings/personal" Icon={UserRound} tone="neutral" title={tr('Личные и данные', 'Personal and data')} />
+            <LinkRow href="/settings/paired" Icon={Lock} title={tr('Парные настройки', 'Shared settings')} />
+            <LinkRow href="/settings/personal" Icon={UserRound} title={tr('Личные и данные', 'Personal and data')} />
           </RowGroup>
         </div>
 
@@ -186,7 +186,7 @@ export default function SettingsPage() {
                 onClick={tour.start}
                 className="flex min-h-13 w-full items-center gap-3.5 px-4 py-2.5 text-left transition-colors hover:bg-sunken focus-visible:bg-sunken active:bg-sunken"
               >
-                <RowIcon Icon={GraduationCap} tone="neutral" />
+                <RowIcon Icon={GraduationCap} />
                 <span className="min-w-0 flex-1 text-body text-ink">{tr('Обучение', 'Tour')}</span>
                 <ChevronRight className="size-5 shrink-0 text-line-strong" strokeWidth={2.2} aria-hidden />
               </button>
