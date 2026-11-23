@@ -8,7 +8,8 @@ import { displayName, genitive } from '@/lib/words';
 import { promptsFor } from '@/lib/dayPrompts';
 import supabase from '@/lib/supabase';
 import { moodColor, moodLabel } from '@/lib/mood';
-import { fmt, longDate, todayISO } from '@/lib/dates';
+import { fmt, longDate, plural, todayISO } from '@/lib/dates';
+import { planerkaWeek, todoWeek } from '@/lib/planerka';
 import { MoodScale } from '@/components/MoodScale';
 import { PartnerDayCard } from '@/components/PartnerDayCard';
 import { DoneForMe, TodayTasks } from '@/components/DayTasks';
@@ -198,9 +199,12 @@ function DayView() {
   const planerkaClosed =
     !!todaysPlanerka && planerka.wheels.some((w) => w.planerka_id === todaysPlanerka.id && w.user_id === user?.id && !!w.closed_at);
   const planerkaDay = isToday && new Date().getDay() === planerka.settings.weekday && !planerkaClosed;
-  const myOpenTodos = user
-    ? planerka.todos.filter((t) => t.status !== 'done' && (t.owner_id === user.id || t.owner_id === null)).length
-    : 0;
+  /* Check-in to-dos are for the week: yours and the shared ones, until the next meeting. */
+  const week = planerkaWeek(planerka.planerkas, planerka.settings.weekday, todayISO());
+  const weekTodos = user ? planerka.todos.filter((t) => t.owner_id === user.id || t.owner_id === null) : [];
+  const weekOpen = weekTodos.filter((t) => ['this', 'carried'].includes(todoWeek(t, week))).length;
+  const weekDone = weekTodos.filter((t) => todoWeek(t, week) === 'done-this').length;
+  const myOpenTodos = weekOpen;
 
   const focus: 'day' | 'planerka' | 'letter' | 'thanks' | 'asked' | null =
     showEditor && !mine
@@ -433,16 +437,23 @@ function DayView() {
                 )}
                 {!planerkaDay && myOpenTodos > 0 && (
                   <Link
-                    href="/planerka"
+                    href="/planerka?view=todos"
                     className="flex items-center gap-3.5 rounded-2xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken"
                   >
                     <span aria-hidden className="flex size-10 items-center justify-center rounded-full bg-sunken text-ink-soft">
                       <ListTodo className="size-4.5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-body font-semibold">{tr('Дела с планёрки', 'Check-in to-dos')}</span>
+                      <span className="block text-body font-semibold">{tr('Дела на неделю', 'This week’s to-dos')}</span>
+                      <span className="block text-footnote text-ink-faint">
+                        {week.daysLeft === 0
+                          ? tr('планёрка сегодня', 'check-in today')
+                          : tr(`до планёрки ${week.daysLeft} ${plural(week.daysLeft, 'день', 'дня', 'дней')}`, `${week.daysLeft} ${week.daysLeft === 1 ? 'day' : 'days'} to the check-in`)}
+                      </span>
                     </span>
-                    <span className="min-w-6 rounded-full bg-sunken px-2 text-center text-footnote leading-6 font-semibold text-ink-soft">{myOpenTodos}</span>
+                    <span className="shrink-0 text-subhead font-semibold tabular-nums text-ink-soft">
+                      {weekDone} {tr('из', 'of')} {weekDone + weekOpen}
+                    </span>
                     <ChevronRight className="size-5 text-line-strong" aria-hidden />
                   </Link>
                 )}

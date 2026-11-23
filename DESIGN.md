@@ -303,6 +303,36 @@ sent by a WorkManager job that waits for a network; on iOS 17+ through an App
 Intent (older iOS opens the app). It is the one write a widget key may make —
 `POST /api/widget/tasks`, only for a request addressed to the key's owner.
 
+## Lists stay lists
+
+Requests, favours and to-dos are one line each: the words first, weight or
+cost in small type, and one quiet control — the circle you tick, a small pill
+(«Попросить · 5», «Увидел», «Сделано»). Rare actions (edit, remove) wait
+behind «⋯» on the row and unfold under it. Finished requests are folded into
+«Выполнено · N» and load older pages only on «Показать раньше».
+
+Nothing refetches a whole list after an action: a save's response and the
+partner's Realtime event are merged into the list in place (`useTasks`,
+`usePlanerka`). One screen holds one store — child views get it as a prop
+rather than opening their own hook.
+
+## The planerka week
+
+«Планёрка» opens on «Неделя»: the last session only, every sphere with both
+scores and the change against the week before (↑ in the accent), comments
+unfolding under a sphere, and the four answers with an «Эта / Прошлая»
+switch. Everything older is in «История» (the trend chart, then six sessions
+and «Все планёрки»).
+
+A to-do set at a planerka is for the week: until the next meeting day
+(`planerkaWeek` in `src/lib/planerka.ts`). «Дела» shows «На эту неделю · N из M»
+with the days left; what is still open from earlier weeks sits apart under «С
+прошлых недель» with «На эту неделю» (`plan_todos.week_of`). «Сегодня» shows
+«Дела на неделю · 2 из 5».
+
+Things set a few times a year (when the couple meets, important dates) are a
+single row that opens a `Sheet`.
+
 ## Deleting all data
 
 «Удалить все данные пары» sits at the foot of Парные настройки and works like

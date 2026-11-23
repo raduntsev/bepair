@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, useId } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import supabase from '@/lib/supabase';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import type { Comments, QuestionKey, Scores } from '@/lib/planerka';
@@ -43,11 +43,27 @@ export interface PlanTodo {
   planerka_id: string | null;
   created_at: string;
   done_at: string | null;
+  /* Moved into this week from an earlier one; null = the week it was created in. */
+  week_of: string | null;
 }
 
 export interface PlanerkaSettings {
   weekday: number;
   at_time: string;
+}
+
+const WHEEL_COLUMNS = 'id, planerka_id, user_id, scores, comments, note, entered_by, closed_at';
+const ANSWER_COLUMNS = 'id, planerka_id, user_id, question, answer, entered_by';
+const TODO_COLUMNS = 'id, owner_id, content, status, decision, planerka_id, created_at, done_at, week_of';
+
+/* Put one row (a save's response or a Realtime event) into a list in place — no refetch of everything. */
+function merge<T extends { id: string }>(list: T[], row: T | null | undefined): T[] {
+  if (!row?.id) return list;
+  const at = list.findIndex((x) => x.id === row.id);
+  if (at === -1) return [...list, row];
+  const next = list.slice();
+  next[at] = { ...next[at], ...row };
+  return next;
 }
 
 /*
@@ -67,16 +83,21 @@ export function usePlanerka() {
   const [settings, setSettings] = useState<PlanerkaSettings>({ weekday: 0, at_time: '13:00' });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /* Session ids already in the list, read from Realtime callbacks without resubscribing. */
+  const known = useRef(new Set<string>());
+  useEffect(() => {
+    known.current = new Set(planerkas.map((p) => p.id));
+  }, [planerkas]);
 
   const load = useCallback(async () => {
     if (!spaceId) return;
     const [p, w, a, t, s] = await Promise.all([
       supabase.from('planerkas').select('id, held_on').eq('space_id', spaceId).order('held_on', { ascending: false }),
-      supabase.from('planerka_wheels').select('id, planerka_id, user_id, scores, comments, note, entered_by, closed_at').eq('space_id', spaceId),
-      supabase.from('planerka_answers').select('id, planerka_id, user_id, question, answer, entered_by').eq('space_id', spaceId),
+      supabase.from('planerka_wheels').select(WHEEL_COLUMNS).eq('space_id', spaceId),
+      supabase.from('planerka_answers').select(ANSWER_COLUMNS).eq('space_id', spaceId),
       supabase
         .from('plan_todos')
-        .select('id, owner_id, content, status, decision, planerka_id, created_at, done_at')
+        .select(TODO_COLUMNS)
         .eq('space_id', spaceId)
         .order('created_at', { ascending: true }),
       supabase.from('planerka_settings').select('weekday, at_time').eq('space_id', spaceId).maybeSingle(),
@@ -103,9 +124,27 @@ export function usePlanerka() {
     const filter = `space_id=eq.${spaceId}`;
     const channel = supabase
       .channel(`planerka:${spaceId}:${instance}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'planerka_wheels', filter }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'planerka_answers', filter }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'plan_todos', filter }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'planerka_wheels', filter }, (payload) => {
+        if (payload.eventType === 'DELETE') setWheels((list) => list.filter((x) => x.id !== (payload.old as { id?: string }).id));
+        else {
+          const row = payload.new as Wheel;
+          setWheels((list) => merge(list, row));
+          /* A session the partner has just started: the one case that needs the list of sessions again. */
+          if (!known.current.has(row.planerka_id)) load();
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'planerka_answers', filter }, (payload) => {
+        if (payload.eventType === 'DELETE') setAnswers((list) => list.filter((x) => x.id !== (payload.old as { id?: string }).id));
+        else {
+          const row = payload.new as Answer;
+          setAnswers((list) => merge(list, row));
+          if (!known.current.has(row.planerka_id)) load();
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'plan_todos', filter }, (payload) => {
+        if (payload.eventType === 'DELETE') setTodos((list) => list.filter((x) => x.id !== (payload.old as { id?: string }).id));
+        else setTodos((list) => merge(list, payload.new as PlanTodo));
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -126,80 +165,94 @@ export function usePlanerka() {
         return null;
       }
       const { data } = await supabase.from('planerkas').select('id, held_on').eq('space_id', spaceId).eq('held_on', heldOn).maybeSingle();
-      await load();
+      if (data) setPlanerkas((list) => (list.some((p) => p.id === data.id) ? list : [...list, data as Planerka].sort((a, b) => (a.held_on < b.held_on ? 1 : -1))));
       return (data?.id as string | undefined) ?? null;
     },
-    [spaceId, user, planerkas, load],
+    [spaceId, user, planerkas],
   );
 
   const saveWheel = useCallback(
     async (planerkaId: string, userId: string, scores: Scores, comments: Comments, note: string) => {
       if (!spaceId || !user) return;
-      const { error: saveError } = await supabase.from('planerka_wheels').upsert(
-        { planerka_id: planerkaId, space_id: spaceId, user_id: userId, scores, comments, note, entered_by: user.id, updated_at: new Date().toISOString() },
-        { onConflict: 'planerka_id,user_id' },
-      );
+      const { data, error: saveError } = await supabase
+        .from('planerka_wheels')
+        .upsert(
+          { planerka_id: planerkaId, space_id: spaceId, user_id: userId, scores, comments, note, entered_by: user.id, updated_at: new Date().toISOString() },
+          { onConflict: 'planerka_id,user_id' },
+        )
+        .select(WHEEL_COLUMNS)
+        .maybeSingle();
       if (saveError) setError(tr('Колесо не сохранилось. Попробуйте ещё раз.', 'The wheel wasn’t saved. Please try again.'));
-      else await load();
+      else setWheels((list) => merge(list, data as Wheel | null));
     },
-    [spaceId, user, load],
+    [spaceId, user],
   );
 
   /* Only the columns sent are written, so closing never touches the scores. */
   const closePart = useCallback(
     async (planerkaId: string, userId: string, closed: boolean) => {
       if (!spaceId || !user) return;
-      const { error: saveError } = await supabase.from('planerka_wheels').upsert(
-        { planerka_id: planerkaId, space_id: spaceId, user_id: userId, closed_at: closed ? new Date().toISOString() : null },
-        { onConflict: 'planerka_id,user_id' },
-      );
+      const { data, error: saveError } = await supabase
+        .from('planerka_wheels')
+        .upsert(
+          { planerka_id: planerkaId, space_id: spaceId, user_id: userId, closed_at: closed ? new Date().toISOString() : null },
+          { onConflict: 'planerka_id,user_id' },
+        )
+        .select(WHEEL_COLUMNS)
+        .maybeSingle();
       if (saveError) setError(tr('Не получилось закрыть планёрку. Попробуйте ещё раз.', 'Couldn’t close the check-in. Please try again.'));
-      else await load();
+      else setWheels((list) => merge(list, data as Wheel | null));
     },
-    [spaceId, user, load],
+    [spaceId, user],
   );
 
   const saveAnswer = useCallback(
     async (planerkaId: string, userId: string, question: QuestionKey, answer: string) => {
       if (!spaceId || !user) return;
-      const { error: saveError } = await supabase.from('planerka_answers').upsert(
-        { planerka_id: planerkaId, space_id: spaceId, user_id: userId, question, answer, entered_by: user.id, updated_at: new Date().toISOString() },
-        { onConflict: 'planerka_id,user_id,question' },
-      );
+      const { data, error: saveError } = await supabase
+        .from('planerka_answers')
+        .upsert(
+          { planerka_id: planerkaId, space_id: spaceId, user_id: userId, question, answer, entered_by: user.id, updated_at: new Date().toISOString() },
+          { onConflict: 'planerka_id,user_id,question' },
+        )
+        .select(ANSWER_COLUMNS)
+        .maybeSingle();
       if (saveError) setError(tr('Ответ не сохранился. Попробуйте ещё раз.', 'The answer wasn’t saved. Please try again.'));
-      else await load();
+      else setAnswers((list) => merge(list, data as Answer | null));
     },
-    [spaceId, user, load],
+    [spaceId, user],
   );
 
   const addTodo = useCallback(
     async (content: string, ownerId: string | null, planerkaId: string | null) => {
       if (!spaceId || !user || !content.trim()) return;
-      const { error: saveError } = await supabase
+      const { data, error: saveError } = await supabase
         .from('plan_todos')
-        .insert({ space_id: spaceId, owner_id: ownerId, content: content.trim(), planerka_id: planerkaId, created_by: user.id });
+        .insert({ space_id: spaceId, owner_id: ownerId, content: content.trim(), planerka_id: planerkaId, created_by: user.id })
+        .select(TODO_COLUMNS)
+        .single();
       if (saveError) setError(tr('Дело не добавилось.', 'The to-do wasn’t added.'));
-      else await load();
+      else setTodos((list) => merge(list, data as PlanTodo));
     },
-    [spaceId, user, load],
+    [spaceId, user],
   );
 
   const updateTodo = useCallback(
-    async (id: string, patch: Partial<Pick<PlanTodo, 'status' | 'decision' | 'content' | 'owner_id'>>) => {
+    async (id: string, patch: Partial<Pick<PlanTodo, 'status' | 'decision' | 'content' | 'owner_id' | 'week_of'>>) => {
       const extra = patch.status ? { done_at: patch.status === 'done' ? new Date().toISOString() : null } : {};
-      const { error: saveError } = await supabase.from('plan_todos').update({ ...patch, ...extra }).eq('id', id);
+      const { data, error: saveError } = await supabase.from('plan_todos').update({ ...patch, ...extra }).eq('id', id).select(TODO_COLUMNS).maybeSingle();
       if (saveError) setError(tr('Изменение не сохранилось.', 'The change wasn’t saved.'));
-      else await load();
+      else setTodos((list) => merge(list, data as PlanTodo | null));
     },
-    [load],
+    [],
   );
 
   const removeTodo = useCallback(
     async (id: string) => {
-      await supabase.from('plan_todos').delete().eq('id', id);
-      await load();
+      const { error: removeError } = await supabase.from('plan_todos').delete().eq('id', id);
+      if (!removeError) setTodos((list) => list.filter((t) => t.id !== id));
     },
-    [load],
+    [],
   );
 
   const saveSettings = useCallback(
