@@ -33,7 +33,7 @@ import app.bepair.vpare.R;
  */
 @RunWith(RobolectricTestRunner.class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = 35, qualifiers = "xxhdpi")
+@Config(sdk = 35, qualifiers = "ru-xxhdpi")
 public class WidgetRenderTest {
 
     private static final String SEALED =
