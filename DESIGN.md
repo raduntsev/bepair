@@ -286,6 +286,16 @@ Task states are **ждёт выполнения → выполнено, парт
 The middle state means the partner has not noticed yet — never "on review", or
 the product becomes an acceptance process.
 
+## Deleting all data
+
+«Удалить все данные пары» sits at the foot of Парные настройки and works like
+a paired setting: one asks, the other agrees, typing the word is the brake
+against a stray tap. Agreement runs `/api/space/reset`, which re-checks it,
+removes the couple's files through the Storage API (storage.objects refuses
+direct deletes) and calls `bp_reset_space` (0013): profiles are unlinked first
+— `profiles.space_id` cascades — then the space goes with every row in it.
+Both accounts survive and land on «создать пространство / войти по коду».
+
 ## Language
 
 Two languages, Russian and English (`src/lib/i18n.ts`). Every visible string

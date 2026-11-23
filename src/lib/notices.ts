@@ -32,6 +32,7 @@ export const PAIRED_LABELS: Record<string, [string, string]> = {
   chronicle_deletable: ['Удалять свои записи', 'Delete own entries'],
   long_distance: ['Мы на расстоянии', 'We live apart'],
   count_streak: ['Считать серию', 'Count the run'],
+  reset_space: ['Удалить все данные пары', 'Delete all shared data'],
 };
 
 export function pairedLabel(key: string, lang: Lang = getLang()) {
@@ -63,6 +64,9 @@ export function noticeText(notice: NoticeLike, actor: string, gender: Gender, la
     case 'service':
       return t(`${actor} ${verb(gender, 'попросил')} об услуге ${ru('title')}`, `${actor} asked for ${en('title')}`);
     case 'paired_proposal': {
+      if (p.key === 'reset_space') {
+        return t(`${actor} ${verb(gender, 'предложил')} удалить все данные пары`, `${actor} suggests deleting all of your shared data`);
+      }
       const label = pairedLabel(String(p.key), lang);
       return t(
         `${actor} ${verb(gender, 'предложил')} ${p.value ? 'включить' : 'выключить'} «${label}»`,
@@ -70,6 +74,9 @@ export function noticeText(notice: NoticeLike, actor: string, gender: Gender, la
       );
     }
     case 'paired_answer': {
+      if (p.key === 'reset_space') {
+        return t(`${actor} ${verb(gender, 'решил')} оставить все данные`, `${actor} chose to keep all your data`);
+      }
       const label = pairedLabel(String(p.key), lang);
       return p.accepted
         ? t(
