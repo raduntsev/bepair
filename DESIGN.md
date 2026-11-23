@@ -80,14 +80,14 @@ Fixed rem steps, no fluid clamping: `text-2xl md:text-3xl` for page titles,
   breakpoint: a black capsule at the bottom showing where you are, and beside
   it a round accent button that writes to the partner. With a mouse the
   capsule opens on hover; on touch, on tap, over a scrim. It grows into a
-  compact list of the five sections — Сегодня · Переписка · Просьбы ·
-  Календарь · Профиль — on Apple's sheet curve (0.42 s in, 0.32 s out),
+  compact list of the six sections — Сегодня · Переписка · Просьбы ·
+  Календарь · Курсы · Профиль — on Apple's sheet curve (0.42 s in, 0.32 s out),
   content by opacity and a small rise only (no blur: it stutters on Android);
   content waits for the shape on the way in and leaves first on the way out.
 - **In «Переписка» the island shares its row** with the note bar: the capsule
   shrinks to its icon and the bar fills the rest (portalled into
   `#island-slot`), so nothing at the bottom stacks on anything.
-- **Five sections, each one question.** Переписка is letters and notes in
+- **Six sections, each one question.** Переписка is letters and notes in
   one feed, with what waits for you on top. Просьбы holds Просьбы and Услуги
   as two tabs under one balance. Профиль is the pair, notifications and all
   settings as one list. Old routes (`/letters`, `/chronicle`) redirect.
@@ -288,6 +288,42 @@ buying the partner.
 Task states are **ждёт выполнения → выполнено, партнёр ещё не видел → выполнено**.
 The middle state means the partner has not noticed yet — never "on review", or
 the product becomes an acceptance process.
+
+## Courses and the journal
+
+«Курсы» is the sixth section (the user chose it over a row inside Профиль),
+with «Курсы | Журнал» as two tabs. Content lives in `src/lib/courses.ts`;
+the database keeps only what each person did (0015).
+
+- **Steps open in order.** A lesson opens once the one before is done.
+  Nothing in a lesson is required — the course calls its questions a
+  programme maximum — so «Шаг пройден» is the one deliberate act. Answers
+  save themselves as you type («Ответы сохранены» under the button).
+- **Progress is always shared, answers never by default.** Two thin bars,
+  indigo for you and amber for the partner, and the partner's small amber
+  avatar beside the lesson they are on. A finished step notifies the partner
+  with the step's name, never its content.
+- **Privacy is all or nothing, by the user's decision.** One switch per
+  person, «Мои ответы видит …», opens every course answer and journal entry
+  at once, or none. There is deliberately no per-answer control. It is
+  enforced by row-level security: hidden rows never reach the partner's
+  browser, and the answers table is not in the Realtime stream.
+- **«Вдвоём»** closes a module: a short prompt for the couple on the partner's
+  soft amber ground. It asks them to talk, not to show each other answers.
+- **The journal** holds free notes, the CBT thought diary (one diary for the
+  whole course — lesson 3.1 starts it, 5.2 continues it inside the lesson)
+  and every course answer, lesson by lesson. The partner's journal is a
+  segment «Мой | Аня» behind the same switch.
+- **Reminders** are personal: on, a time, days of the week (Monday first).
+  They fire only when there is a reason — a started, unfinished course with
+  nothing done in it today — and point at the next step. «Сегодня» shows the
+  same as a quiet card without the focus ring: the course is for you, not
+  between you.
+- The 0–10 VLQ scales are the one place numbers are shown: they score life
+  spheres, not the day, so the mood rule does not apply. An untouched scale
+  is grey until moved.
+- Course content is written in Russian; in the English interface the course
+  wears an «In Russian» chip and the chrome stays English.
 
 ## Today's to-dos
 

@@ -555,6 +555,19 @@
   transition: box-shadow 600ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/*
+  The 0–10 scale in a course (VLQ spheres). A plain range in the accent; until
+  it is touched it stays grey and faint, because an untouched score is no score.
+*/
+.course-range {
+  accent-color: var(--c-accent);
+  cursor: pointer;
+}
+.course-range--unset {
+  accent-color: var(--c-ink-faint);
+  opacity: 0.55;
+}
+
 @keyframes pair-mark-turn {
   to {
     transform: rotate(360deg);

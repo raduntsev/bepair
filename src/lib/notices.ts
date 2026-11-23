@@ -1,5 +1,6 @@
 import { genitive, verb, type Gender } from './words';
 import { getLang, trIn, type Lang } from './i18n';
+import { courseById, lessonById, lessonsOf, nextLesson } from './courses';
 
 /*
   One wording for the in-app feed and for system push. Every line reports a
@@ -20,7 +21,10 @@ export type NoticeKind =
   | 'paired_answer'
   | 'joined'
   | 'remind_morning'
-  | 'remind_evening';
+  | 'remind_evening'
+  | 'course_step'
+  | 'course_shared'
+  | 'remind_course';
 
 export interface NoticeLike {
   kind: NoticeKind;
@@ -94,13 +98,51 @@ export function noticeText(notice: NoticeLike, actor: string, gender: Gender, la
       );
     case 'remind_evening':
       return t('Вечер. Можно отметить, как прошёл день', 'Evening. Time to mark how the day went');
+    case 'course_step': {
+      /* Which step — never what was written in it. */
+      const course = courseById(raw('course_id'));
+      const lesson = course ? lessonById(course, raw('lesson_id')) : null;
+      if (!course || !lesson) return t(`${actor} ${verb(gender, 'сделал')} шаг курса`, `${actor} took a course step`);
+      if (lesson.kind === 'final') {
+        return t(`${actor} ${verb(gender, 'завершил')} курс «${course.title}»`, `${actor} finished the course “${course.title}”`);
+      }
+      const ruStep = lesson.kind === 'practice' ? 'практическую работу' : `урок ${lesson.code}`;
+      const enStep = lesson.kind === 'practice' ? 'a practice task' : `lesson ${lesson.code}`;
+      return t(`${actor} ${verb(gender, 'закончил')} ${ruStep} «${lesson.title}»`, `${actor} finished ${enStep}: “${lesson.title}”`);
+    }
+    case 'course_shared':
+      return t(`${actor} ${verb(gender, 'открыл')} вам свои ответы в курсах`, `${actor} opened their course answers to you`);
+    case 'remind_course': {
+      const next = courseNext(raw('course_id'), raw('last_lesson'));
+      return next
+        ? t(`Курс ждёт: ${next.code} «${next.title}»`, `Your course is waiting: ${next.code} “${next.title}”`)
+        : t('Пора вернуться к курсу', 'Time to get back to your course');
+    }
     default:
       return t('Новое событие', 'Something new');
   }
 }
 
+/* The step after the last one done — what a reminder points at. */
+function courseNext(courseId: string, lastLesson: string) {
+  const course = courseById(courseId);
+  if (!course) return null;
+  const all = lessonsOf(course);
+  const at = all.findIndex((l) => l.id === lastLesson);
+  return at === -1 ? (nextLesson(course, new Set()) ?? null) : (all[at + 1] ?? null);
+}
+
 export function noticeHref(kind: NoticeKind, payload?: Record<string, unknown> | null) {
+  const str = (key: string) => (typeof payload?.[key] === 'string' ? String(payload[key]) : '');
   switch (kind) {
+    case 'course_step':
+      return str('course_id') ? `/courses/course?id=${str('course_id')}` : '/courses';
+    case 'course_shared':
+      return '/journal?who=partner';
+    case 'remind_course': {
+      const next = courseNext(str('course_id'), str('last_lesson'));
+      return next ? `/courses/lesson?c=${str('course_id')}&l=${next.id}` : '/courses';
+    }
     case 'remind_morning':
       return typeof payload?.date === 'string' ? `/day?d=${payload.date}` : '/calendar';
     case 'remind_evening':

@@ -62,3 +62,8 @@ export const TIME_TABS = [
   { href: '/calendar', label: tr('Календарь', 'Calendar') },
   { href: '/planerka', label: tr('Планёрки', 'Check-ins') },
 ];
+
+export const COURSE_TABS = [
+  { href: '/courses', label: tr('Курсы', 'Courses') },
+  { href: '/journal', label: tr('Журнал', 'Journal') },
+];

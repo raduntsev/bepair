@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Bell, CalendarHeart, Check, ChevronRight, Droplet, ListTodo, Lock, Mail, Pencil, Users } from 'lucide-react';
+import { Bell, BookOpen, CalendarHeart, Check, ChevronRight, Droplet, ListTodo, Lock, Mail, Pencil, Users } from 'lucide-react';
 import Link from 'next/link';
 import { displayName, genitive } from '@/lib/words';
 import { promptsFor } from '@/lib/dayPrompts';
@@ -27,6 +27,8 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useImportantDates } from '@/hooks/useImportantDates';
 import { occursOn, withAnniversary, upcoming } from '@/lib/importantDates';
 import { taskState } from '@/hooks/useTasks';
+import { useCourses } from '@/hooks/useCourses';
+import { COURSES, nextLesson } from '@/lib/courses';
 import { tr } from '@/lib/i18n';
 
 export default function DayPage() {
@@ -205,6 +207,22 @@ function DayView() {
   const weekOpen = weekTodos.filter((t) => ['this', 'carried'].includes(todoWeek(t, week))).length;
   const weekDone = weekTodos.filter((t) => todoWeek(t, week) === 'done-this').length;
   const myOpenTodos = weekOpen;
+
+  /* A course started and not finished, untouched today: one quiet card, no ring — it is for you, not between you. */
+  const courses = useCourses();
+  const courseCard = (() => {
+    if (!isToday || !user || !courses.available || courses.isLoading) return null;
+    for (const course of COURSES) {
+      const enrolment = courses.enrolmentOf(user.id, course.id);
+      if (!enrolment || enrolment.finished_at) continue;
+      const next = nextLesson(course, courses.doneOf(user.id, course.id));
+      if (!next) continue;
+      const last = courses.lastActivity(user.id);
+      if (last && todayISO(new Date(last)) === date) return null;
+      return { course, next };
+    }
+    return null;
+  })();
 
   const focus: 'day' | 'planerka' | 'letter' | 'thanks' | 'asked' | null =
     showEditor && !mine
@@ -483,6 +501,23 @@ function DayView() {
             </>
           )}
 
+          {courseCard && (
+            <Link
+              href={`/courses/lesson?c=${courseCard.course.id}&l=${courseCard.next.id}`}
+              className="mt-3 flex items-center gap-3.5 rounded-2xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken"
+            >
+              <span aria-hidden className="flex size-10 items-center justify-center rounded-full bg-sunken text-ink-soft">
+                <BookOpen className="size-4.5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-body font-semibold">{courseCard.course.title}</span>
+                <span className="block truncate text-footnote text-ink-faint">
+                  {tr('Дальше', 'Next')}: {courseCard.next.code} {courseCard.next.title}
+                </span>
+              </span>
+              <ChevronRight className="size-5 text-line-strong" aria-hidden />
+            </Link>
+          )}
         </motion.div>
       )}
     </div>
