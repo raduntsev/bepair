@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { CalendarHeart, Plus, X } from 'lucide-react';
+import { CalendarHeart, ChevronRight, Plus, X } from 'lucide-react';
 import { fmt, todayISO } from '@/lib/dates';
 import { upcoming, whenText, withAnniversary, type ImportantDate } from '@/lib/importantDates';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Toggle } from '@/components/ui/Controls';
-import { Alert, Card } from '@/components/ui/Blocks';
+import { Alert } from '@/components/ui/Blocks';
+import { Sheet } from '@/components/ui/Sheet';
 import { tr } from '@/lib/i18n';
 
 interface Props {
@@ -18,8 +19,13 @@ interface Props {
   onRemove: (id: string) => void;
 }
 
-/* «Скоро» first — the point is to see a birthday coming, not to keep a register. */
+/*
+  One row under the calendar: the nearest date and how soon. The list and the
+  form live in a sheet — dates are added a few times a year, so they do not
+  take the page. «Скоро» first: the point is to see a birthday coming.
+*/
 export function ImportantDates({ items, togetherSince, error, onAdd, onRemove }: Props) {
+  const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
@@ -42,21 +48,40 @@ export function ImportantDates({ items, togetherSince, error, onAdd, onRemove }:
     }
   };
 
+  const next = list[0];
+  const close = () => {
+    setOpen(false);
+    setAdding(false);
+  };
+
   return (
-    <Card>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-semibold">
-          <CalendarHeart className="size-4.5 text-ink-soft" aria-hidden /> {tr('Важные даты', 'Important dates')}
-        </h2>
-        {!adding && (
-          <Button variant="secondary" onClick={() => setAdding(true)}>
-            <Plus className="size-4" aria-hidden /> {tr('Добавить', 'Add')}
-          </Button>
-        )}
-      </div>
+    <>
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      aria-haspopup="dialog"
+      className="flex min-h-14 w-full items-center gap-3.5 rounded-2xl bg-surface px-4 py-2.5 text-left shadow-card transition-colors hover:bg-sunken"
+    >
+      <CalendarHeart className="size-5 shrink-0 text-accent" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block text-body font-medium">{tr('Важные даты', 'Important dates')}</span>
+        <span className="block truncate text-footnote text-ink-faint">
+          {next ? `${next.title} · ${whenText(next.inDays)}` : tr('Дни рождения, годовщины, праздники', 'Birthdays, anniversaries, holidays')}
+        </span>
+      </span>
+      {list.length > 0 && <span className="shrink-0 text-footnote tabular-nums text-ink-faint">{list.length}</span>}
+      <ChevronRight className="size-5 shrink-0 text-line-strong" aria-hidden />
+    </button>
+
+    <Sheet open={open} onClose={close} title={tr('Важные даты', 'Important dates')}>
+      {!adding && (
+        <Button variant="secondary" block onClick={() => setAdding(true)}>
+          <Plus className="size-4" aria-hidden /> {tr('Добавить дату', 'Add a date')}
+        </Button>
+      )}
 
       {adding && (
-        <form onSubmit={submit} className="mt-4 space-y-3 rounded-xl bg-sunken p-4">
+        <form onSubmit={submit} className="space-y-3 rounded-xl bg-sunken p-4">
           <div>
             <label htmlFor="date-title" className="mb-2 block text-sm font-medium">
               {tr('Что это за день', 'What day is it')}
@@ -121,6 +146,7 @@ export function ImportantDates({ items, togetherSince, error, onAdd, onRemove }:
           <Alert>{error}</Alert>
         </div>
       )}
-    </Card>
+    </Sheet>
+    </>
   );
 }

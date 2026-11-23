@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { MoreHorizontal, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { points } from '@/lib/dates';
 import { displayName, genitive, verb } from '@/lib/words';
@@ -9,7 +9,8 @@ import { flushPush } from '@/lib/push';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Field';
-import { Alert, Chip, EmptyState, Loading, Page, SectionHeader } from '@/components/ui/Blocks';
+import { Alert, Loading, Page } from '@/components/ui/Blocks';
+import { AutoHeight } from '@/components/ui/AutoHeight';
 import { ExchangeHeader } from '@/components/ExchangeHeader';
 import { tr } from '@/lib/i18n';
 
@@ -23,6 +24,8 @@ interface ShopItem {
   claimed_by: string | null;
   claimed_at: string | null;
 }
+
+const ITEM_COLUMNS = 'id, user_id, title, description, cost_points, is_claimed, claimed_by, claimed_at';
 
 /* «Услуги», «Попросить», «Предложить услугу» — never «купить»: that reads as buying the partner. */
 export default function StorePage() {
@@ -49,7 +52,7 @@ export default function StorePage() {
     const [itemsResult, ledgerResult] = await Promise.all([
       supabase
         .from('shop_items')
-        .select('id, user_id, title, description, cost_points, is_claimed, claimed_by, claimed_at')
+        .select(ITEM_COLUMNS)
         .eq('space_id', spaceId)
         .order('created_at', { ascending: false }),
       supabase.from('points_ledger').select('to_user, amount').eq('space_id', spaceId),
@@ -76,15 +79,19 @@ export default function StorePage() {
   const offer = async () => {
     if (!user || !spaceId || !title.trim()) return;
     setBusy(true);
-    const { error: saveError } = await supabase.from('shop_items').insert({
-      space_id: spaceId,
-      user_id: user.id,
-      title: title.trim(),
-      description: description.trim() || null,
-      cost_points: cost,
-    });
+    const { data: saved, error: saveError } = await supabase
+      .from('shop_items')
+      .insert({
+        space_id: spaceId,
+        user_id: user.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        cost_points: cost,
+      })
+      .select(ITEM_COLUMNS)
+      .single();
     setBusy(false);
-    if (saveError) {
+    if (saveError || !saved) {
       setError(tr('Услуга не сохранилась. Попробуйте ещё раз.', 'The favour wasn’t saved. Please try again.'));
       return;
     }
@@ -92,7 +99,7 @@ export default function StorePage() {
     setDescription('');
     setCost(5);
     setComposing(false);
-    await load();
+    setItems((list) => [saved as ShopItem, ...list]);
   };
 
   const request = async (item: ShopItem) => {
@@ -129,22 +136,23 @@ export default function StorePage() {
       setError(tr('Баллы не списались, услуга осталась свободной. Попробуйте ещё раз.', 'Points weren’t spent; the favour is still free. Please try again.'));
     } else {
       setError(null);
+      setItems((list) => list.map((i) => (i.id === item.id ? { ...i, is_claimed: true, claimed_by: user.id } : i)));
+      setBalance((b) => b - item.cost_points);
       flushPush();
     }
 
     setClaiming(null);
-    await load();
   };
 
   const reoffer = async (item: ShopItem) => {
-    await supabase.from('shop_items').update({ is_claimed: false, claimed_by: null, claimed_at: null }).eq('id', item.id);
-    await load();
+    const { error: reofferError } = await supabase.from('shop_items').update({ is_claimed: false, claimed_by: null, claimed_at: null }).eq('id', item.id);
+    if (!reofferError) setItems((list) => list.map((i) => (i.id === item.id ? { ...i, is_claimed: false, claimed_by: null, claimed_at: null } : i)));
   };
 
   const withdraw = async (item: ShopItem) => {
     const { error: removeError } = await supabase.from('shop_items').delete().eq('id', item.id).eq('is_claimed', false);
     if (removeError) setError(tr('Не удалось убрать услугу.', 'Couldn’t remove the favour.'));
-    await load();
+    else setItems((list) => list.filter((i) => i.id !== item.id));
   };
 
   const theirs = items.filter((item) => item.user_id !== user?.id);
@@ -197,26 +205,36 @@ export default function StorePage() {
       ) : (
         <div className="space-y-8">
           <section>
-            <SectionHeader title={partner ? tr(`От ${genitive(name, partner.gender)}`, `From ${name}`) : tr('От партнёра', 'From your partner')} />
+            <h2 className="mb-2 px-1 text-subhead font-semibold text-ink-faint">
+              {partner ? tr(`От ${genitive(name, partner.gender)}`, `From ${name}`) : tr('От партнёра', 'From your partner')}
+            </h2>
             {theirs.length === 0 ? (
-              <EmptyState title={tr('Пока пусто', 'Nothing yet')} variant="quiet" />
+              <p className="rounded-2xl bg-surface px-4 py-3.5 text-subhead text-ink-faint shadow-card">
+                {tr(`${name} пока ничего не ${verb(partner?.gender, 'предложил')}`, `${name} hasn’t offered anything yet`)}
+              </p>
             ) : (
-              <ul className="space-y-3">
+              <ul className="overflow-hidden rounded-2xl bg-surface shadow-card [&>li+li]:border-t [&>li+li]:border-line">
                 {theirs.map((item) => (
-                  <li key={item.id} className="rounded-2xl bg-surface p-5 shadow-card">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[15px] font-medium">{item.title}</p>
-                        {item.description && <p className="mt-1 text-sm text-ink-soft">{item.description}</p>}
-                      </div>
-                      {item.is_claimed ? (
-                        <Chip>{item.claimed_by === user?.id ? tr('Вы попросили', 'You asked') : tr('Уже попросили', 'Already asked')}</Chip>
-                      ) : (
-                        <Button disabled={balance < item.cost_points} loading={claiming === item.id} onClick={() => request(item)}>
-                          {tr('Попросить', 'Ask')} · {item.cost_points}
-                        </Button>
-                      )}
-                    </div>
+                  <li key={item.id} className="flex min-h-13 items-center gap-3 px-4 py-2.5">
+                    <span className="min-w-0 flex-1">
+                      <span className={`block text-body ${item.is_claimed ? 'text-ink-faint' : 'text-ink'}`}>{item.title}</span>
+                      {item.description && <span className="line-clamp-2 block text-footnote text-ink-faint">{item.description}</span>}
+                    </span>
+                    {item.is_claimed ? (
+                      <span className="shrink-0 text-footnote text-ink-faint">
+                        {item.claimed_by === user?.id ? tr('вы попросили', 'you asked') : tr('уже попросили', 'already asked')}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={balance < item.cost_points || claiming !== null}
+                        onClick={() => request(item)}
+                        aria-label={tr(`Попросить «${item.title}» за ${points(item.cost_points)}`, `Ask for “${item.title}” for ${points(item.cost_points)}`)}
+                        className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-accent-soft px-3 text-footnote font-semibold text-accent-soft-ink tabular-nums transition-opacity active:opacity-70 disabled:opacity-40"
+                      >
+                        {claiming === item.id ? '…' : tr('Попросить', 'Ask')} · {item.cost_points}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -224,44 +242,24 @@ export default function StorePage() {
           </section>
 
           <section>
-            <SectionHeader
-              title={tr('От вас', 'From you')}
-              action={
-                !composing && (
-                  <Button variant="ghost" className="!h-9 !px-3" onClick={() => setComposing(true)}>
-                    <Plus className="size-4" aria-hidden /> {tr('Добавить', 'Add')}
-                  </Button>
-                )
-              }
-            />
+            <div className="mb-2 flex items-center justify-between gap-3 px-1">
+              <h2 className="text-subhead font-semibold text-ink-faint">{tr('От вас', 'From you')}</h2>
+              {!composing && (
+                <button type="button" onClick={() => setComposing(true)} className="tap -my-2 flex items-center gap-1 text-subhead font-semibold text-accent">
+                  <Plus className="size-4" aria-hidden /> {tr('Предложить', 'Offer')}
+                </button>
+              )}
+            </div>
             {mine.length === 0 ? null : (
-              <ul className="space-y-3">
+              <ul className="overflow-hidden rounded-2xl bg-surface shadow-card [&>li+li]:border-t [&>li+li]:border-line">
                 {mine.map((item) => (
-                  <li key={item.id} className="rounded-2xl bg-surface p-5 shadow-card">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[15px] font-medium">{item.title}</p>
-                        {item.description && <p className="mt-1 text-sm text-ink-soft">{item.description}</p>}
-                        <p className="mt-1 text-sm text-ink-faint">{points(item.cost_points)}</p>
-                      </div>
-                      {item.is_claimed ? (
-                        <Chip tone="partner">
-                          {tr(`${name} ${verb(partner?.gender, 'попросил')}`, `${name} asked`)}
-                        </Chip>
-                      ) : null}
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {item.is_claimed ? (
-                        <Button variant="secondary" onClick={() => reoffer(item)}>
-                          <RotateCcw className="size-4" aria-hidden /> {tr('Сделано, предложить снова', 'Done, offer again')}
-                        </Button>
-                      ) : (
-                        <Button variant="ghost" onClick={() => withdraw(item)}>
-                          <Trash2 className="size-4" aria-hidden /> {tr('Убрать', 'Remove')}
-                        </Button>
-                      )}
-                    </div>
-                  </li>
+                  <MyFavour
+                    key={item.id}
+                    item={item}
+                    claimedLine={tr(`${name} ${verb(partner?.gender, 'попросил')}`, `${name} asked`)}
+                    onReoffer={() => reoffer(item)}
+                    onWithdraw={() => withdraw(item)}
+                  />
                 ))}
               </ul>
             )}
@@ -269,5 +267,70 @@ export default function StorePage() {
         </div>
       )}
     </Page>
+  );
+}
+
+/* Your own offer: one line, and its one rare action behind «⋯». A claimed one shows who asked and «Сделано». */
+function MyFavour({
+  item,
+  claimedLine,
+  onReoffer,
+  onWithdraw,
+}: {
+  item: ShopItem;
+  claimedLine: string;
+  onReoffer: () => Promise<void>;
+  onWithdraw: () => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true);
+    await action();
+    setBusy(false);
+    setOpen(false);
+  };
+
+  return (
+    <li>
+      <div className="flex min-h-13 items-center gap-3 px-4 py-2.5">
+        <span className="min-w-0 flex-1">
+          <span className="block text-body">{item.title}</span>
+          <span className="line-clamp-2 block text-footnote text-ink-faint">
+            {item.is_claimed ? <span className="font-medium text-partner-ink">{claimedLine}</span> : points(item.cost_points)}
+            {item.description && ` · ${item.description}`}
+          </span>
+        </span>
+        {item.is_claimed ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => run(onReoffer)}
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-accent-soft px-3 text-footnote font-semibold text-accent-soft-ink transition-opacity active:opacity-70"
+          >
+            <RotateCcw className="size-3.5" aria-hidden /> {tr('Сделано', 'Done')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-label={tr(`Действия с «${item.title}»`, `Actions for “${item.title}”`)}
+            className="tap -mr-2 flex shrink-0 items-center justify-center rounded-full text-ink-faint transition-colors hover:text-ink"
+          >
+            <MoreHorizontal className="size-5" aria-hidden />
+          </button>
+        )}
+      </div>
+      <AutoHeight>
+        {open && !item.is_claimed && (
+          <div className="px-4 pb-3">
+            <button type="button" disabled={busy} onClick={() => run(onWithdraw)} className="tap flex items-center gap-1.5 text-subhead font-medium text-danger">
+              <Trash2 className="size-4" aria-hidden /> {tr('Убрать', 'Remove')}
+            </button>
+          </div>
+        )}
+      </AutoHeight>
+    </li>
   );
 }

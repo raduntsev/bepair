@@ -46,3 +46,41 @@ export function isoDate(d: Date) {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+/*
+  The planerka week: from the last session held (today included) to the next
+  meeting day. A to-do set at a session is meant for this week; one still open
+  from before the last session has been carried over.
+*/
+export interface PlanerkaWeek {
+  /* held_on of the last session on or before today; null before the first one. */
+  start: string | null;
+  /* The next meeting day: today while today's session is still ahead, else the next weekday. */
+  due: string;
+  /* Calendar days from today to `due`. */
+  daysLeft: number;
+}
+
+export function planerkaWeek(sessions: { held_on: string }[], weekday: number, today: string): PlanerkaWeek {
+  const start = sessions.map((s) => s.held_on).filter((d) => d <= today).sort().at(-1) ?? null;
+  const [y, m, d] = today.split('-').map(Number);
+  const now = new Date(y, m - 1, d);
+  let ahead = (weekday - now.getDay() + 7) % 7;
+  /* Meeting day with today's session already held: the week runs to the next one. */
+  if (ahead === 0 && start === today) ahead = 7;
+  const due = new Date(y, m - 1, d + ahead);
+  return { start, due: isoDate(due), daysLeft: ahead };
+}
+
+export type TodoWeek = 'this' | 'carried' | 'done-this' | 'done-before';
+
+/* Which part of the week a to-do belongs to. */
+export function todoWeek(
+  todo: { status: string; created_at: string; done_at: string | null; week_of?: string | null },
+  week: PlanerkaWeek,
+): TodoWeek {
+  const day = (iso: string) => isoDate(new Date(iso));
+  if (todo.status === 'done') return !week.start || (todo.done_at && day(todo.done_at) >= week.start) ? 'done-this' : 'done-before';
+  const set = todo.week_of ?? day(todo.created_at);
+  return !week.start || set >= week.start ? 'this' : 'carried';
+}

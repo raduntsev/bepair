@@ -5,8 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, Check, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts';
 import { displayName, verb } from '@/lib/words';
-import { fmt } from '@/lib/dates';
-import { QUESTIONS, SPHERES, type Comments, type QuestionKey, type Scores, type SphereKey } from '@/lib/planerka';
+import { fmt, plural, todayISO } from '@/lib/dates';
+import { QUESTIONS, SPHERES, planerkaWeek, todoWeek, type Comments, type QuestionKey, type Scores, type SphereKey } from '@/lib/planerka';
 import { type PlanTodo, type TodoStatus, usePlanerka } from '@/hooks/usePlanerka';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Segment } from '@/components/ui/Controls';
@@ -311,7 +311,18 @@ function StatusDot({ status, onClick, label }: { status: TodoStatus; onClick: ()
   );
 }
 
-function TodoRow({ todo, onUpdate, onRemove }: { todo: PlanTodo; onUpdate: (patch: Partial<PlanTodo>) => Promise<void>; onRemove: () => void }) {
+function TodoRow({
+  todo,
+  onUpdate,
+  onRemove,
+  onCarry,
+}: {
+  todo: PlanTodo;
+  onUpdate: (patch: Partial<PlanTodo>) => Promise<void>;
+  onRemove: () => void;
+  /* Carried over from an earlier week: move it into this one. */
+  onCarry?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const decision = useAutosave(todo.decision, (d) => onUpdate({ decision: d }));
   return (
@@ -324,6 +335,15 @@ function TodoRow({ todo, onUpdate, onRemove }: { todo: PlanTodo; onUpdate: (patc
           </span>
           {todo.decision && !open && <span className="mt-0.5 block text-footnote text-ink-faint">{todo.decision}</span>}
         </button>
+        {onCarry && (
+          <button
+            type="button"
+            onClick={onCarry}
+            className="flex h-8 shrink-0 items-center rounded-full bg-accent-soft px-3 text-footnote font-semibold text-accent-soft-ink transition-opacity active:opacity-70"
+          >
+            {tr('На эту неделю', 'This week')}
+          </button>
+        )}
       </div>
       <AnimatePresence initial={false}>
         {open && (
@@ -354,9 +374,10 @@ function TodoRow({ todo, onUpdate, onRemove }: { todo: PlanTodo; onUpdate: (patc
   );
 }
 
-export function TodosBoard({ planerkaId }: { planerkaId: string | null }) {
+/* Takes the screen's own planerka store, so one screen keeps one load and one Realtime channel. */
+export function TodosBoard({ planerkaId, store }: { planerkaId: string | null; store: ReturnType<typeof usePlanerka> }) {
   const { user, partner } = useSpaceAuth();
-  const { todos, addTodo, updateTodo, removeTodo } = usePlanerka();
+  const { todos, planerkas, settings, addTodo, updateTodo, removeTodo } = store;
   const [text, setText] = useState('');
   const [owner, setOwner] = useState<'me' | 'partner' | 'both'>('both');
   const [showDone, setShowDone] = useState(false);
@@ -368,8 +389,20 @@ export function TodosBoard({ planerkaId }: { planerkaId: string | null }) {
     { key: 'me', title: tr('Мои', 'Mine'), id: user?.id ?? null },
     { key: 'partner', title: partnerName, id: partner?.id ?? null },
   ];
-  const open = todos.filter((t) => t.status !== 'done');
-  const done = todos.filter((t) => t.status === 'done');
+  /* To-dos are set for the week: until the next meeting. What is left from before is shown apart. */
+  const week = planerkaWeek(planerkas, settings.weekday, todayISO());
+  const part = (t: PlanTodo) => todoWeek(t, week);
+  const open = todos.filter((t) => part(t) === 'this');
+  const carried = todos.filter((t) => part(t) === 'carried');
+  const doneThisWeek = todos.filter((t) => part(t) === 'done-this');
+  const done = todos.filter((t) => t.status === 'done').sort((a, b) => ((a.done_at ?? '') < (b.done_at ?? '') ? 1 : -1));
+  const total = open.length + doneThisWeek.length;
+  const dueLine =
+    week.daysLeft === 0
+      ? tr('планёрка сегодня', 'check-in today')
+      : week.daysLeft === 1
+        ? tr('до завтрашней планёрки', 'until tomorrow’s check-in')
+        : tr(`до ${fmt(week.due, 'EEEEEE, d MMMM')} · ${week.daysLeft} ${plural(week.daysLeft, 'день', 'дня', 'дней')}`, `until ${fmt(week.due, 'EEE, MMMM d')} · ${week.daysLeft} days`);
 
   return (
     <div className="space-y-4">
@@ -411,6 +444,18 @@ export function TodosBoard({ planerkaId }: { planerkaId: string | null }) {
         />
       </form>
 
+      <section className="flex items-center gap-3.5 rounded-2xl bg-surface px-4 py-3 shadow-card">
+        <span className="min-w-0 flex-1">
+          <span className="block text-headline font-semibold">{tr('На эту неделю', 'This week')}</span>
+          <span className="block text-footnote text-ink-faint">{dueLine}</span>
+        </span>
+        {total > 0 && (
+          <span className="shrink-0 text-subhead font-semibold tabular-nums text-accent">
+            {doneThisWeek.length} {tr('из', 'of')} {total}
+          </span>
+        )}
+      </section>
+
       {groups.map((g) => {
         const items = open.filter((t) => t.owner_id === g.id);
         if (items.length === 0) return null;
@@ -425,6 +470,26 @@ export function TodosBoard({ planerkaId }: { planerkaId: string | null }) {
           </section>
         );
       })}
+
+      {carried.length > 0 && (
+        <section>
+          <h3 className="mb-2 px-1 text-subhead font-semibold text-ink-faint">{tr('С прошлых недель', 'Carried over')}</h3>
+          <ul className="overflow-hidden rounded-2xl bg-surface shadow-card [&>li+li]:border-t [&>li+li]:border-line">
+            {carried.map((t) => (
+              <TodoRow
+                key={t.id}
+                todo={t}
+                onUpdate={(patch) => updateTodo(t.id, patch)}
+                onRemove={() => removeTodo(t.id)}
+                onCarry={week.start ? () => updateTodo(t.id, { week_of: week.start }) : undefined}
+              />
+            ))}
+          </ul>
+          <p className="mt-1.5 px-1 text-footnote text-ink-faint">
+            {tr('Решите на планёрке: перенести на эту неделю или убрать (нажмите на дело).', 'Decide at the check-in: move it to this week or drop it (tap the to-do).')}
+          </p>
+        </section>
+      )}
 
       {done.length > 0 && (
         <section>
@@ -541,7 +606,8 @@ type Step = 'wheel' | 'questions' | 'todos';
 
 export function PlanerkaSession({ heldOn }: { heldOn: string }) {
   const { user, partner, profile } = useSpaceAuth();
-  const { planerkas, wheels, answers, isLoading, error, ensure, saveWheel, closePart, saveAnswer } = usePlanerka();
+  const store = usePlanerka();
+  const { planerkas, wheels, answers, isLoading, error, ensure, saveWheel, closePart, saveAnswer } = store;
   const [closing, setClosing] = useState(false);
   const [step, setStep] = useState<Step>('wheel');
   const [whose, setWhose] = useState<'me' | 'partner'>('me');
@@ -652,7 +718,7 @@ export function PlanerkaSession({ heldOn }: { heldOn: string }) {
               ))}
             </div>
           )}
-          {step === 'todos' && <TodosBoard planerkaId={id} />}
+          {step === 'todos' && <TodosBoard planerkaId={id} store={store} />}
         </motion.div>
       </AnimatePresence>
 
