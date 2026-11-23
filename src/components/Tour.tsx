@@ -120,7 +120,7 @@ const STEPS: TourStep[] = [
     route: '/settings',
     target: 'profile-pair',
     title: tr('Вы вдвоём', 'The two of you'),
-    body: tr('Наверху — вы: фото, имя, как к вам обращаться. Ниже — профиль пары: сколько вы вместе, важные даты, ответы друг о друге.', 'At the top is you: photo, name, how to address you. Below is your couple: how long you’ve been together, important dates, answers about each other.'),
+    body: tr('Наверху — вы: фото и имя. Ниже — профиль пары: сколько вы вместе, важные даты, ответы друг о друге.', 'At the top is you: photo and name. Below is your couple: how long you’ve been together, important dates, answers about each other.'),
   },
   {
     route: '/settings',

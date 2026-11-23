@@ -95,17 +95,6 @@ export default function SettingsPage() {
           className={`-mt-1 size-4 text-accent transition-opacity duration-500 ${savedName ? 'opacity-100' : 'opacity-0'}`}
           aria-label={savedName ? tr('Сохранено', 'Saved') : undefined}
         />
-        <div className="mt-2 w-full max-w-xs">
-          <Segment
-            legend={tr('Как о вас писать', 'How to address you')}
-            options={[
-              { value: 'f' as const, label: tr('Она', 'She') },
-              { value: 'm' as const, label: tr('Он', 'He') },
-            ]}
-            value={profile?.gender ?? null}
-            onChange={(gender) => updateProfile({ gender })}
-          />
-        </div>
       </section>
 
       <div className="space-y-3">
