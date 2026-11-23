@@ -119,7 +119,7 @@ export default function WidgetSettingsPage() {
         )}
 
         <RowGroup label={tr('Фото', 'Photo')}>
-          <LinkRow href="/album" Icon={Images} tone="partner" title={tr('Фото для виджета', 'Photos for the widget')} sub={tr('Общий альбом: виджет «Фото» показывает его на обоих телефонах', 'A shared album: the Photo widget shows it on both phones')} />
+          <LinkRow href="/album" Icon={Images} title={tr('Фото для виджета', 'Photos for the widget')} sub={tr('Общий альбом: виджет «Фото» показывает его на обоих телефонах', 'A shared album: the Photo widget shows it on both phones')} />
         </RowGroup>
 
         <RowGroup label={tr('Что видно на виджете', 'What the widget shows')}>
