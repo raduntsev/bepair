@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "709045384338",
+    "project_id": "vpare-3235a",
+    "storage_bucket": "vpare-3235a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709045384338:android:e570c31b2dd7e7ff67624b",
+        "android_client_info": {
+          "package_name": "app.bepair.vpare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFH9rDX0Ef65fcz3B15LOJyM8ATomkLbE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

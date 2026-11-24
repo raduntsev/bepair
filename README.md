@@ -127,7 +127,7 @@ Import репозитория → Framework: Next.js → Environment Variables: 
 
 Собрать локально: Android Studio → Open → папка `android` (перед этим `BEPAIR_URL=https://… npx cap sync android`).
 
-Push на Android: без `google-services.json` приложение не регистрируется в FCM (иначе Android закрыл бы его) и пишет, что push в этой сборке не подключён. Чтобы подключить: создать проект в [Firebase](https://console.firebase.google.com), добавить Android-приложение `app.bepair.vpare`, положить `google-services.json` в `android/app/`. Для сервера: Firebase → Project settings → Service accounts → Generate new private key, содержимое JSON положить в переменную Vercel `FCM_SERVICE_ACCOUNT`.
+Push на Android: Firebase-проект `vpare-3235a`, его `google-services.json` лежит в `android/app/` (это не секрет — настройки клиента). Без этого файла приложение не регистрируется в FCM (иначе Android закрыл бы его) и пишет, что push в этой сборке не подключён. Для сервера: Firebase → Project settings → Service accounts → Generate new private key, содержимое JSON положить в переменную Vercel `FCM_SERVICE_ACCOUNT`.
 
 ### iPhone
 
