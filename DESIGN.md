@@ -295,11 +295,16 @@ the product becomes an acceptance process.
 with «Курсы | Журнал» as two tabs. Content lives in `src/lib/courses.ts`;
 the database keeps only what each person did (0015).
 
-- **Theory first, then the task.** Every lesson opens with «Теория»: the
-  idea in plain words (retold from the course's own lesson notes), «Как это
-  выглядит в жизни» with everyday and couple examples, at most one short
-  quote with its author, and «Почитать» — links that were opened and
-  answered when added. Then «Задание».
+- **Theory first, then the task.** Every lesson opens with «Теория», built
+  from blocks (`src/lib/theory/`) so it reads with a rhythm, not as a wall:
+  a lead in larger type, short paragraphs with **bold**, subheadings, one
+  «Главное» on the accent ground, «Пример из жизни пары» set apart by a rule,
+  two columns to compare, and the interactive pieces — terms that unfold one
+  at a time, «Подумайте — и откройте», a one-question quiz where every answer
+  explains itself, and «Попробуйте прямо сейчас» to tick off (on the partner's
+  soft amber). Reading time sits by the heading; links in «Почитать» were
+  opened and answered when added. The voice is a family psychologist's:
+  warm, plain, «вы», stories of couples, light humour — never a lecture.
 - **Steps open in order, and only answered.** A lesson opens once the one
   before is done. «Шаг пройден» checks every question not marked «по
   желанию»: every line of a list, every sphere of a scale, one whole row of
@@ -311,8 +316,13 @@ the database keeps only what each person did (0015).
   on the partner's favours. Eight badges (one per module and the final),
   a run of days with the course, and the points sit in «Награды» on the
   course page; the partner's badges wear an amber dot. A step ends in a
-  short line «Шаг засчитан · +2 балла»; a module or the course ends in a
-  sheet where the badge springs in — the third authored moment.
+  card with the pair hugging, a warm line («Ещё один шаг к себе») and «Шаг
+  засчитан · +2 балла», over a burst of confetti; a module or the course
+  ends in a sheet where the badge springs in over two confetti cannons — the
+  third authored moment. Confetti wears indigo, amber and lavender only (never
+  mood's green or red) and is off with reduced motion (`src/lib/celebrate.ts`).
+  Every badge is a button: an earned one says when and for what, a closed
+  one what it takes and how many steps are left.
 - **Progress is always shared, answers never by default.** Two thin bars,
   indigo for you and amber for the partner, and the partner's small amber
   avatar beside the lesson they are on. A finished step notifies the partner
@@ -338,6 +348,13 @@ the database keeps only what each person did (0015).
   is grey until moved.
 - Course content is written in Russian; in the English interface the course
   wears an «In Russian» chip and the chrome stays English.
+
+## The app on a phone
+
+«Профиль → Приложение на телефон» (`/settings/app`) puts this phone's card
+first. Android: «Скачать для Android» — the APK that CI publishes to the
+`android-latest` release on every merge into main, with steps. iPhone: Safari
+→ Поделиться → На экран «Домой» (widgets need an App Store/TestFlight build).
 
 ## Widgets: the pair acts out the day
 

@@ -15,7 +15,7 @@ import { AutoHeight } from '@/components/ui/AutoHeight';
 import { FieldEditor, AnswersView } from '@/components/courses/CourseFields';
 import { ThoughtDiary } from '@/components/courses/ThoughtDiary';
 import { CoursesUnavailable } from '@/components/courses/Unavailable';
-import { TheoryBlock } from '@/components/courses/Theory';
+import { TheoryCard } from '@/components/courses/Theory';
 import { Celebration } from '@/components/courses/Rewards';
 import { tr } from '@/lib/i18n';
 
@@ -171,7 +171,7 @@ function LessonView() {
             </p>
           )}
 
-          {lesson.theory && <TheoryBlock theory={lesson.theory} />}
+          {lesson.theory && <TheoryCard theory={lesson.theory} />}
 
           {lesson.theory && <h2 className="px-1 pt-5 text-title-3 font-semibold">{tr('Задание', 'Your task')}</h2>}
 

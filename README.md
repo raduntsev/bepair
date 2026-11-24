@@ -121,7 +121,9 @@ Import репозитория → Framework: Next.js → Environment Variables: 
 
 ### Android
 
-Сборка идёт сама: GitHub → Actions → «Native apps» → последний запуск → артефакт **vpare-android-debug** (APK). Установить на телефон: скачать, открыть, разрешить установку из этого источника. Затем долгое нажатие на рабочем столе → «Виджеты» → Впаре.
+Сборка идёт сама при каждом мёрдже в `main` и выкладывается по постоянной ссылке: https://github.com/raduntsev/bepair/releases/download/android-latest/vpare.apk (в приложении: Профиль → «Приложение на телефон» → «Скачать для Android»). Тот же APK лежит в Actions → «Native apps» → артефакт **vpare-android-debug**.
+
+Чтобы новая версия ставилась поверх старой (без удаления и повторного входа), сборки должны подписываться одним ключом. Один раз создайте ключ: `keytool -genkeypair -v -keystore vpare.keystore -alias vpare -keyalg RSA -keysize 2048 -validity 10000`, затем в GitHub → Settings → Secrets and variables → Actions добавьте секреты `ANDROID_KEYSTORE_BASE64` (результат `base64 -w0 vpare.keystore`) и `ANDROID_KEYSTORE_PASSWORD`. Без них каждая сборка подписана временным ключом. Установить на телефон: скачать, открыть, разрешить установку из этого источника. Затем долгое нажатие на рабочем столе → «Виджеты» → Впаре.
 
 Собрать локально: Android Studio → Open → папка `android` (перед этим `BEPAIR_URL=https://… npx cap sync android`).
 

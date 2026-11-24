@@ -1,4 +1,4 @@
-import { WHO_AM_I_THEORY } from './courseTheory';
+import { WHO_AM_I_THEORY } from './theory';
 
 /*
   Courses are content, not data: they live here, typed, and the database keeps
@@ -36,14 +36,31 @@ export type Field =
   | (FieldBase & { kind: 'diary' });
 
 /*
-  What to read before answering: the idea in plain words, how it shows up in
-  life (and between two people), a short quote from a book with its author, and
-  where to read more. Written from the course's own lesson notes, retold.
+  What to read before answering, as a sequence of blocks so the page has a
+  rhythm instead of a wall of text: a lead, short paragraphs with **bold**,
+  subheadings, the one key thought, a couple's story, two columns to compare,
+  terms that unfold, a card to think over before opening, a small quiz with
+  explanations, a «try it now», a quote. Written in the voice of a family
+  psychologist; the ideas are retold from the course's own lesson notes.
 */
+export type TheoryBlock =
+  | { t: 'lead'; text: string }
+  | { t: 'p'; text: string }
+  | { t: 'h'; text: string }
+  | { t: 'key'; text: string }
+  | { t: 'list'; items: string[]; ordered?: boolean }
+  | { t: 'terms'; items: { term: string; def: string }[] }
+  | { t: 'story'; title: string; text: string }
+  | { t: 'compare'; left: { title: string; items: string[] }; right: { title: string; items: string[] } }
+  | { t: 'reveal'; prompt: string; answer: string }
+  | { t: 'quiz'; q: string; options: { text: string; ok?: boolean; why: string }[] }
+  | { t: 'try'; text: string }
+  | { t: 'quote'; text: string; source: string };
+
 export interface Theory {
-  text: string[];
-  examples?: string[];
-  quote?: { text: string; source: string };
+  /* Minutes to read, shown under the heading. */
+  minutes: number;
+  blocks: TheoryBlock[];
   read?: { label: string; href: string }[];
 }
 

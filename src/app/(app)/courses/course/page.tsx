@@ -114,6 +114,8 @@ function CourseView() {
               streak={store.streakOf(store.me)}
               points={store.pointsOf(store.me)}
               mine={new Set(store.badgesOf(store.me, course.id).map((b) => b.module.id))}
+              earnedAt={new Map(store.badgesOf(store.me, course.id).map((b) => [b.module.id, b.at]))}
+              done={mine}
               theirs={partner ? new Set(store.badgesOf(store.partnerId, course.id).map((b) => b.module.id)) : null}
               partnerName={partnerName}
             />
