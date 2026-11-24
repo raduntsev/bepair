@@ -26,6 +26,7 @@ public final class WidgetRenderer {
         }
         PhotoRenderer.updateAll(context);
         TasksRenderer.updateAll(context);
+        MapRenderer.updateAll(context);
         /* The lock-screen line reads the same snapshot, so it changes with the widgets. */
         LockStatus.update(context);
     }
@@ -40,7 +41,8 @@ public final class WidgetRenderer {
         return manager.getAppWidgetIds(new ComponentName(context, DayWidgetProvider.class)).length > 0
             || manager.getAppWidgetIds(new ComponentName(context, CoupleWidgetProvider.class)).length > 0
             || PhotoRenderer.ids(context).length > 0
-            || TasksRenderer.ids(context).length > 0;
+            || TasksRenderer.ids(context).length > 0
+            || MapRenderer.ids(context).length > 0;
     }
 
     /* vpare://day opens the app on that screen; MainActivity hands it to the web app. */

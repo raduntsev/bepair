@@ -19,4 +19,12 @@
     <string name="widget_tasks_title">Today’s to-dos</string>
     <string name="widget_tasks_loading">Loading to-dos…</string>
     <string name="widget_tasks_mark">Mark as done: %1$s</string>
+    <string name="widget_map_name">Map</string>
+    <string name="widget_map_description">The two of you on a map — once you both turn on “Where we are”</string>
+    <string name="widget_map_title">Where we are</string>
+    <string name="widget_map_loading">Loading the map…</string>
+    <string name="location_channel">Where we are</string>
+    <string name="location_notification_title">You’re sharing your location</string>
+    <string name="location_notification_text">Every 5 minutes, just for the two of you. Tap to open the map</string>
+    <string name="location_notification_stop">Stop sharing</string>
 </resources>

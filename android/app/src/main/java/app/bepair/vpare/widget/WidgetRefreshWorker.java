@@ -34,6 +34,11 @@ public class WidgetRefreshWorker extends Worker {
         WidgetApi.Result result = WidgetApi.refresh(context);
         WidgetApi.Result photo = PhotoRenderer.ids(context).length > 0 ? WidgetApi.refreshPhoto(context) : WidgetApi.Result.OK;
         if (TasksRenderer.ids(context).length > 0) WidgetApi.refreshTasks(context);
+        /* While «Где мы» runs, the location service redraws the map every five minutes itself. */
+        if (MapRenderer.ids(context).length > 0 && !LocationService.isRunning()) {
+            WidgetApi.refreshLocation(context);
+            MapRenderer.compose(context);
+        }
         WidgetRenderer.updateAll(context);
         return result == WidgetApi.Result.FAILED || photo == WidgetApi.Result.FAILED ? Result.retry() : Result.success();
     }

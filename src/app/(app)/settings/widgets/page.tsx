@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { EyeOff, Images, LockKeyhole, Smartphone, Trash2 } from 'lucide-react';
+import { EyeOff, Images, LockKeyhole, MapPin, Smartphone, Trash2 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { relativeStamp } from '@/lib/dates';
 import { WidgetBridge, clearWidgets, isNative, nativePlatform, refreshWidgets } from '@/lib/native';
@@ -29,7 +29,8 @@ const HOW_TO = {
   android: [
     tr('Нажмите и подержите пустое место на рабочем столе.', 'Touch and hold an empty spot on the home screen.'),
     tr('Выберите «Виджеты» и найдите «Впаре».', 'Choose Widgets and find Bepair.'),
-    tr('Перетащите «День», «Пара», «Фото» или «Дела» на рабочий стол.', 'Drag Day, Couple, Photo or To-dos onto the home screen.'),
+    tr('Перетащите «День», «Пара», «Фото», «Дела» или «Карта» на рабочий стол.', 'Drag Day, Couple, Photo, To-dos or Map onto the home screen.'),
+    tr('«Карта» показывает вас и партнёра, когда вы оба включили «Где мы».', 'Map shows the two of you once you both turn on “Where we are”.'),
   ],
 };
 
@@ -118,8 +119,11 @@ export default function WidgetSettingsPage() {
           </Card>
         )}
 
-        <RowGroup label={tr('Фото', 'Photo')}>
+        <RowGroup label={tr('Фото и карта', 'Photo and map')}>
           <LinkRow href="/album" Icon={Images} title={tr('Фото для виджета', 'Photos for the widget')} sub={tr('Общий альбом: виджет «Фото» показывает его на обоих телефонах', 'A shared album: the Photo widget shows it on both phones')} />
+          {platform === 'android' && (
+            <LinkRow href="/map" Icon={MapPin} title={tr('Где мы', 'Where we are')} sub={tr('Виджет «Карта»: вы и партнёр, раз в 5 минут', 'The Map widget: the two of you, every 5 minutes')} />
+          )}
         </RowGroup>
 
         <RowGroup label={tr('Что видно на виджете', 'What the widget shows')}>

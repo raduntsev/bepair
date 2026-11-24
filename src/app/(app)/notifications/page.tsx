@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { Bell, BellRing, BookOpen, Eye, Gift, ListChecks, Mail, Moon, Send, Settings2, SlidersHorizontal, Sun, Sunrise, UserPlus } from 'lucide-react';
+import { Bell, BellRing, BookOpen, Eye, Gift, ListChecks, Mail, MapPin, Moon, Send, Settings2, SlidersHorizontal, Sun, Sunrise, UserPlus } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { relativeStamp } from '@/lib/dates';
 import { noticeHref, noticeText, type NoticeKind } from '@/lib/notices';
@@ -29,6 +29,7 @@ const ICONS: Record<NoticeKind, LucideIcon> = {
   course_step: BookOpen,
   course_shared: Eye,
   remind_course: BellRing,
+  location_shared: MapPin,
 };
 
 export default function NotificationsPage() {

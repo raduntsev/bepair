@@ -568,6 +568,69 @@
   opacity: 0.55;
 }
 
+/*
+  «Где мы». The map is a backdrop, not a feature: Leaflet's chrome is reduced
+  to the required attribution, in the app's own type. The two pins are the
+  same two colours as everywhere — you in the accent, your partner in theirs.
+*/
+.pair-map {
+  font: inherit;
+  background: var(--c-surface-sunken);
+}
+.pair-map .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--c-surface) 82%, transparent);
+  color: var(--c-ink-faint);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  padding: 1px 6px;
+  border-top-left-radius: 6px;
+}
+.pair-map .leaflet-control-attribution a {
+  color: inherit;
+}
+/* OpenStreetMap's colours quieted to grey, so only the two pins carry colour. */
+.pair-tiles {
+  filter: grayscale(1) contrast(0.9) brightness(1.06);
+}
+.pair-tiles--dark {
+  filter: grayscale(1) invert(1) brightness(0.82) contrast(0.88);
+}
+.pair-pin-wrap {
+  background: none;
+  border: 0;
+}
+.pair-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 3px solid var(--c-surface);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: opacity 400ms var(--ease-out-soft);
+}
+.pair-pin--me {
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+}
+.pair-pin--partner {
+  background: var(--c-partner);
+  /* The ink every partner-coloured tile uses (RowIcon «partner»): dark on amber reads in both themes. */
+  color: var(--color-mood-ink);
+}
+/* An old point is a memory of where they were, not where they are. */
+.pair-pin--stale {
+  opacity: 0.5;
+}
+.pair-ring {
+  fill: var(--c-partner);
+  fill-opacity: 0.14;
+}
+
 @keyframes pair-mark-turn {
   to {
     transform: rotate(360deg);

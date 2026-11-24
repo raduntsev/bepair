@@ -19,6 +19,27 @@ interface WidgetBridgePlugin {
   /* Android: the quiet «today» line on the lock screen. */
   lockStatus(): Promise<{ enabled: boolean; permitted: boolean }>;
   setLockStatus(options: { enabled: boolean }): Promise<{ enabled: boolean }>;
+  /*
+    Android: «Где мы». A foreground service sends the phone's point every five
+    minutes and redraws the «Карта» widget. requestLocation asks for the
+    permission and starts nothing: sharing is switched on in the database
+    first, then ensureLocation starts the service — only when permission is
+    already there, never with a prompt.
+  */
+  locationStatus(): Promise<LocationNative>;
+  requestLocation(): Promise<LocationNative>;
+  ensureLocation(): Promise<LocationNative>;
+  stopLocation(): Promise<LocationNative>;
+  /* «Allow all the time»: so the service comes back after a reboot. Opens the system screen on Android 11+. */
+  requestBackgroundLocation(): Promise<LocationNative>;
+}
+
+export interface LocationNative {
+  running: boolean;
+  /* Location while the app (or its service) is in use. */
+  foreground: boolean;
+  /* «Allow all the time»: the service may start again after a reboot. */
+  background: boolean;
 }
 
 export const WidgetBridge = registerPlugin<WidgetBridgePlugin>('WidgetBridge');
@@ -32,6 +53,16 @@ export async function refreshWidgets() {
     await WidgetBridge.refresh();
   } catch {
     /* an older shell without the plugin — nothing to redraw */
+  }
+}
+
+/* The Android location service, or null where there is none (browser, iPhone, an older APK). */
+export async function nativeLocation(action: 'locationStatus' | 'requestLocation' | 'ensureLocation' | 'stopLocation' | 'requestBackgroundLocation') {
+  if (nativePlatform() !== 'android') return null;
+  try {
+    return await WidgetBridge[action]();
+  } catch {
+    return null;
   }
 }
 
