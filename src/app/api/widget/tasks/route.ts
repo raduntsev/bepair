@@ -133,7 +133,7 @@ export async function POST(request: Request) {
 
   const { data: task } = await admin
     .from('checklist_items')
-    .select('id, user_id, points, is_completed')
+    .select('id, user_id, is_completed')
     .eq('id', id)
     .eq('space_id', me.space_id)
     .maybeSingle();
@@ -141,29 +141,20 @@ export async function POST(request: Request) {
   if (!task || task.user_id === userId) return Response.json({ error: 'not-found' }, { status: 404 });
 
   if (!task.is_completed) {
-    /* Guarded on is_completed: a double tap, or the app and the widget at once, award points once. */
-    const { data: completed } = await admin
+    /*
+      Guarded on is_completed: a double tap, or the app and the widget at once,
+      complete it once. The database pays the points in the same statement
+      (bp_task_points, migration 0017), at most once per request.
+    */
+    const { data: completed, error: completeError } = await admin
       .from('checklist_items')
       .update({ is_completed: true, completed_by: userId, completed_at: new Date().toISOString() })
       .eq('id', id)
       .eq('is_completed', false)
       .select('id');
 
-    if (completed && completed.length > 0) {
-      const { error: ledgerError } = await admin.from('points_ledger').insert({
-        space_id: me.space_id,
-        from_user: task.user_id,
-        to_user: userId,
-        amount: task.points,
-        reason: 'task',
-        reference: id,
-      });
-      if (ledgerError) {
-        await admin.from('checklist_items').update({ is_completed: false, completed_by: null, completed_at: null }).eq('id', id);
-        return Response.json({ error: 'failed' }, { status: 500 });
-      }
-      if (pushConfigured()) await claimAndDeliver(admin, me.space_id).catch(() => 0);
-    }
+    if (completeError) return Response.json({ error: 'failed' }, { status: 500 });
+    if (completed && completed.length > 0 && pushConfigured()) await claimAndDeliver(admin, me.space_id).catch(() => 0);
   }
 
   const payload = await build(admin, userId);

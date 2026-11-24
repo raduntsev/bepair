@@ -240,7 +240,11 @@ export function useTasks() {
     async (task: Task) => {
       if (!user || !spaceId) return;
 
-      /* Guarded on is_completed and checked by row count: two taps award points once. */
+      /*
+        Guarded on is_completed and checked by row count. The points are paid by
+        the database in the same statement (bp_task_points, migration 0017), once
+        per request — so there is nothing to write here and nothing to roll back.
+      */
       const { data: completed, error: completeError } = await supabase
         .from('checklist_items')
         .update({ is_completed: true, completed_by: user.id, completed_at: new Date().toISOString() })
@@ -257,28 +261,9 @@ export function useTasks() {
         return;
       }
 
-      const { error: ledgerError } = await supabase.from('points_ledger').insert({
-        space_id: spaceId,
-        from_user: task.user_id,
-        to_user: user.id,
-        amount: task.points,
-        reason: 'task',
-        reference: task.id,
-      });
-
-      if (ledgerError) {
-        /* Never leave a task done with no points and no explanation. */
-        await supabase
-          .from('checklist_items')
-          .update({ is_completed: false, completed_by: null, completed_at: null })
-          .eq('id', task.id);
-        setError(tr('Баллы не начислились, задача осталась активной. Попробуйте ещё раз.', 'Points weren’t added; the request is still open. Please try again.'));
-        await load();
-      } else {
-        setError(null);
-        setTasks((list) => merge(list, completed[0] as Task));
-        flushPush();
-      }
+      setError(null);
+      setTasks((list) => merge(list, completed[0] as Task));
+      flushPush();
     },
     [user, spaceId, load],
   );
