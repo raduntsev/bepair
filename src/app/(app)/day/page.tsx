@@ -219,7 +219,7 @@ function DayView() {
       if (!next) continue;
       const last = courses.lastActivity(user.id);
       if (last && todayISO(new Date(last)) === date) return null;
-      return { course, next };
+      return { course, next, streak: courses.streakOf(user.id) };
     }
     return null;
   })();
@@ -512,6 +512,7 @@ function DayView() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-body font-semibold">{courseCard.course.title}</span>
                 <span className="block truncate text-footnote text-ink-faint">
+                  {courseCard.streak > 1 && `${tr(`${courseCard.streak} ${plural(courseCard.streak, 'день', 'дня', 'дней')} подряд`, `${courseCard.streak} days in a row`)} · `}
                   {tr('Дальше', 'Next')}: {courseCard.next.code} {courseCard.next.title}
                 </span>
               </span>

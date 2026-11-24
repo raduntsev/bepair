@@ -295,10 +295,24 @@ the product becomes an acceptance process.
 with «Курсы | Журнал» as two tabs. Content lives in `src/lib/courses.ts`;
 the database keeps only what each person did (0015).
 
-- **Steps open in order.** A lesson opens once the one before is done.
-  Nothing in a lesson is required — the course calls its questions a
-  programme maximum — so «Шаг пройден» is the one deliberate act. Answers
-  save themselves as you type («Ответы сохранены» under the button).
+- **Theory first, then the task.** Every lesson opens with «Теория»: the
+  idea in plain words (retold from the course's own lesson notes), «Как это
+  выглядит в жизни» with everyday and couple examples, at most one short
+  quote with its author, and «Почитать» — links that were opened and
+  answered when added. Then «Задание».
+- **Steps open in order, and only answered.** A lesson opens once the one
+  before is done. «Шаг пройден» checks every question not marked «по
+  желанию»: every line of a list, every sphere of a scale, one whole row of
+  a table, one diary entry. What is missing is ringed and named, the page
+  scrolls to the first one, and «Отвечено N из M» sits under the button.
+  Answers save themselves as you type.
+- **Rewards (0016).** A step pays 2 points, a finished module 10 and a badge,
+  the whole course 30 — into the same balance as requests, so they are spent
+  on the partner's favours. Eight badges (one per module and the final),
+  a run of days with the course, and the points sit in «Награды» on the
+  course page; the partner's badges wear an amber dot. A step ends in a
+  short line «Шаг засчитан · +2 балла»; a module or the course ends in a
+  sheet where the badge springs in — the third authored moment.
 - **Progress is always shared, answers never by default.** Two thin bars,
   indigo for you and amber for the partner, and the partner's small amber
   avatar beside the lesson they are on. A finished step notifies the partner
@@ -324,6 +338,25 @@ the database keeps only what each person did (0015).
   is grey until moved.
 - Course content is written in Russian; in the English interface the course
   wears an «In Russian» chip and the chrome stays English.
+
+## Widgets: the pair acts out the day
+
+The widgets show the pair as the two round characters of the loader
+(`PairCharacters.java`, `PairMark` in `WidgetViews.swift`), not as discs.
+Each acts out its own day: asleep (not marked — faded, eyes shut, breathing,
+a «z»), light (happy ^ ^, hopping), normal (open eyes, a sway, a blink),
+heavy (drooping eyes, sunk lower, sighing — and the other one leans towards
+it), sealed (the partner's day you may not see yet: eyes shut, a lock, a
+peek now and then), hidden (marked, colours hidden on this phone) and absent
+(a dashed outline). A visible day fills the body with its colour and keeps a
+ring of the person's colour. The level comes from the server
+(`moodLevel`: light < 0.35 ≤ normal < 0.65 ≤ heavy) and, like the colour,
+never for a sealed day.
+
+Android loops it: eight frames in a ViewFlipper the launcher flips every
+280 ms; with animations off on the phone all frames are the first. iOS
+cannot loop a widget: it shows the pose and, from iOS 17, animates the change
+when the state changes.
 
 ## Today's to-dos
 

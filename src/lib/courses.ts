@@ -1,3 +1,5 @@
+import { WHO_AM_I_THEORY } from './courseTheory';
+
 /*
   Courses are content, not data: they live here, typed, and the database keeps
   only what each person did with them (supabase/migrations/0015). A new course
@@ -13,17 +15,37 @@
   answers are a «programme maximum», and a blank field must never block a step.
 */
 
+/* Every field may be marked optional («по желанию»); all others must be answered before the step is done. */
+interface FieldBase {
+  id: string;
+  q: string;
+  hint?: string;
+  optional?: boolean;
+}
+
 export type Field =
   /* Free text. */
-  | { kind: 'text'; id: string; q: string; hint?: string; rows?: number; echo?: Echo[] }
-  /* A fixed number of short lines: «Я — …» ten times. `ordered` numbers them. */
-  | { kind: 'list'; id: string; q: string; hint?: string; count: number; prefix?: string; ordered?: boolean }
-  /* A 0–10 score for each item, e.g. the spheres of life. */
-  | { kind: 'scale'; id: string; q: string; hint?: string; items: string[]; min: number; max: number }
-  /* Rows of columns that grow on demand: the growth-mindset table, behavioural activation. */
-  | { kind: 'table'; id: string; q: string; hint?: string; columns: string[]; rows: number; max?: number; example?: string[] }
-  /* The thought diary from the journal, shown inside the lesson. */
-  | { kind: 'diary'; id: string; q: string; hint?: string };
+  | (FieldBase & { kind: 'text'; rows?: number; echo?: Echo[] })
+  /* A fixed number of short lines: «Я — …» ten times. `ordered` numbers them. Every line must be filled. */
+  | (FieldBase & { kind: 'list'; count: number; prefix?: string; ordered?: boolean })
+  /* A 0–10 score for each item, e.g. the spheres of life. Every item must be scored. */
+  | (FieldBase & { kind: 'scale'; items: string[]; min: number; max: number })
+  /* Rows of columns that grow on demand: the growth-mindset table, behavioural activation. One full row is enough. */
+  | (FieldBase & { kind: 'table'; columns: string[]; rows: number; max?: number; example?: string[] })
+  /* The thought diary from the journal, shown inside the lesson. One entry is enough. */
+  | (FieldBase & { kind: 'diary' });
+
+/*
+  What to read before answering: the idea in plain words, how it shows up in
+  life (and between two people), a short quote from a book with its author, and
+  where to read more. Written from the course's own lesson notes, retold.
+*/
+export interface Theory {
+  text: string[];
+  examples?: string[];
+  quote?: { text: string; source: string };
+  read?: { label: string; href: string }[];
+}
 
 /* An earlier answer shown beside a question, so a final reflection can compare. */
 export interface Echo {
@@ -43,6 +65,7 @@ export interface Lesson {
   kind: 'lesson' | 'practice' | 'final';
   /* A short frame for the questions, so they stand without the video. */
   intro?: string;
+  theory?: Theory;
   fields: Field[];
   links?: { label: string; href: string }[];
   /* A closing note after the fields. */
@@ -51,11 +74,15 @@ export interface Lesson {
   together?: string;
 }
 
+/* The badge a finished module earns. The icon is a key, drawn by the app (lib stays free of React). */
+export type BadgeIcon = 'gem' | 'mountain' | 'brain' | 'compass' | 'waves' | 'shield' | 'route' | 'award';
+
 export interface Module {
   id: string;
   n: number;
   title: string;
   about: string;
+  badge: { name: string; icon: BadgeIcon };
   lessons: Lesson[];
 }
 
@@ -111,6 +138,7 @@ const WHO_AM_I: Course = {
       n: 1,
       title: 'Грани моего Я',
       about: 'Из чего складывается представление о себе и как оно влияет на поступки.',
+      badge: { name: 'Грани', icon: 'gem' },
       lessons: [
         {
           id: 'm1-l3',
@@ -231,7 +259,7 @@ const WHO_AM_I: Course = {
             { kind: 'text', id: 'ask', q: 'Если бы вы встретили того, кто знает о вас всё, — о чём бы спросили первым делом?' },
             { kind: 'text', id: 'goal', q: 'Что вам важно лучше понять о себе к концу курса?' },
             { kind: 'list', id: 'change', q: 'Как, по-вашему, лучшее понимание себя изменит вашу жизнь? Три конкретных изменения', count: 3, ordered: true },
-            { kind: 'text', id: 'swls', q: 'По желанию: результат шкалы удовлетворённости жизнью (SWLS)', rows: 2 },
+            { kind: 'text', id: 'swls', q: 'Результат шкалы удовлетворённости жизнью (SWLS)', rows: 2, optional: true },
           ],
           links: [{ label: 'Шкала удовлетворённости жизнью (SWLS)', href: 'https://experimental-psychic.ru/shkala-udovletvorennosti-zhiznyu/' }],
           tip: 'Возвращайтесь к этим ответам по ходу курса — в итоговой работе вы сравните их с тем, что думаете в конце.',
@@ -245,6 +273,7 @@ const WHO_AM_I: Course = {
       n: 2,
       title: 'Сильные и слабые стороны',
       about: 'Темперамент, характер, черты личности — и как пользоваться этим знанием, чтобы оно помогало, а не мешало.',
+      badge: { name: 'Опора', icon: 'mountain' },
       lessons: [
         {
           id: 'm2-l1',
@@ -291,7 +320,7 @@ const WHO_AM_I: Course = {
               q: 'Какие ваши черты проявлены сильнее всего? Какими вы гордитесь, а какие хотели бы поменять?',
               rows: 5,
             },
-            { kind: 'text', id: 'result', q: 'По желанию: результат теста «Большая пятёрка»', rows: 3 },
+            { kind: 'text', id: 'result', q: 'Результат теста «Большая пятёрка»', rows: 3, optional: true },
             { kind: 'text', id: 'missed', q: 'Что важного о вас тест не отразил?' },
             { kind: 'text', id: 'learned', q: 'Что нового вы о себе узнали?' },
             { kind: 'text', id: 'help', q: 'Как эти знания могут вам помочь?' },
@@ -330,6 +359,7 @@ const WHO_AM_I: Course = {
               kind: 'table',
               id: 'activation',
               q: 'Для смелых: поведенческая активация',
+              optional: true,
               hint: 'Выберите одно простое действие, связанное с этой чертой. Представьте человека, у которого она уже есть. Заручитесь поддержкой — например, партнёра. Запланируйте, сделайте и сравните ожидания с тем, что вышло.',
               columns: ['Даты', 'Действие', 'Ожидаемые последствия', 'Что вышло на деле', 'Ожидаемое удовольствие', 'Удовольствие на деле'],
               rows: 1,
@@ -345,6 +375,7 @@ const WHO_AM_I: Course = {
       n: 3,
       title: 'Ограничивающие убеждения. Установка на рост',
       about: 'Как мысли связаны с самочувствием и поступками, какие из них мешают — и можно ли их поменять.',
+      badge: { name: 'Гибкий ум', icon: 'brain' },
       lessons: [
         {
           id: 'm3-l1',
@@ -462,6 +493,7 @@ const WHO_AM_I: Course = {
       n: 4,
       title: 'Ценности как основа выборов',
       about: 'Значимые сферы жизни, ценности в них, конфликт ценностей и план действий. Середина пути.',
+      badge: { name: 'Компас', icon: 'compass' },
       lessons: [
         {
           id: 'm4-l1',
@@ -555,6 +587,7 @@ const WHO_AM_I: Course = {
       n: 5,
       title: 'Потребности. Эмоции как их индикатор',
       about: 'Чего я хочу и как понять это по тому, что я чувствую.',
+      badge: { name: 'Чуткость', icon: 'waves' },
       lessons: [
         {
           id: 'm5-l1',
@@ -628,6 +661,7 @@ const WHO_AM_I: Course = {
       n: 6,
       title: 'Свои и чужие потребности. Границы',
       about: 'Где проходят личные границы, что делать, если их нарушают, — и если нарушаем мы.',
+      badge: { name: 'Свои границы', icon: 'shield' },
       lessons: [
         {
           id: 'm6-l1',
@@ -728,6 +762,7 @@ const WHO_AM_I: Course = {
       n: 7,
       title: 'Авторство своей жизни',
       about: 'Жизненный путь, поворотные моменты и кризисы — и как оставаться автором, а не героем чужого сюжета.',
+      badge: { name: 'Автор', icon: 'route' },
       lessons: [
         {
           id: 'm7-l1',
@@ -802,6 +837,7 @@ const WHO_AM_I: Course = {
       n: 8,
       title: 'Итоговая работа',
       about: 'Собрать воедино всё, что вы узнали о себе.',
+      badge: { name: 'Кто я — знаю', icon: 'award' },
       lessons: [
         {
           id: 'final',
@@ -844,6 +880,7 @@ const WHO_AM_I: Course = {
               q: 'Представьте сверхспособность — всегда поступать по своим ценностям и потребностям. Как изменились бы ваша жизнь и мир вокруг?',
               rows: 5,
             },
+            { kind: 'text', id: 'steps', q: 'Какими могли бы быть самые маленькие доступные шаги в ближайшее время, чтобы чаще жить в согласии со своими ценностями и потребностями?', rows: 4 },
             { kind: 'text', id: 'support', q: 'Кто или что могли бы вам в этом помочь? Какие знания о себе и своих сильных сторонах станут опорой?', rows: 5 },
           ],
           tip: 'Познание себя не заканчивается с последним уроком. Новые мысли о себе можно записывать в «Журнал».',
@@ -865,6 +902,9 @@ const WHO_AM_I: Course = {
     'Джеффри Янг, Джанет Клоско. «Прочь из замкнутого круга»',
   ],
 };
+
+/* Theory lives in its own file to keep the questions readable; it is joined to the lessons here. */
+for (const m of WHO_AM_I.modules) for (const l of m.lessons) l.theory = WHO_AM_I_THEORY[l.id];
 
 export const COURSES: Course[] = [WHO_AM_I];
 
@@ -912,6 +952,39 @@ export function stepLabel(lesson: { code: string; kind: Lesson['kind'] }) {
   if (lesson.kind === 'final') return 'итоговая работа';
   if (lesson.code.startsWith('М')) return `практическая работа ${lesson.code}`;
   return `урок ${lesson.code}`;
+}
+
+/*
+  Is this field answered well enough to move on? The rule the couple chose:
+  every question that is not «по желанию» has an answer — every line of a list,
+  every sphere of a scale, at least one complete row of a table, at least one
+  diary entry.
+*/
+export function isAnswered(field: Field, value: FieldValue | undefined, diaryEntries = 0): boolean {
+  if (field.optional) return true;
+  switch (field.kind) {
+    case 'text':
+      return typeof value === 'string' && value.trim().length > 0;
+    case 'list': {
+      const list = Array.isArray(value) ? (value as unknown[]) : [];
+      return Array.from({ length: field.count }, (_, i) => list[i]).every((x) => typeof x === 'string' && x.trim().length > 0);
+    }
+    case 'scale': {
+      const scores = value && !Array.isArray(value) && typeof value === 'object' ? (value as Record<string, number>) : {};
+      return field.items.every((_, i) => typeof scores[String(i)] === 'number');
+    }
+    case 'table': {
+      const rows = Array.isArray(value) ? (value as unknown[]) : [];
+      return rows.some((row) => Array.isArray(row) && field.columns.every((_, c) => typeof row[c] === 'string' && (row[c] as string).trim().length > 0));
+    }
+    case 'diary':
+      return diaryEntries > 0;
+  }
+}
+
+/* The questions of a lesson still waiting for an answer, in order. */
+export function missingFields(lesson: Lesson, answers: LessonAnswers | null | undefined, diaryEntries = 0) {
+  return lesson.fields.filter((f) => !isAnswered(f, answers?.[f.id], diaryEntries));
 }
 
 /* Has anything been written in this value? */

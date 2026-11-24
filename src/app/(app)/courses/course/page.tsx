@@ -18,6 +18,7 @@ import { Sheet } from '@/components/ui/Sheet';
 import { PairProgress, StepDot, stepState } from '@/components/courses/Progress';
 import { CourseReminder, ShareSwitch } from '@/components/courses/CourseSettings';
 import { CoursesUnavailable } from '@/components/courses/Unavailable';
+import { Celebration, RewardsCard } from '@/components/courses/Rewards';
 import { tr } from '@/lib/i18n';
 
 export default function CoursePage() {
@@ -76,6 +77,8 @@ function CourseView() {
     <Page>
       <PageHeader title={course.title} back={{ href: '/courses', label: tr('Курсы', 'Courses') }} />
 
+      {store.available && !store.isLoading && <Celebration key={params.toString()} streak={store.streakOf(store.me)} />}
+
       {!store.available ? (
         <CoursesUnavailable />
       ) : store.isLoading ? (
@@ -104,6 +107,17 @@ function CourseView() {
               </Link>
             ) : null}
           </Card>
+
+          {started && (
+            <RewardsCard
+              course={course}
+              streak={store.streakOf(store.me)}
+              points={store.pointsOf(store.me)}
+              mine={new Set(store.badgesOf(store.me, course.id).map((b) => b.module.id))}
+              theirs={partner ? new Set(store.badgesOf(store.partnerId, course.id).map((b) => b.module.id)) : null}
+              partnerName={partnerName}
+            />
+          )}
 
           {/* How to work with it: open before you start, folded afterwards. */}
           <section className="rounded-2xl bg-surface shadow-card">

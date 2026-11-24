@@ -43,7 +43,7 @@ public final class PhotoRenderer {
         } else {
             views.setViewVisibility(R.id.widget_photo, View.GONE);
             views.setViewVisibility(R.id.widget_photo_empty, View.VISIBLE);
-            views.setImageViewBitmap(R.id.widget_mark, PairMarkPainter.draw(context, null));
+            PairCharacters.apply(context, views, null, 72);
             int text = !configured
                 ? R.string.widget_setup_headline
                 : PhotoStore.isEmpty(context) ? R.string.widget_photo_empty : R.string.widget_photo_loading;

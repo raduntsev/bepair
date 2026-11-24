@@ -49,6 +49,18 @@ export function moodLabel(value: number): string {
 }
 
 /*
+  Three words a widget character can act out: a light day, an ordinary one, a
+  heavy one. Coarser than moodLabel on purpose — a pose has to read at a glance.
+*/
+export type MoodLevel = 'light' | 'normal' | 'heavy';
+
+export function moodLevel(value: number): MoodLevel {
+  if (value < 0.35) return 'light';
+  if (value < 0.65) return 'normal';
+  return 'heavy';
+}
+
+/*
   Ink for text sitting ON a mood colour. One value across the whole spectrum:
   it clears 4.5:1 at every stop, and the red end is the tightest at exactly 4.5.
   Mood colour is never used as text colour on a neutral surface — it fails

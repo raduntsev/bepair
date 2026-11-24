@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import supabase from '@/lib/supabase';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
-import { courseById, lessonsOf, type LessonAnswers } from '@/lib/courses';
+import { courseById, lessonsOf, type LessonAnswers, type Module } from '@/lib/courses';
+import { todayISO } from '@/lib/dates';
 import { tr } from '@/lib/i18n';
 
 export interface CoursePrefs {
@@ -45,6 +46,20 @@ export interface JournalEntry {
   data: Record<string, string>;
   created_at: string;
   updated_at: string;
+}
+
+/* What a finished step brought: points, and a module or the course closed by it. */
+export interface StepResult {
+  points: number;
+  module: Module | null;
+  course: boolean;
+}
+
+interface LedgerRow {
+  to_user: string;
+  amount: number;
+  reason: string;
+  reference: string | null;
 }
 
 export const DEFAULT_PREFS: Omit<CoursePrefs, 'user_id'> = {
@@ -97,6 +112,9 @@ export function useCourses() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [answers, setAnswers] = useState<AnswerRow[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  /* Rewards (0016). Optional: before that migration they are simply empty. */
+  const [days, setDays] = useState<{ user_id: string; day: string }[]>([]);
+  const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [available, setAvailable] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +141,12 @@ export function useCourses() {
       setError(null);
     }
     setIsLoading(false);
+    const [d, l] = await Promise.all([
+      supabase.from('course_days').select('user_id, day').eq('space_id', spaceId),
+      supabase.from('points_ledger').select('to_user, amount, reason, reference').eq('space_id', spaceId).like('reason', 'course_%'),
+    ]);
+    if (!d.error) setDays((d.data ?? []) as { user_id: string; day: string }[]);
+    if (!l.error) setLedger((l.data ?? []) as LedgerRow[]);
   }, [spaceId]);
 
   useEffect(() => {
@@ -189,6 +213,18 @@ export function useCourses() {
 
   /* ── writes ─────────────────────────────────────────────────────────────── */
 
+  /* Today counts towards the run. Once a day per person; a failure only costs a day of the run. */
+  const touchDay = useCallback(() => {
+    if (!me || !spaceId) return;
+    const day = todayISO();
+    if (days.some((d) => d.user_id === me && d.day === day)) return;
+    setDays((list) => [...list, { user_id: me, day }]);
+    supabase
+      .from('course_days')
+      .upsert({ user_id: me, space_id: spaceId, day }, { onConflict: 'user_id,day', ignoreDuplicates: true })
+      .then(() => undefined);
+  }, [me, spaceId, days]);
+
   const start = useCallback(
     async (courseId: string) => {
       if (!me || !spaceId) return false;
@@ -217,34 +253,59 @@ export function useCourses() {
         return false;
       }
       setError(null);
+      touchDay();
       return true;
     },
-    [me, spaceId],
+    [me, spaceId, touchDay],
   );
 
   const markDone = useCallback(
-    async (courseId: string, lessonId: string) => {
-      if (!me || !spaceId) return false;
+    async (courseId: string, lessonId: string): Promise<StepResult | null> => {
+      if (!me || !spaceId) return null;
       const course = courseById(courseId);
-      if (!course) return false;
+      if (!course) return null;
       await start(courseId);
       const row = { user_id: me, space_id: spaceId, course_id: courseId, lesson_id: lessonId, done_at: new Date().toISOString() };
       const { error: writeError } = await supabase.from('course_steps').upsert(row, { onConflict: 'user_id,course_id,lesson_id', ignoreDuplicates: true });
       if (writeError) {
         setError(tr('Не получилось отметить урок. Попробуйте ещё раз.', 'Couldn’t mark the lesson. Please try again.'));
-        return false;
+        return null;
       }
       const done = new Set([...steps.filter((s) => s.user_id === me && s.course_id === courseId).map((s) => s.lesson_id), lessonId]);
       setSteps((list) => [...list.filter((s) => !(s.user_id === me && s.course_id === courseId && s.lesson_id === lessonId)), row]);
+      touchDay();
+
+      /* The database pays the lesson by trigger; a closed module and the course are claimed here and checked there. */
+      const pay = (reason: string, reference: string, amount: number) =>
+        setLedger((list) => (list.some((r) => r.to_user === me && r.reason === reason && r.reference === reference) ? list : [...list, { to_user: me, amount, reason, reference }]));
+      pay('course_lesson', `${courseId}/${lessonId}`, 2);
+      const result: StepResult = { points: 2, module: null, course: false };
+
+      const closed = course.modules.find((m) => m.lessons.some((l) => l.id === lessonId)) ?? null;
+      if (closed && closed.lessons.every((l) => done.has(l.id))) {
+        const { data } = await supabase.rpc('bp_course_milestone', { course: courseId, milestone: closed.id, steps: closed.lessons.length });
+        if (typeof data === 'number' && data > 0) {
+          pay('course_module', `${courseId}/${closed.id}`, data);
+          result.points += data;
+        }
+        result.module = closed;
+      }
+
       /* The last step closes the course, which also stops its reminders. */
       if (lessonsOf(course).every((l) => done.has(l.id))) {
         const finished_at = new Date().toISOString();
         await supabase.from('course_enrolments').update({ finished_at }).eq('user_id', me).eq('course_id', courseId);
         setEnrolments((list) => list.map((e) => (e.user_id === me && e.course_id === courseId ? { ...e, finished_at } : e)));
+        const { data } = await supabase.rpc('bp_course_milestone', { course: courseId, milestone: 'course', steps: lessonsOf(course).length });
+        if (typeof data === 'number' && data > 0) {
+          pay('course_done', courseId, data);
+          result.points += data;
+        }
+        result.course = true;
       }
-      return true;
+      return result;
     },
-    [me, spaceId, steps, start],
+    [me, spaceId, steps, start, touchDay],
   );
 
   const updatePrefs = useCallback(
@@ -341,6 +402,35 @@ export function useCourses() {
         ...answers.filter((a) => a.user_id === userId).map((a) => a.updated_at),
       ];
       return stamps.length ? stamps.reduce((a, b) => (a > b ? a : b)) : null;
+    },
+    /*
+      Days in a row with the course, ending today — or yesterday, so the run
+      does not look broken in the morning before today's step.
+    */
+    streakOf: (userId: string | null) => {
+      const mine = new Set(days.filter((d) => d.user_id === userId).map((d) => d.day));
+      const at = new Date();
+      if (!mine.has(todayISO(at))) at.setDate(at.getDate() - 1);
+      let n = 0;
+      while (mine.has(todayISO(at))) {
+        n += 1;
+        at.setDate(at.getDate() - 1);
+      }
+      return n;
+    },
+    /* Points earned in courses — the same points as requests, spent in «Услуги». */
+    pointsOf: (userId: string | null) => ledger.filter((r) => r.to_user === userId).reduce((sum, r) => sum + r.amount, 0),
+    /* Modules whose every step is done, with the moment the last one was. */
+    badgesOf: (userId: string | null, courseId: string) => {
+      const course = courseById(courseId);
+      if (!course) return [];
+      const mine = steps.filter((s) => s.user_id === userId && s.course_id === courseId);
+      return course.modules
+        .filter((m) => m.lessons.every((l) => mine.some((s) => s.lesson_id === l.id)))
+        .map((m) => ({
+          module: m,
+          at: mine.filter((s) => m.lessons.some((l) => l.id === s.lesson_id)).reduce((a, s) => (s.done_at > a ? s.done_at : a), ''),
+        }));
     },
     myAnswers,
     partnerAnswers,

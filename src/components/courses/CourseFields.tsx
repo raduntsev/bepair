@@ -24,11 +24,18 @@ const asTable = (v: FieldValue | undefined, cols: number, rows: number) => {
 };
 const asScale = (v: FieldValue | undefined) => (v && !Array.isArray(v) && typeof v === 'object' ? (v as Record<string, number>) : {});
 
+/* «по желанию» after the question: the one kind of question that may stay empty. */
+export function Optional({ field }: { field: Field }) {
+  if (!field.optional) return null;
+  return <span className="ml-2 inline-block rounded-full bg-sunken px-2 py-0.5 align-middle text-footnote font-medium text-ink-faint">{tr('по желанию', 'optional')}</span>;
+}
+
 function Question({ id, field, children }: { id: string; field: Field; children: React.ReactNode }) {
   return (
     <div>
       <label htmlFor={id} className="block text-headline font-semibold">
         {field.q}
+        <Optional field={field} />
       </label>
       {field.hint && <p className="measure mt-1 text-subhead text-ink-faint">{field.hint}</p>}
       <div className="mt-3">{children}</div>
@@ -115,7 +122,10 @@ export function FieldEditor({
     const scores = asScale(value);
     return (
       <fieldset>
-        <legend className="block text-headline font-semibold">{field.q}</legend>
+        <legend className="block text-headline font-semibold">
+          {field.q}
+          <Optional field={field} />
+        </legend>
         {field.hint && <p className="measure mt-1 text-subhead text-ink-faint">{field.hint}</p>}
         <ul className="mt-3 space-y-4">
           {field.items.map((item, i) => {
@@ -160,7 +170,10 @@ export function FieldEditor({
   };
   return (
     <div>
-      <p className="block text-headline font-semibold">{field.q}</p>
+      <p className="block text-headline font-semibold">
+        {field.q}
+        <Optional field={field} />
+      </p>
       {field.hint && <p className="measure mt-1 text-subhead text-ink-faint">{field.hint}</p>}
       <div className="mt-3 space-y-3">
         {field.example && (

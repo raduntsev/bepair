@@ -13,11 +13,14 @@ public final class WidgetSnapshot {
 
     public final boolean meMarked;
     public final String meColor;
+    /** light / normal / heavy, or null while unmarked, sealed or hidden. Drives the characters' pose. */
+    public final String meLevel;
 
     public final boolean hasPartner;
     public final boolean partnerMarked;
     public final boolean partnerUnlocked;
     public final String partnerColor;
+    public final String partnerLevel;
 
     public final int togetherDays;
     public final String togetherLabel;
@@ -37,12 +40,14 @@ public final class WidgetSnapshot {
         JSONObject me = json.optJSONObject("me");
         meMarked = me != null && me.optBoolean("marked", false);
         meColor = me != null && !me.isNull("color") ? me.optString("color", null) : null;
+        meLevel = me != null && !me.isNull("level") ? me.optString("level", null) : null;
 
         JSONObject partner = json.optJSONObject("partner");
         hasPartner = partner != null;
         partnerMarked = partner != null && partner.optBoolean("marked", false);
         partnerUnlocked = partner != null && partner.optBoolean("unlocked", false);
         partnerColor = partner != null && !partner.isNull("color") ? partner.optString("color", null) : null;
+        partnerLevel = partner != null && partnerUnlocked && !partner.isNull("level") ? partner.optString("level", null) : null;
 
         JSONObject together = json.optJSONObject("together");
         togetherDays = together != null ? together.optInt("days", 0) : 0;

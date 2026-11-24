@@ -1,7 +1,7 @@
 import 'server-only';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { moodHex, moodLabel } from './mood';
+import { moodHex, moodLabel, moodLevel, type MoodLevel } from './mood';
 import { streaks } from './streak';
 import { displayName, verb, type Gender } from './words';
 import { fmt, plural, sentence } from './dates';
@@ -21,8 +21,9 @@ export interface WidgetSnapshot {
   dateLabel: string;
   headline: string;
   sub: string;
-  me: { name: string; marked: boolean; color: string | null; label: string | null };
-  partner: { name: string; marked: boolean; unlocked: boolean; color: string | null; label: string | null } | null;
+  /* level drives the pair characters' pose on the widgets; null when unmarked, sealed or hidden. */
+  me: { name: string; marked: boolean; color: string | null; label: string | null; level: MoodLevel | null };
+  partner: { name: string; marked: boolean; unlocked: boolean; color: string | null; label: string | null; level: MoodLevel | null } | null;
   together: { days: number; label: string } | null;
   streak: { enabled: boolean; current: number; best: number; label: string };
   waiting: { letters: number; tasks: number };
@@ -58,7 +59,7 @@ export async function buildSnapshot(admin: SupabaseClient, userId: string): Prom
     dateLabel: sentence(fmt(today, 'EEEEEE, d MMMM')),
     headline: tr('Как прошёл день?', 'How was your day?'),
     sub: tr('Отметьте его цветом', 'Mark it with a colour'),
-    me: { name: myName, marked: false, color: null, label: null },
+    me: { name: myName, marked: false, color: null, label: null, level: null },
     partner: null,
     together: null,
     streak: { enabled: true, current: 0, best: 0, label: '' },
@@ -104,10 +105,11 @@ export async function buildSnapshot(admin: SupabaseClient, userId: string): Prom
   function compose(): WidgetSnapshot {
   const show = (mood: number | undefined | null) => (mood == null || hideMood ? null : moodHex(mood));
   const word = (mood: number | undefined | null) => (mood == null || hideMood ? null : moodLabel(mood));
+  const level = (mood: number | undefined | null) => (mood == null || hideMood ? null : moodLevel(mood));
 
   const snapshot: WidgetSnapshot = {
     ...base,
-    me: { name: myName, marked: !!mine, color: show(mine?.mood), label: word(mine?.mood) },
+    me: { name: myName, marked: !!mine, color: show(mine?.mood), label: word(mine?.mood), level: level(mine?.mood) },
     together: togetherDays && togetherDays > 0 ? { days: togetherDays, label: tr(`${plural(togetherDays, 'день', 'дня', 'дней')} вместе`, `${togetherDays === 1 ? 'day' : 'days'} together`) } : null,
     streak: {
       enabled: settings?.count_streak ?? true,
@@ -129,6 +131,7 @@ export async function buildSnapshot(admin: SupabaseClient, userId: string): Prom
     unlocked,
     color: unlocked ? show(theirs?.mood) : null,
     label: unlocked ? word(theirs?.mood) : null,
+    level: unlocked ? level(theirs?.mood) : null,
   };
 
   if (!mine) {

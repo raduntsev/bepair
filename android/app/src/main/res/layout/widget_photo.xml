@@ -25,12 +25,64 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <ImageView
+        <!-- The pair as two characters acting out the day: eight frames the launcher flips
+             on its own (PairCharacters.java). -->
+        <ViewFlipper
             android:id="@+id/widget_mark"
-            android:layout_width="64dp"
-            android:layout_height="32dp"
-            android:importantForAccessibility="no"
-            android:scaleType="fitCenter" />
+            android:layout_width="72dp"
+            android:layout_height="36dp"
+            android:autoStart="true"
+            android:flipInterval="280"
+            android:importantForAccessibility="no">
+            <ImageView
+                android:id="@+id/widget_mark_0"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter" />
+            <ImageView
+                android:id="@+id/widget_mark_1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter" />
+            <ImageView
+                android:id="@+id/widget_mark_2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter" />
+            <ImageView
+                android:id="@+id/widget_mark_3"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter" />
+            <ImageView
+                android:id="@+id/widget_mark_4"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter" />
+            <ImageView
+                android:id="@+id/widget_mark_5"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter" />
+            <ImageView
+                android:id="@+id/widget_mark_6"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter" />
+            <ImageView
+                android:id="@+id/widget_mark_7"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter" />
+        </ViewFlipper>
 
         <TextView
             android:id="@+id/widget_photo_text"
