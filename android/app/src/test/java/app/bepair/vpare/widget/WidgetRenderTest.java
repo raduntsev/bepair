@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
+import android.widget.ViewFlipper;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -45,14 +46,14 @@ public class WidgetRenderTest {
 
     private static final String OPEN =
         "{\"v\":1,\"date\":\"2026-10-29\",\"dateLabel\":\"Чт, 29 октября\",\"headline\":\"Аня: день спокойный\",\"sub\":\"Ваш: непростой\","
-            + "\"me\":{\"name\":\"Алекс\",\"marked\":true,\"color\":\"#e48b39\",\"label\":\"непростой\"},"
-            + "\"partner\":{\"name\":\"Аня\",\"marked\":true,\"unlocked\":true,\"color\":\"#9ab64e\",\"label\":\"спокойный\"},"
+            + "\"me\":{\"name\":\"Алекс\",\"marked\":true,\"color\":\"#e48b39\",\"label\":\"непростой\",\"level\":\"heavy\"},"
+            + "\"partner\":{\"name\":\"Аня\",\"marked\":true,\"unlocked\":true,\"color\":\"#9ab64e\",\"label\":\"спокойный\",\"level\":\"light\"},"
             + "\"together\":{\"days\":497,\"label\":\"дней вместе\"},\"streak\":{\"enabled\":true,\"current\":12,\"best\":12,\"label\":\"дней подряд\"},"
             + "\"waiting\":{\"letters\":0,\"tasks\":0},\"hideMood\":false,\"updatedAt\":\"2026-10-29T12:00:00Z\"}";
 
     private static final String WAITING =
         "{\"v\":1,\"date\":\"2026-10-29\",\"dateLabel\":\"Чт, 29 октября\",\"headline\":\"Аня ещё не отметила день\",\"sub\":\"Ваш день: лёгкий\","
-            + "\"me\":{\"name\":\"Алекс\",\"marked\":true,\"color\":\"#4fab67\",\"label\":\"лёгкий\"},"
+            + "\"me\":{\"name\":\"Алекс\",\"marked\":true,\"color\":\"#4fab67\",\"label\":\"лёгкий\",\"level\":\"light\"},"
             + "\"partner\":{\"name\":\"Аня\",\"marked\":false,\"unlocked\":true,\"color\":null,\"label\":null},"
             + "\"together\":null,\"streak\":{\"enabled\":false,\"current\":0,\"best\":3,\"label\":\"\"},"
             + "\"waiting\":{\"letters\":0,\"tasks\":1},\"hideMood\":false,\"updatedAt\":\"2026-10-29T12:00:00Z\"}";
@@ -104,7 +105,7 @@ public class WidgetRenderTest {
     }
 
     @Test
-    public void openDayShowsBothColours() {
+    public void openDayShowsBothDays() {
         use(OPEN);
         View couple = inflate(true);
         assertEquals("Аня: день спокойный", text(couple, R.id.widget_headline));
@@ -121,6 +122,55 @@ public class WidgetRenderTest {
         assertEquals(View.GONE, couple.findViewById(R.id.widget_together).getVisibility());
         assertEquals(View.GONE, couple.findViewById(R.id.widget_streak).getVisibility());
         preview(couple, true, "couple-waiting");
+    }
+
+    @Test
+    public void charactersActOutTheDay() {
+        WidgetSnapshot sealed = WidgetSnapshot.parse(SEALED);
+        assertEquals(PairCharacters.Pose.ASLEEP, PairCharacters.mePose(sealed));
+        assertEquals(PairCharacters.Pose.SEALED, PairCharacters.partnerPose(sealed));
+        assertNull("a sealed partner's level must not reach the widget", sealed.partnerLevel);
+
+        WidgetSnapshot open = WidgetSnapshot.parse(OPEN);
+        assertEquals(PairCharacters.Pose.HEAVY, PairCharacters.mePose(open));
+        assertEquals(PairCharacters.Pose.LIGHT, PairCharacters.partnerPose(open));
+
+        WidgetSnapshot waiting = WidgetSnapshot.parse(WAITING);
+        assertEquals(PairCharacters.Pose.LIGHT, PairCharacters.mePose(waiting));
+        assertEquals(PairCharacters.Pose.ASLEEP, PairCharacters.partnerPose(waiting));
+        assertEquals(PairCharacters.Pose.ABSENT, PairCharacters.partnerPose(null));
+
+        /* The launcher gets the whole strip of frames in a flipper. */
+        use(OPEN);
+        View day = inflate(false);
+        ViewFlipper flipper = day.findViewById(R.id.widget_mark);
+        assertNotNull(flipper);
+        assertEquals(PairCharacters.FRAMES, flipper.getChildCount());
+        strip("frames-open", OPEN);
+        strip("frames-sealed", SEALED);
+        strip("frames-waiting", WAITING);
+    }
+
+    /* All frames of the characters side by side, so the motion can be checked by eye. */
+    private void strip(String name, String json) {
+        String dir = System.getProperty("widget.previews");
+        if (dir == null) return;
+        WidgetSnapshot s = WidgetSnapshot.parse(json);
+        float density = context().getResources().getDisplayMetrics().density;
+        int w = Math.round(84 * density);
+        int h = Math.round(42 * density);
+        Bitmap bitmap = Bitmap.createBitmap(w * PairCharacters.FRAMES, h, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        canvas.drawColor(0xFFFFFFFF);
+        for (int f = 0; f < PairCharacters.FRAMES; f++) {
+            canvas.drawBitmap(PairCharacters.draw(context(), s, f, 84), f * w, 0, null);
+        }
+        new File(dir).mkdirs();
+        try (FileOutputStream out = new FileOutputStream(new File(dir, name + ".png"))) {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test

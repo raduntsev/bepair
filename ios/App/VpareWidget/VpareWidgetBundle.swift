@@ -103,7 +103,7 @@ struct PhotoWidgetView: View {
             let palette = Palette.of(scheme)
             VStack(spacing: 10) {
                 PairMark(snapshot: nil, palette: palette)
-                    .frame(width: 64, height: 36)
+                    .frame(width: 72, height: 36)
                 Text(message)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(palette.ink)

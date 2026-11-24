@@ -11,6 +11,8 @@ struct Snapshot: Codable, Equatable {
         let marked: Bool
         let color: String?
         let label: String?
+        /// light / normal / heavy — the pose of the character; nil while unmarked or hidden.
+        var level: String? = nil
     }
 
     struct Partner: Codable, Equatable {
@@ -19,6 +21,8 @@ struct Snapshot: Codable, Equatable {
         let unlocked: Bool
         let color: String?
         let label: String?
+        /// Only ever sent once the partner's day is open to you.
+        var level: String? = nil
     }
 
     struct Together: Codable, Equatable {
@@ -61,8 +65,8 @@ struct Snapshot: Codable, Equatable {
         dateLabel: "Чт, 29 октября",
         headline: "Аня: день спокойный",
         sub: "Ваш: непростой",
-        me: Me(name: "Алекс", marked: true, color: "#e48b39", label: "непростой"),
-        partner: Partner(name: "Аня", marked: true, unlocked: true, color: "#9ab64e", label: "спокойный"),
+        me: Me(name: "Алекс", marked: true, color: "#e48b39", label: "непростой", level: "heavy"),
+        partner: Partner(name: "Аня", marked: true, unlocked: true, color: "#9ab64e", label: "спокойный", level: "light"),
         together: Together(days: 497, label: "дней вместе"),
         streak: Streak(enabled: true, current: 12, best: 12, label: "дней подряд"),
         waiting: Waiting(letters: 0, tasks: 0),

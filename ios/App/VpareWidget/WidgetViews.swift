@@ -41,60 +41,171 @@ extension Color {
     }
 }
 
-// MARK: - The pair mark
+// MARK: - The pair, as two characters
 
-/// Your ring and your partner's disc — the same device as in the app.
-/// Dotted = not marked yet; filled with the day's colour once you may see it;
-/// an amber disc with a lock while their day is still sealed for you.
+/// The two round characters from the app's loader (src/components/PairLoader.tsx),
+/// indigo for you and amber for your partner, each acting out its own day:
+/// asleep (not marked), light (happy ^ ^, a little hop), normal (open eyes),
+/// heavy (drooping eyes, sunk lower; the other leans towards it), sealed (the
+/// partner's day you may not see yet: eyes shut, a lock), hidden (marked, mood
+/// hidden on this phone) and absent (no partner yet). A visible day fills the
+/// body with its colour and keeps a ring of the person's own colour.
+///
+/// The same drawing as android/…/PairCharacters.java, frame 0. A widget on iOS
+/// cannot loop an animation; from iOS 17 the change between two states is
+/// animated when the timeline moves on — the hop lands, the eyes open, the
+/// character straightens up.
+enum Pose: Equatable {
+    case asleep, light, normal, heavy, sealed, hidden, absent
+
+    static func me(_ s: Snapshot?) -> Pose {
+        guard let me = s?.me, me.marked else { return .asleep }
+        return level(me.level, color: me.color)
+    }
+
+    static func partner(_ s: Snapshot?) -> Pose {
+        guard let p = s?.partner else { return .absent }
+        if !p.marked { return .asleep }
+        if !p.unlocked { return .sealed }
+        return level(p.level, color: p.color)
+    }
+
+    private static func level(_ level: String?, color: String?) -> Pose {
+        switch level {
+        case "light": return .light
+        case "heavy": return .heavy
+        case "normal": return .normal
+        default: return color != nil ? .normal : .hidden
+        }
+    }
+
+    var showsMood: Bool { self == .light || self == .normal || self == .heavy }
+}
+
 struct PairMark: View {
     let snapshot: Snapshot?
     let palette: Palette
 
     var body: some View {
-        let meMarked = snapshot?.me.marked ?? false
-        let partner = snapshot?.partner
-        let partnerMarked = partner?.marked ?? false
-        let together = meMarked && partnerMarked
+        let me = Pose.me(snapshot)
+        let them = Pose.partner(snapshot)
+        // The one who is fine leans towards the one having a heavy day.
+        let meLean: CGFloat = them == .heavy && me != .heavy && me != .asleep ? 1 : 0
+        let themLean: CGFloat = me == .heavy && ![Pose.heavy, .asleep, .absent, .sealed].contains(them) ? -1 : 0
 
         GeometryReader { geo in
-            let unit = min(geo.size.width / 96, geo.size.height / 56)
-            let ringX = (together ? 40 : 30) * unit
-            let discX = (together ? 56 : 66) * unit
-            let cy = 28 * unit
-
-            ZStack {
-                if partnerMarked, let partner = partner {
-                    Circle()
-                        .fill(partner.unlocked && partner.color != nil ? Color(hex: partner.color!) : palette.partner)
-                        .frame(width: 36 * unit, height: 36 * unit)
-                        .position(x: discX, y: cy)
-                    if !partner.unlocked {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 13 * unit, weight: .semibold))
-                            .foregroundColor(palette.background)
-                            .position(x: discX + (together ? 4 * unit : 0), y: cy)
-                    }
-                } else {
-                    Circle()
-                        .stroke(palette.partner, style: StrokeStyle(lineWidth: 2.5 * unit, lineCap: .round, dash: [4 * unit, 5 * unit]))
-                        .frame(width: 34 * unit, height: 34 * unit)
-                        .position(x: discX, y: cy)
-                }
-
-                if meMarked {
-                    Circle()
-                        .stroke(snapshot?.me.color.map { Color(hex: $0) } ?? palette.accent, lineWidth: 5 * unit)
-                        .frame(width: 33 * unit, height: 33 * unit)
-                        .position(x: ringX, y: cy)
-                } else {
-                    Circle()
-                        .stroke(palette.accent, style: StrokeStyle(lineWidth: 3 * unit, lineCap: .round, dash: [4 * unit, 5 * unit]))
-                        .frame(width: 33 * unit, height: 33 * unit)
-                        .position(x: ringX, y: cy)
-                }
+            // The loader's 120×60 box.
+            let u = min(geo.size.width / 120, geo.size.height / 60)
+            ZStack(alignment: .topLeading) {
+                PairCharacter(pose: me, facing: 1, own: palette.accent, mood: snapshot?.me.color, lean: meLean, outline: palette.inkFaint, u: u)
+                    .position(x: 34 * u, y: 33 * u)
+                PairCharacter(pose: them, facing: -1, own: palette.partner, mood: snapshot?.partner?.color, lean: themLean, outline: palette.inkFaint, u: u)
+                    .position(x: 86 * u, y: 33 * u)
             }
+            .animation(.spring(response: 0.6, dampingFraction: 0.6), value: me)
+            .animation(.spring(response: 0.6, dampingFraction: 0.6), value: them)
         }
         .accessibilityHidden(true)
+    }
+}
+
+private struct PairCharacter: View {
+    let pose: Pose
+    let facing: CGFloat
+    let own: Color
+    let mood: String?
+    let lean: CGFloat
+    let outline: Color
+    let u: CGFloat
+
+    var body: some View {
+        let r: CGFloat = 17 * u
+        let known = pose.showsMood && mood != nil
+        let ink = known ? Color(hex: "#101018") : Color.white
+
+        if pose == .absent {
+            Circle()
+                .stroke(outline, style: StrokeStyle(lineWidth: 2 * u, lineCap: .round, dash: [3.5 * u, 4.5 * u]))
+                .frame(width: 2 * r - 2 * u, height: 2 * r - 2 * u)
+        } else {
+            ZStack {
+                Circle()
+                    .fill(known ? Color(hex: mood!) : own)
+                    .opacity(pose == .asleep ? 0.45 : 1)
+                if known {
+                    Circle().stroke(own, lineWidth: 2.6 * u).padding(1.3 * u)
+                }
+                eyes(ink: ink)
+                if pose == .sealed {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 8 * u, weight: .bold))
+                        .foregroundColor(.white)
+                        .offset(y: 8.5 * u)
+                }
+                if pose == .asleep {
+                    Text("z")
+                        .font(.system(size: 7 * u, weight: .bold))
+                        .foregroundColor(own)
+                        .offset(x: facing * 13 * u, y: -21 * u)
+                }
+            }
+            .frame(width: 2 * r, height: 2 * r)
+            .scaleEffect(x: pose == .heavy ? 1.03 : 1, y: pose == .heavy ? 0.95 : 1, anchor: .bottom)
+            .offset(x: 2.5 * u * lean, y: pose == .heavy ? 2.5 * u : 0)
+            .rotationEffect(.degrees(9 * Double(lean)))
+        }
+    }
+
+    @ViewBuilder
+    private func eyes(ink: Color) -> some View {
+        let lx = (1.8 * facing - 4) * u
+        let rx = (1.8 * facing + 4.4) * u
+        let ey: CGFloat = -7.5 * u
+        switch pose {
+        case .light:
+            ZStack {
+                Arc(up: true).stroke(ink, style: StrokeStyle(lineWidth: 2.3 * u, lineCap: .round)).frame(width: 4.8 * u, height: 3.8 * u).offset(x: lx, y: ey + 1 * u)
+                Arc(up: true).stroke(ink, style: StrokeStyle(lineWidth: 2.3 * u, lineCap: .round)).frame(width: 4.8 * u, height: 3.8 * u).offset(x: rx, y: ey + 1 * u)
+            }
+        case .normal, .hidden:
+            ZStack {
+                Capsule().fill(ink).frame(width: 3.6 * u, height: 8.5 * u).rotationEffect(.degrees(18 * Double(facing))).offset(x: lx, y: ey)
+                Capsule().fill(ink).frame(width: 3.6 * u, height: 8.5 * u).rotationEffect(.degrees(18 * Double(facing))).offset(x: rx, y: ey + 1 * u)
+            }
+        case .heavy:
+            ZStack {
+                Capsule().fill(ink).frame(width: 3.6 * u, height: 5.5 * u).rotationEffect(.degrees(-24)).offset(x: lx, y: ey + 3.5 * u)
+                Capsule().fill(ink).frame(width: 3.6 * u, height: 5.5 * u).rotationEffect(.degrees(24)).offset(x: rx, y: ey + 3.5 * u)
+            }
+        case .asleep:
+            ZStack {
+                Arc(up: false).stroke(ink, style: StrokeStyle(lineWidth: 2.3 * u, lineCap: .round)).frame(width: 4.8 * u, height: 3 * u).offset(x: lx, y: ey + 2 * u)
+                Arc(up: false).stroke(ink, style: StrokeStyle(lineWidth: 2.3 * u, lineCap: .round)).frame(width: 4.8 * u, height: 3 * u).offset(x: rx, y: ey + 2 * u)
+            }
+        case .sealed:
+            ZStack {
+                Capsule().fill(ink).frame(width: 3.6 * u, height: 2.3 * u).offset(x: lx, y: ey + 1.5 * u)
+                Capsule().fill(ink).frame(width: 3.6 * u, height: 2.3 * u).offset(x: rx, y: ey + 1.5 * u)
+            }
+        case .absent:
+            EmptyView()
+        }
+    }
+}
+
+/// ^ (up) or ‿ (down), drawn in its frame.
+private struct Arc: Shape {
+    let up: Bool
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        if up {
+            p.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+            p.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.maxY), control: CGPoint(x: rect.midX, y: rect.minY - rect.height * 0.6))
+        } else {
+            p.move(to: CGPoint(x: rect.minX, y: rect.minY))
+            p.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY), control: CGPoint(x: rect.midX, y: rect.maxY + rect.height * 0.6))
+        }
+        return p
     }
 }
 
@@ -142,7 +253,7 @@ struct DayWidgetView: View {
                 .foregroundColor(palette.inkFaint)
                 .lineLimit(1)
             PairMark(snapshot: snapshot(of: entry.state), palette: palette)
-                .frame(width: 72, height: 42)
+                .frame(width: 84, height: 42)
                 .padding(.top, 6)
             Spacer(minLength: 4)
             Text(copy.headline)
@@ -183,7 +294,7 @@ struct CoupleWidgetView: View {
                         .foregroundColor(palette.inkFaint)
                         .lineLimit(1)
                     PairMark(snapshot: s, palette: palette)
-                        .frame(width: 72, height: 42)
+                        .frame(width: 84, height: 42)
                         .padding(.top, 6)
                     Spacer(minLength: 4)
                     Text(copy.headline)

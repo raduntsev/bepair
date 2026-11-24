@@ -55,7 +55,7 @@ public final class WidgetRenderer {
         boolean configured = WidgetStore.isConfigured(context);
         WidgetSnapshot s = configured ? WidgetSnapshot.parse(WidgetStore.snapshot(context)) : null;
 
-        views.setImageViewBitmap(R.id.widget_mark, PairMarkPainter.draw(context, s));
+        PairCharacters.apply(context, views, s, 84);
 
         if (s == null) {
             views.setTextViewText(R.id.widget_date, "Впаре");

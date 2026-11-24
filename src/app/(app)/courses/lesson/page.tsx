@@ -4,8 +4,8 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Lock, Users } from 'lucide-react';
-import { courseById, isOpen, lessonById, lessonsOf, nextLesson, type FieldValue, type LessonAnswers } from '@/lib/courses';
-import { fmt } from '@/lib/dates';
+import { courseById, isOpen, lessonById, lessonsOf, missingFields, nextLesson, type FieldValue, type LessonAnswers } from '@/lib/courses';
+import { fmt, plural } from '@/lib/dates';
 import { displayName, verb } from '@/lib/words';
 import { useCourses } from '@/hooks/useCourses';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
@@ -15,6 +15,8 @@ import { AutoHeight } from '@/components/ui/AutoHeight';
 import { FieldEditor, AnswersView } from '@/components/courses/CourseFields';
 import { ThoughtDiary } from '@/components/courses/ThoughtDiary';
 import { CoursesUnavailable } from '@/components/courses/Unavailable';
+import { TheoryBlock } from '@/components/courses/Theory';
+import { Celebration } from '@/components/courses/Rewards';
 import { tr } from '@/lib/i18n';
 
 const SAVE_AFTER_MS = 700;
@@ -46,6 +48,8 @@ function LessonView() {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [finishing, setFinishing] = useState(false);
   const [showPartner, setShowPartner] = useState(false);
+  /* Set by a tap on «Шаг пройден» with questions still open: from then on the empty ones are marked. */
+  const [showMissing, setShowMissing] = useState(false);
   const loadedFor = useRef<string | null>(null);
   const timer = useRef<number | null>(null);
   const pending = useRef<LessonAnswers | null>(null);
@@ -58,6 +62,7 @@ function LessonView() {
     loadedFor.current = lessonKey;
     setDraft(store.myAnswers.get(lessonKey) ?? {});
     setStatus('idle');
+    setShowMissing(false);
   }, [lessonKey, store.isLoading, store.myAnswers]);
 
   const { saveAnswers } = store;
@@ -125,18 +130,32 @@ function LessonView() {
     );
   }
 
+  const diaryCount = store.myEntries.filter((e) => e.kind === 'thought').length;
+  const missing = missingFields(lesson, draft, diaryCount);
+  const missingIds = new Set(missing.map((f) => f.id));
+  const required = lesson.fields.filter((f) => !f.optional).length;
+
   const finish = async () => {
+    if (missing.length > 0) {
+      setShowMissing(true);
+      document.getElementById(`field-${missing[0].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     setFinishing(true);
     const saved = await flush();
-    const ok = saved && (await store.markDone(course.id, lesson.id));
+    const result = saved ? await store.markDone(course.id, lesson.id) : null;
     setFinishing(false);
-    if (!ok) return;
-    router.push(after ? `/courses/lesson?c=${course.id}&l=${after.id}` : `/courses/course?id=${course.id}`);
+    if (!result) return;
+    /* The reward is shown where you land: a line for a step, a sheet for a module or the course. */
+    const reward = `&reward=${result.points}&course=${course.id}${result.module ? `&badge=${result.module.id}` : ''}`;
+    router.push(after ? `/courses/lesson?c=${course.id}&l=${after.id}${reward}` : `/courses/course?id=${course.id}${reward}`);
   };
 
   return (
     <Page>
       <PageHeader eyebrow={eyebrow} title={lesson.title} back={back} />
+
+      {store.available && !store.isLoading && <Celebration key={params.toString()} streak={store.streakOf(store.me)} />}
 
       {!store.available ? (
         <CoursesUnavailable />
@@ -152,8 +171,17 @@ function LessonView() {
             </p>
           )}
 
+          {lesson.theory && <TheoryBlock theory={lesson.theory} />}
+
+          {lesson.theory && <h2 className="px-1 pt-5 text-title-3 font-semibold">{tr('Задание', 'Your task')}</h2>}
+
           {lesson.fields.map((field) => (
-            <Card key={field.id}>
+            <div
+              key={field.id}
+              id={`field-${field.id}`}
+              className={`scroll-mt-6 rounded-2xl transition-shadow duration-500 ${showMissing && missingIds.has(field.id) ? 'ring-2 ring-danger' : ''}`}
+            >
+            <Card>
               {field.kind === 'diary' ? (
                 <div>
                   <h2 className="text-headline font-semibold">{field.q}</h2>
@@ -174,7 +202,21 @@ function LessonView() {
                   }
                 />
               )}
+              {showMissing && missingIds.has(field.id) && (
+                <p className="mt-3 text-footnote font-medium text-danger">
+                  {field.kind === 'list'
+                    ? tr('Заполните все строки', 'Fill in every line')
+                    : field.kind === 'scale'
+                      ? tr('Оцените каждую сферу', 'Rate every sphere')
+                      : field.kind === 'table'
+                        ? tr('Заполните хотя бы одну строку целиком', 'Fill in at least one whole row')
+                        : field.kind === 'diary'
+                          ? tr('Сделайте хотя бы одну запись', 'Add at least one entry')
+                          : tr('Ответьте на этот вопрос', 'Answer this question')}
+                </p>
+              )}
             </Card>
+            </div>
           ))}
 
           {lesson.links && (
@@ -253,9 +295,22 @@ function LessonView() {
                 )}
               </div>
             ) : (
-              <Button size="lg" block loading={finishing} onClick={finish}>
-                {lesson.kind === 'final' ? tr('Завершить курс', 'Finish the course') : tr('Шаг пройден', 'Step done')}
-              </Button>
+              <div className="space-y-2">
+                {showMissing && missing.length > 0 && (
+                  <Alert>
+                    {tr(
+                      `Осталось ответить: ${missing.length} ${plural(missing.length, 'вопрос', 'вопроса', 'вопросов')}`,
+                      `${missing.length} ${missing.length === 1 ? 'question' : 'questions'} still to answer`,
+                    )}
+                  </Alert>
+                )}
+                <Button size="lg" block loading={finishing} onClick={finish}>
+                  {lesson.kind === 'final' ? tr('Завершить курс', 'Finish the course') : tr('Шаг пройден', 'Step done')}
+                </Button>
+                <p className="text-center text-footnote text-ink-faint tabular-nums">
+                  {tr('Отвечено', 'Answered')} {required - missing.length} {tr('из', 'of')} {required}
+                </p>
+              </div>
             )}
             <p role="status" aria-live="polite" className="mt-2 h-5 text-center text-footnote text-ink-faint">
               {status === 'saving' ? tr('Сохраняем…', 'Saving…') : status === 'saved' ? tr('Ответы сохранены', 'Answers saved') : ''}
