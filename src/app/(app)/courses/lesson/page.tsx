@@ -163,7 +163,7 @@ function LessonView() {
         <Loading label={tr('Открываем урок…', 'Opening the lesson…')} />
       ) : (
         <div className="space-y-3">
-          {lesson.intro && <p className="measure -mt-2 mb-5 px-1 text-body text-ink-soft">{lesson.intro}</p>}
+          {lesson.intro && !lesson.theory && <p className="measure -mt-2 mb-5 px-1 text-body text-ink-soft">{lesson.intro}</p>}
 
           {partnerHere && !partnerDone && (
             <p className="flex items-center gap-2 px-1 text-subhead text-partner-ink">
@@ -179,7 +179,7 @@ function LessonView() {
             <div
               key={field.id}
               id={`field-${field.id}`}
-              className={`scroll-mt-6 rounded-2xl transition-shadow duration-500 ${showMissing && missingIds.has(field.id) ? 'ring-2 ring-danger' : ''}`}
+              className={`scroll-mt-6 rounded-2xl ${showMissing && missingIds.has(field.id) ? 'ring-2 ring-danger' : ''}`}
             >
             <Card>
               {field.kind === 'diary' ? (
