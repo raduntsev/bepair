@@ -12,7 +12,10 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
+import app.bepair.vpare.widget.LocationService;
+import app.bepair.vpare.widget.LocationStore;
 import app.bepair.vpare.widget.LockStatus;
+import app.bepair.vpare.widget.MapRenderer;
 import app.bepair.vpare.widget.PhotoStore;
 import app.bepair.vpare.widget.TasksStore;
 import app.bepair.vpare.widget.WidgetRefreshWorker;
@@ -25,7 +28,11 @@ import app.bepair.vpare.widget.WidgetStore;
  */
 @CapacitorPlugin(
     name = "WidgetBridge",
-    permissions = { @Permission(strings = { Manifest.permission.POST_NOTIFICATIONS }, alias = "notifications") }
+    permissions = {
+        @Permission(strings = { Manifest.permission.POST_NOTIFICATIONS }, alias = "notifications"),
+        @Permission(strings = { Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION }, alias = "location"),
+        @Permission(strings = { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, alias = "background")
+    }
 )
 public class WidgetBridgePlugin extends Plugin {
 
@@ -51,6 +58,9 @@ public class WidgetBridgePlugin extends Plugin {
 
     @PluginMethod
     public void clear(PluginCall call) {
+        /* Signed out: this phone stops sharing and forgets every point. */
+        LocationService.stop(getContext());
+        LocationStore.clear(getContext());
         WidgetStore.clear(getContext());
         PhotoStore.clear(getContext());
         TasksStore.clear(getContext());
@@ -118,5 +128,86 @@ public class WidgetBridgePlugin extends Plugin {
         JSObject result = new JSObject();
         result.put("enabled", enabled);
         call.resolve(result);
+    }
+
+    /* «Где мы» — see src/lib/native.ts. */
+
+    @PluginMethod
+    public void locationStatus(PluginCall call) {
+        call.resolve(locationState());
+    }
+
+    /* Asks for the permission; starts nothing — the app switches sharing on first, then calls ensureLocation. */
+    @PluginMethod
+    public void requestLocation(PluginCall call) {
+        if (LocationService.permitted(getContext())) {
+            askNotifications(call);
+            return;
+        }
+        requestPermissionForAlias("location", call, "locationPermissionResult");
+    }
+
+    @PermissionCallback
+    private void locationPermissionResult(PluginCall call) {
+        if (LocationService.permitted(getContext())) askNotifications(call);
+        else call.resolve(locationState());
+    }
+
+    /* The service's notification is the visible sign of sharing: without this permission Android hides it. */
+    private void askNotifications(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= 33 && getPermissionState("notifications") != PermissionState.GRANTED) {
+            requestPermissionForAlias("notifications", call, "locationNotificationsResult");
+            return;
+        }
+        call.resolve(locationState());
+    }
+
+    @PermissionCallback
+    private void locationNotificationsResult(PluginCall call) {
+        call.resolve(locationState());
+    }
+
+    /* Sharing is on in the database: run the service if permission is there. Never prompts. */
+    @PluginMethod
+    public void ensureLocation(PluginCall call) {
+        LocationStore.setSharing(getContext(), true);
+        if (!LocationService.isRunning()) LocationService.start(getContext());
+        call.resolve(locationState(LocationService.permitted(getContext())));
+    }
+
+    @PluginMethod
+    public void stopLocation(PluginCall call) {
+        LocationStore.setSharing(getContext(), false);
+        LocationService.stop(getContext());
+        /* The widget learns «you don't share» from the server, in your words. */
+        if (MapRenderer.ids(getContext()).length > 0) WidgetRefreshWorker.refreshNow(getContext());
+        call.resolve(locationState(false));
+    }
+
+    @PluginMethod
+    public void requestBackgroundLocation(PluginCall call) {
+        if (Build.VERSION.SDK_INT < 29 || LocationService.backgroundPermitted(getContext()) || !LocationService.permitted(getContext())) {
+            call.resolve(locationState());
+            return;
+        }
+        requestPermissionForAlias("background", call, "backgroundPermissionResult");
+    }
+
+    @PermissionCallback
+    private void backgroundPermissionResult(PluginCall call) {
+        call.resolve(locationState());
+    }
+
+    private JSObject locationState() {
+        return locationState(LocationService.isRunning());
+    }
+
+    /* `running` is passed in right after a start or stop: the service flips its flag a moment later. */
+    private JSObject locationState(boolean running) {
+        JSObject result = new JSObject();
+        result.put("running", running);
+        result.put("foreground", LocationService.permitted(getContext()));
+        result.put("background", LocationService.backgroundPermitted(getContext()));
+        return result;
     }
 }

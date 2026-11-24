@@ -141,6 +141,61 @@ public final class WidgetApi {
         }
     }
 
+    /** «Карта»: the two points and one line, from {api}/api/widget/location. */
+    public static Result refreshLocation(Context context) {
+        return location(context, "GET", null);
+    }
+
+    /** The phone's own point; the answer is the same as refreshLocation's. */
+    public static Result sendLocation(Context context, double lat, double lng, float accuracy, long at) {
+        String body = String.format(java.util.Locale.ROOT,
+            "{\"lat\":%.6f,\"lng\":%.6f,\"accuracy\":%.1f,\"at\":%d}", lat, lng, accuracy, at);
+        return location(context, "POST", body);
+    }
+
+    /** «Не делиться» from the service's notification: switches sharing off for the account. */
+    public static Result stopSharing(Context context) {
+        return location(context, "POST", "{\"sharing\":false}");
+    }
+
+    private static Result location(Context context, String method, String body) {
+        String token = WidgetStore.token(context);
+        String api = WidgetStore.api(context);
+        if (token == null || api == null) return Result.NOT_CONFIGURED;
+
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(api + "/api/widget/location").openConnection();
+            connection.setRequestMethod(method);
+            connection.setConnectTimeout(10_000);
+            connection.setReadTimeout(15_000);
+            connection.setRequestProperty("Authorization", "Bearer " + token);
+            connection.setRequestProperty("Accept", "application/json");
+            if (body != null) {
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.getOutputStream().write(body.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int status = connection.getResponseCode();
+            if (status == 401) {
+                WidgetStore.clear(context);
+                LocationStore.clearMap(context);
+                return Result.REVOKED;
+            }
+            if (status != 200) return Result.FAILED;
+
+            String text = read(connection.getInputStream());
+            if (MapPayload.parse(text) == null) return Result.FAILED;
+            LocationStore.savePayload(context, text);
+            return Result.OK;
+        } catch (Exception e) {
+            return Result.FAILED;
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
+    }
+
     private static byte[] readBytes(InputStream stream) throws java.io.IOException {
         try (InputStream in = stream; ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[16384];

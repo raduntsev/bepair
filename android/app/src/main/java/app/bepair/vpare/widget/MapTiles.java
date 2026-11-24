@@ -1,0 +1,297 @@
+package app.bepair.vpare.widget;
+
+import android.content.Context;
+import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.Typeface;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Locale;
+
+/**
+ * Draws the «Карта» widget's picture: OpenStreetMap tiles stitched around the
+ * two points, quieted to grey (inverted in the dark theme, as in the app), with
+ * the two pins on top — you in the accent, your partner in theirs.
+ *
+ * OSM tiles are 256 px; each is drawn at twice its size, so the map has the
+ * same scale and legible labels as a 2× map on the phone's screen. One tile
+ * cache serves both themes: the grey is applied while drawing.
+ *
+ * The launcher crops the picture to the widget's shape (centerCrop), so the
+ * pins are fitted into the part every crop keeps: the middle 480×360 of a
+ * 720×480 picture survives both a 2:1 and a 1:1 widget.
+ */
+public final class MapTiles {
+    public static final int WIDTH = 720;
+    public static final int HEIGHT = 480;
+    /* Each 256-px OSM tile is drawn at 512 px: map math runs in these 2× pixels. */
+    static final int TILE = 512;
+    private static final int PIN_MARGIN = 56;
+    static final int FIT_W = 480 - 2 * PIN_MARGIN;
+    static final int FIT_H = 360 - 2 * PIN_MARGIN;
+    static final int MAX_ZOOM = 16;
+    static final int SINGLE_ZOOM = 15;
+    static final int MIN_ZOOM = 2;
+    private static final long TILE_MAX_AGE_MS = 30L * 24 * 3600 * 1000;
+    private static final int TILE_CACHE_FILES = 240;
+    /* Two pins closer than this would cover each other: they lean apart like the pair mark. */
+    private static final float OVERLAP_PX = 44f;
+
+    private static final int ACCENT = 0xFF5856D6;
+    private static final int ACCENT_INK = 0xFFFFFFFF;
+    private static final int PARTNER_LIGHT = 0xFFD98324;
+    private static final int PARTNER_DARK = 0xFFE8A552;
+    private static final int PARTNER_INK = 0xFF101018;
+    private static final int SURFACE_LIGHT = 0xFFFFFFFF;
+    private static final int SURFACE_DARK = 0xFF1C1C1E;
+    private static final int LAND_LIGHT = 0xFFF2F2EF;
+    private static final int LAND_DARK = 0xFF262626;
+
+    private MapTiles() {}
+
+    public static boolean dark(Context context) {
+        int mode = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        return mode == Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    /* Web Mercator, in @2x pixels at zoom z. */
+    static double worldX(double lng, int z) {
+        return (lng + 180.0) / 360.0 * TILE * (double) (1L << z);
+    }
+
+    static double worldY(double lat, int z) {
+        double clamped = Math.max(-85.05112878, Math.min(85.05112878, lat));
+        double s = Math.sin(Math.toRadians(clamped));
+        return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * TILE * (double) (1L << z);
+    }
+
+    /* The closest zoom at which both points sit inside the part every crop keeps. */
+    static int zoomFor(MapPayload.Dot a, MapPayload.Dot b) {
+        if (a == null || b == null) return SINGLE_ZOOM;
+        for (int z = MAX_ZOOM; z > MIN_ZOOM; z--) {
+            double world = TILE * (double) (1L << z);
+            double dx = Math.abs(worldX(a.lng, z) - worldX(b.lng, z));
+            dx = Math.min(dx, world - dx);
+            double dy = Math.abs(worldY(a.lat, z) - worldY(b.lat, z));
+            if (dx <= FIT_W && dy <= FIT_H) return z;
+        }
+        return MIN_ZOOM;
+    }
+
+    /* What a picture of this payload looks like; equal keys draw equal pictures. */
+    public static String key(MapPayload p, boolean dark) {
+        return String.format(Locale.ROOT, "%s|%s|%s", dot(p.me), dot(p.partner), dark ? "dark" : "light");
+    }
+
+    private static String dot(MapPayload.Dot d) {
+        return d == null ? "-" : String.format(Locale.ROOT, "%.5f,%.5f,%s,%b", d.lat, d.lng, d.initial, d.stale);
+    }
+
+    /** The finished picture, and whether every tile arrived (a partial one is drawn again next time). */
+    public static final class Result {
+        public final Bitmap bitmap;
+        public final boolean complete;
+
+        Result(Bitmap bitmap, boolean complete) {
+            this.bitmap = bitmap;
+            this.complete = complete;
+        }
+    }
+
+    public static Result compose(Context context, MapPayload p, boolean dark) {
+        if (p == null || !p.hasMap()) return null;
+        int z = zoomFor(p.me, p.partner);
+        long world = TILE * (1L << z);
+
+        double[] me = p.me != null ? new double[] { worldX(p.me.lng, z), worldY(p.me.lat, z) } : null;
+        double[] partner = p.partner != null ? new double[] { worldX(p.partner.lng, z), worldY(p.partner.lat, z) } : null;
+        /* Across the antimeridian, bring one point next to the other. */
+        if (me != null && partner != null) {
+            if (partner[0] - me[0] > world / 2.0) partner[0] -= world;
+            else if (me[0] - partner[0] > world / 2.0) partner[0] += world;
+        }
+
+        double cx;
+        double cy;
+        if (me != null && partner != null) {
+            cx = (me[0] + partner[0]) / 2;
+            cy = (me[1] + partner[1]) / 2;
+        } else {
+            double[] only = me != null ? me : partner;
+            cx = only[0];
+            cy = only[1];
+        }
+        double left = cx - WIDTH / 2.0;
+        double top = cy - HEIGHT / 2.0;
+
+        Bitmap bitmap = Bitmap.createBitmap(WIDTH, HEIGHT, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        canvas.drawColor(dark ? LAND_DARK : LAND_LIGHT);
+
+        boolean complete = true;
+        int tiles = 1 << z;
+        int x0 = (int) Math.floor(left / TILE);
+        int x1 = (int) Math.floor((left + WIDTH) / TILE);
+        int y0 = (int) Math.floor(top / TILE);
+        int y1 = (int) Math.floor((top + HEIGHT) / TILE);
+        Paint tilePaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        tilePaint.setColorFilter(quiet(dark));
+        for (int tx = x0; tx <= x1; tx++) {
+            for (int ty = y0; ty <= y1; ty++) {
+                if (ty < 0 || ty >= tiles) continue;
+                int wrapped = ((tx % tiles) + tiles) % tiles;
+                Bitmap tile = tile(context, z, wrapped, ty);
+                if (tile == null) {
+                    complete = false;
+                    continue;
+                }
+                float dx = (float) (tx * (double) TILE - left);
+                float dy = (float) (ty * (double) TILE - top);
+                canvas.drawBitmap(tile, null, new Rect(Math.round(dx), Math.round(dy), Math.round(dx) + TILE, Math.round(dy) + TILE), tilePaint);
+                tile.recycle();
+            }
+        }
+
+        float[] mePx = me != null ? new float[] { (float) (me[0] - left), (float) (me[1] - top) } : null;
+        float[] partnerPx = partner != null ? new float[] { (float) (partner[0] - left), (float) (partner[1] - top) } : null;
+        if (mePx != null && partnerPx != null && Math.hypot(mePx[0] - partnerPx[0], mePx[1] - partnerPx[1]) < OVERLAP_PX) {
+            float mx = (mePx[0] + partnerPx[0]) / 2;
+            float my = (mePx[1] + partnerPx[1]) / 2;
+            mePx = new float[] { mx - OVERLAP_PX / 2, my };
+            partnerPx = new float[] { mx + OVERLAP_PX / 2, my };
+        }
+        int surface = dark ? SURFACE_DARK : SURFACE_LIGHT;
+        if (mePx != null) pin(canvas, mePx[0], mePx[1], ACCENT, ACCENT_INK, surface, p.me.initial, false);
+        if (partnerPx != null) pin(canvas, partnerPx[0], partnerPx[1], dark ? PARTNER_DARK : PARTNER_LIGHT, PARTNER_INK, surface, p.partner.initial, p.partner.stale);
+
+        return new Result(bitmap, complete);
+    }
+
+    private static void pin(Canvas canvas, float x, float y, int fill, int ink, int ring, String initial, boolean stale) {
+        int alpha = stale ? 130 : 255;
+        Paint outer = new Paint(Paint.ANTI_ALIAS_FLAG);
+        outer.setColor(ring);
+        outer.setAlpha(alpha);
+        outer.setShadowLayer(8f, 0f, 3f, stale ? 0x22000000 : 0x40000000);
+        canvas.drawCircle(x, y, 31f, outer);
+
+        Paint inner = new Paint(Paint.ANTI_ALIAS_FLAG);
+        inner.setColor(fill);
+        inner.setAlpha(alpha);
+        canvas.drawCircle(x, y, 25f, inner);
+
+        Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
+        text.setColor(ink);
+        text.setAlpha(alpha);
+        text.setTextSize(27f);
+        text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        text.setTextAlign(Paint.Align.CENTER);
+        String letter = initial == null || initial.isEmpty() ? "·" : initial.substring(0, Math.min(initial.length(), 2));
+        Paint.FontMetrics m = text.getFontMetrics();
+        canvas.drawText(letter, x, y - (m.ascent + m.descent) / 2f, text);
+    }
+
+    /* The app's .pair-tiles filter: grey, a little softer; in the dark, inverted and dimmed. */
+    static ColorMatrixColorFilter quiet(boolean dark) {
+        ColorMatrix m = new ColorMatrix();
+        m.setSaturation(0f);
+        if (dark) {
+            m.postConcat(new ColorMatrix(new float[] {
+                -0.72f, 0, 0, 0, 205f,
+                0, -0.72f, 0, 0, 205f,
+                0, 0, -0.72f, 0, 205f,
+                0, 0, 0, 1, 0,
+            }));
+        } else {
+            m.postConcat(new ColorMatrix(new float[] {
+                0.9f, 0, 0, 0, 30f,
+                0, 0.9f, 0, 0, 30f,
+                0, 0, 0.9f, 0, 30f,
+                0, 0, 0, 1, 0,
+            }));
+        }
+        return new ColorMatrixColorFilter(m);
+    }
+
+    /* One map tile, from the cache if it is fresh, else from OpenStreetMap. */
+    private static Bitmap tile(Context context, int z, int x, int y) {
+        File dir = new File(context.getCacheDir(), "map-tiles");
+        //noinspection ResultOfMethodCallIgnored
+        dir.mkdirs();
+        File file = new File(dir, "osm-" + z + "-" + x + "-" + y + ".png");
+        if (file.isFile() && System.currentTimeMillis() - file.lastModified() < TILE_MAX_AGE_MS) {
+            Bitmap cached = BitmapFactory.decodeFile(file.getAbsolutePath());
+            if (cached != null) return cached;
+        }
+
+        String url = "https://tile.openstreetmap.org/" + z + "/" + x + "/" + y + ".png";
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setConnectTimeout(10_000);
+            connection.setReadTimeout(15_000);
+            /* OSM's tile policy: every client names itself and caches what it gets. */
+            connection.setRequestProperty("User-Agent", "Vpare-Android-Widget/1.0 (+https://github.com/raduntsev/bepair)");
+            if (connection.getResponseCode() != 200) return null;
+            byte[] bytes;
+            try (InputStream in = connection.getInputStream(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[16384];
+                int n;
+                while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
+                bytes = out.toByteArray();
+            }
+            Bitmap decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            if (decoded == null) return null;
+            try (FileOutputStream out = new FileOutputStream(file)) {
+                out.write(bytes);
+            }
+            prune(dir);
+            return decoded;
+        } catch (Exception e) {
+            /* Offline: an old tile is better than none. */
+            return file.isFile() ? BitmapFactory.decodeFile(file.getAbsolutePath()) : null;
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
+    }
+
+    private static void prune(File dir) {
+        File[] files = dir.listFiles();
+        if (files == null || files.length <= TILE_CACHE_FILES) return;
+        Arrays.sort(files, Comparator.comparingLong(File::lastModified));
+        for (int i = 0; i < files.length - TILE_CACHE_FILES; i++) {
+            //noinspection ResultOfMethodCallIgnored
+            files[i].delete();
+        }
+    }
+
+    public static void save(Bitmap bitmap, File target) throws java.io.IOException {
+        File temp = new File(target.getParentFile(), target.getName() + ".tmp");
+        try (FileOutputStream out = new FileOutputStream(temp)) {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+        }
+        if (!temp.renameTo(target)) throw new java.io.IOException("rename failed");
+    }
+
+    public static void clearCache(Context context) {
+        File[] files = new File(context.getCacheDir(), "map-tiles").listFiles();
+        if (files == null) return;
+        for (File f : files) {
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
+        }
+    }
+}

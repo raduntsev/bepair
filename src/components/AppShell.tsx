@@ -7,6 +7,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Island } from '@/components/Island';
 import { TourProvider } from '@/components/Tour';
+import { LocationReporter } from '@/components/LocationReporter';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { getLang } from '@/lib/i18n';
 
@@ -51,6 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </motion.main>
       <Island pathname={pathname} unread={unread} />
+      <LocationReporter />
     </div>
     </TourProvider>
   );

@@ -16,4 +16,5 @@
     <color name="widget_partner_ink">#94500F</color>
     <color name="widget_partner_soft">#FCF0E1</color>
     <color name="widget_check_ring">#C7C7CC</color>
+    <color name="widget_map_panel">#E6FFFFFF</color>
 </resources>

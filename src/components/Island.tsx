@@ -42,7 +42,7 @@ export const DESTINATIONS: Destination[] = [
   { href: '/tasks', label: tr('Просьбы', 'Requests'), Icon: ListChecks, also: ['/store'] },
   { href: '/calendar', label: tr('Календарь', 'Calendar'), Icon: CalendarDays, also: ['/planerka'] },
   { href: '/courses', label: tr('Курсы', 'Courses'), Icon: BookOpen, also: ['/journal'] },
-  { href: '/settings', label: tr('Профиль', 'Profile'), Icon: UserRound, also: ['/couple', '/album'] },
+  { href: '/settings', label: tr('Профиль', 'Profile'), Icon: UserRound, also: ['/couple', '/album', '/map'] },
 ];
 
 const COMPOSE = '/ping';

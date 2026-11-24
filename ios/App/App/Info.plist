@@ -39,6 +39,8 @@
 	<string>Чтобы записать голосовую весточку или голосовое к письму.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Чтобы сфотографировать что-то для весточки.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Чтобы вы с партнёром видели друг друга на карте «Где мы» — только пока вы оба делитесь.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Чтобы приложить снимок или видео к весточке и письму.</string>
 	<key>UIApplicationSceneManifest</key>

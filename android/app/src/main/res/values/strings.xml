@@ -22,4 +22,13 @@
     <string name="widget_tasks_title">Дела на сегодня</string>
     <string name="widget_tasks_loading">Загружаем дела…</string>
     <string name="widget_tasks_mark">Отметить выполненным: %1$s</string>
+    <string name="widget_map_name">Карта</string>
+    <string name="widget_map_description">Вы и партнёр на карте — когда вы оба включили «Где мы»</string>
+    <string name="widget_map_title">Где мы</string>
+    <string name="widget_map_loading">Загружаем карту…</string>
+    <string name="widget_map_attribution">© OpenStreetMap</string>
+    <string name="location_channel">Где мы</string>
+    <string name="location_notification_title">Вы делитесь местоположением</string>
+    <string name="location_notification_text">Раз в 5 минут — для вас двоих. Нажмите, чтобы открыть карту</string>
+    <string name="location_notification_stop">Не делиться</string>
 </resources>

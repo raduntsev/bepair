@@ -4,8 +4,9 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 /*
   Shared by every widget endpoint: a widget authorises with its own key, never
-  a session. The key reads the owner's own widget data; the one thing it may
-  change is ticking off a request made to its owner (/api/widget/tasks).
+  a session. The key reads the owner's own widget data; the only things it may
+  change are ticking off a request made to its owner (/api/widget/tasks) and
+  the owner's own point on the map, while they share it (/api/widget/location).
   Returns the service client and the key's owner, or the response to send
   instead.
 */

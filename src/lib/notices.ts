@@ -24,7 +24,8 @@ export type NoticeKind =
   | 'remind_evening'
   | 'course_step'
   | 'course_shared'
-  | 'remind_course';
+  | 'remind_course'
+  | 'location_shared';
 
 export interface NoticeLike {
   kind: NoticeKind;
@@ -112,6 +113,11 @@ export function noticeText(notice: NoticeLike, actor: string, gender: Gender, la
     }
     case 'course_shared':
       return t(`${actor} ${verb(gender, 'открыл')} вам свои ответы в курсах`, `${actor} opened their course answers to you`);
+    case 'location_shared':
+      return t(
+        `${actor} ${verb(gender, 'начал')} делиться местоположением`,
+        `${actor} started sharing their location`,
+      );
     case 'remind_course': {
       const next = courseNext(raw('course_id'), raw('last_lesson'));
       return next
@@ -147,6 +153,8 @@ export function noticeHref(kind: NoticeKind, payload?: Record<string, unknown> |
       return typeof payload?.date === 'string' ? `/day?d=${payload.date}` : '/calendar';
     case 'remind_evening':
       return '/day';
+    case 'location_shared':
+      return '/map';
     case 'ping':
       return '/messages';
     case 'day':
