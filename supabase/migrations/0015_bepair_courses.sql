@@ -16,6 +16,30 @@
 -- browser at all. Progress (which lesson you are on) is always shared.
 
 -- ═════════════════════════════════════════════════════════════════════════════
+-- 0. An older journal_entries from the Lumina days
+-- ═════════════════════════════════════════════════════════════════════════════
+-- Some databases still carry a journal_entries table from before the redesign
+-- (content / is_private / type, no `kind`), unused by the app. Its policy lets
+-- the partner read every row not marked private, which would defeat the
+-- all-or-nothing rule below, and `create table if not exists` would silently
+-- keep it. It is moved aside, not dropped, so nothing in it is lost.
+
+do $$
+begin
+  if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'journal_entries')
+     and not exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'journal_entries' and column_name = 'kind')
+  then
+    alter table public.journal_entries rename to journal_entries_lumina;
+    if exists (select 1 from pg_constraint where conname = 'journal_entries_pkey'
+               and conrelid = 'public.journal_entries_lumina'::regclass) then
+      alter table public.journal_entries_lumina rename constraint journal_entries_pkey to journal_entries_lumina_pkey;
+    end if;
+  end if;
+end;
+$$;
+
+-- ═════════════════════════════════════════════════════════════════════════════
 -- 1. Tables
 -- ═════════════════════════════════════════════════════════════════════════════
 
@@ -85,6 +109,8 @@ returns boolean
 language sql stable security definer set search_path = public
 as $$ select coalesce((select share_answers from public.course_prefs where user_id = owner), false) $$;
 
+-- Policies call it as the signed-in user; nobody signed out needs it.
+revoke execute on function public.bp_course_shared(uuid) from public, anon;
 grant execute on function public.bp_course_shared(uuid) to authenticated;
 
 alter table public.course_prefs enable row level security;
@@ -186,6 +212,10 @@ begin
   return new;
 end;
 $$;
+
+-- Trigger functions only: not callable through the API.
+revoke execute on function public.bp_on_course_step() from public, anon, authenticated;
+revoke execute on function public.bp_on_course_share() from public, anon, authenticated;
 
 drop trigger if exists bp_on_course_share on public.course_prefs;
 create trigger bp_on_course_share
