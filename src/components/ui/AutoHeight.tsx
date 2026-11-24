@@ -29,7 +29,10 @@ export function AutoHeight({ children, className = '' }: { children: React.React
       transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 32 }}
       className={`overflow-hidden ${className}`}
     >
-      <div ref={inner}>{children}</div>
+      {/* flow-root keeps the children's margins inside, so the measured height is the drawn one. */}
+      <div ref={inner} className="flow-root">
+        {children}
+      </div>
     </motion.div>
   );
 }
