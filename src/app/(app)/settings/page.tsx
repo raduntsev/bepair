@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
-import { Bell, Check, ChevronRight, GraduationCap, Images, LayoutGrid, Lock, LogOut, MapPin, Monitor, Moon, Smartphone, Sun, UserRound } from 'lucide-react';
+import { Bell, Check, ChevronRight, GraduationCap, Images, LayoutGrid, Lock, LogOut, MapPin, Monitor, Moon, Smartphone, Sun, UserCog, UserRound } from 'lucide-react';
 import { displayName } from '@/lib/words';
 import { plural, todayISO } from '@/lib/dates';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Segment } from '@/components/ui/Controls';
 import { Card, LinkRow, Page, RowGroup, RowIcon, SectionHeader } from '@/components/ui/Blocks';
 import { InviteCard } from '@/components/InviteCard';
+import { PartnerLeftCard } from '@/components/PartnerLeft';
 import { Avatar, AvatarPicker } from '@/components/Avatar';
 import { PartnerBatteryBadge, usePartnerBattery } from '@/components/PartnerBattery';
 import { useTour } from '@/components/Tour';
@@ -34,7 +35,7 @@ function readTheme(): ThemeChoice {
   is the bell on «Сегодня»; only «what to send» stays, as a setting.
 */
 export default function SettingsPage() {
-  const { profile, partner, settings, updateProfile, signOut } = useSpaceAuth();
+  const { profile, partner, settings, closedSpace, updateProfile, signOut } = useSpaceAuth();
   const tour = useTour();
 
   const [name, setName] = useState(profile?.display_name ?? '');
@@ -125,9 +126,7 @@ export default function SettingsPage() {
             <ChevronRight className="size-5 shrink-0 text-line-strong" strokeWidth={2.2} aria-hidden />
           </Link>
         ) : (
-          <div data-tour="profile-pair">
-            <InviteCard />
-          </div>
+          <div data-tour="profile-pair">{closedSpace ? <PartnerLeftCard /> : <InviteCard />}</div>
         )}
         {partner && (
           <RowGroup label={tr('Вместе', 'Together')}>
@@ -175,6 +174,7 @@ export default function SettingsPage() {
           <RowGroup label={tr('Пара и данные', 'Couple and data')}>
             <LinkRow href="/settings/paired" Icon={Lock} title={tr('Парные настройки', 'Shared settings')} />
             <LinkRow href="/settings/personal" Icon={UserRound} title={tr('Личные и данные', 'Personal and data')} />
+            <LinkRow href="/settings/account" Icon={UserCog} title={tr('Аккаунт', 'Account')} sub={tr('Выйти из пары, удалить аккаунт', 'Leave the pair, delete the account')} />
           </RowGroup>
         </div>
 
@@ -196,7 +196,7 @@ export default function SettingsPage() {
 
         <div className="pt-6">
           <Button variant="danger" block onClick={signOut}>
-            <LogOut className="size-4" aria-hidden /> {tr('Выйти', 'Sign out')}
+            <LogOut className="size-4" aria-hidden /> {tr('Выйти из аккаунта', 'Sign out')}
           </Button>
         </div>
       </div>

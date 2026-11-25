@@ -48,10 +48,15 @@ export default function JoinPage() {
           <p className="mt-2 text-sm text-ink-soft">
             {own
               ? tr('Отправьте эту ссылку партнёру — открыть её должен он.', 'Send this link to your partner — they’re the one to open it.')
-              : tr('У одного человека может быть только одно пространство. Чтобы перейти в другое, сначала выйдите из этого.', 'One person can have only one space. To move to another, leave this one first.')}
+              : tr('У одного человека может быть только одно пространство. Чтобы перейти в другое, сначала выйдите из пары — это можно сделать в профиле, в разделе «Аккаунт».', 'One person can have only one space. To move to another, leave your pair first — in Profile → Account.')}
           </p>
-          <div className="mt-5">
+          <div className="mt-5 flex flex-wrap gap-2">
             <LinkButton href="/day">{tr('Открыть день', 'Open the day')}</LinkButton>
+            {!own && (
+              <LinkButton href="/settings/account" variant="secondary">
+                {tr('Выйти из пары', 'Leave the pair')}
+              </LinkButton>
+            )}
           </div>
         </Panel>
       </Centered>

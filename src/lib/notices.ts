@@ -1,4 +1,4 @@
-import { genitive, verb, type Gender } from './words';
+import { genitive, leftVerb, verb, type Gender } from './words';
 import { getLang, trIn, type Lang } from './i18n';
 import { courseById, lessonById, lessonsOf, nextLesson } from './courses';
 
@@ -25,7 +25,8 @@ export type NoticeKind =
   | 'course_step'
   | 'course_shared'
   | 'remind_course'
-  | 'location_shared';
+  | 'location_shared'
+  | 'left';
 
 export interface NoticeLike {
   kind: NoticeKind;
@@ -92,6 +93,14 @@ export function noticeText(notice: NoticeLike, actor: string, gender: Gender, la
     }
     case 'joined':
       return t(`${actor} ${verb(gender, 'присоединился')} к пространству`, `${actor} joined your space`);
+    case 'left': {
+      /* The person is gone from the space by now, so their name travels in the payload. */
+      const who = raw('name') || actor;
+      const g = (p.gender === 'm' || p.gender === 'f' ? p.gender : gender) as Gender;
+      return p.deleted
+        ? t(`${who} ${verb(g, 'удалил')} свой аккаунт и ${leftVerb(g)} из пары`, `${who} deleted their account and left the pair`)
+        : t(`${who} ${leftVerb(g)} из пары`, `${who} left the pair`);
+    }
     case 'remind_morning':
       return t(
         `Вчерашний день ${actor === 'Партнёр' ? 'партнёра' : genitive(actor, gender)} ждёт вас — вы его ещё не открывали`,
@@ -160,6 +169,8 @@ export function noticeHref(kind: NoticeKind, payload?: Record<string, unknown> |
     case 'day':
     case 'joined':
       return '/day';
+    case 'left':
+      return '/settings/account';
     case 'task_new':
     case 'task_done':
     case 'task_seen':
