@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Clock, Lock, Reply, UserPlus } from 'lucide-react';
+import { Clock, Lock, Reply, UserMinus, UserPlus } from 'lucide-react';
 import { moodColor, moodLabel } from '@/lib/mood';
 import { timeIn } from '@/lib/dates';
-import { displayName, genitive, verb } from '@/lib/words';
+import { displayName, genitive, leftVerb, verb } from '@/lib/words';
 import type { DayEntry } from '@/hooks/useCoupleDay';
-import type { Partner } from '@/hooks/useSpaceAuth';
+import { useSpaceAuth, type Partner } from '@/hooks/useSpaceAuth';
 import { tr } from '@/lib/i18n';
 
 interface PartnerDayCardProps {
@@ -28,6 +28,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, justUnsealed, partnerMarked }: PartnerDayCardProps) {
   const reduce = useReducedMotion();
+  const { closedSpace } = useSpaceAuth();
   const name = displayName(partner?.display_name);
   const state: CardState = !partner ? 'alone' : !isUnlocked ? 'sealed' : entry ? 'open' : 'waiting';
 
@@ -51,15 +52,28 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
       <AnimatePresence mode="wait" initial={false}>
         {state === 'alone' && (
           <motion.section key="alone" exit={{ opacity: 0 }} className="rounded-2xl border-2 border-dashed border-line-strong p-5">
-            <Link
-              href="/couple"
-              className="tap -m-2 flex items-center gap-3.5 rounded-xl p-2 text-headline font-semibold text-accent transition-colors hover:bg-sunken"
-            >
-              <span className="flex size-11 items-center justify-center rounded-full bg-accent-soft">
-                <UserPlus className="size-5" aria-hidden />
-              </span>
-              {tr('Позвать партнёра', 'Invite your partner')}
-            </Link>
+            {closedSpace ? (
+              /* The partner left: nobody to invite into this space, only a way to start again. */
+              <Link
+                href="/settings/account"
+                className="tap -m-2 flex items-center gap-3.5 rounded-xl p-2 text-headline font-semibold text-ink-soft transition-colors hover:bg-sunken"
+              >
+                <span className="flex size-11 items-center justify-center rounded-full bg-sunken">
+                  <UserMinus className="size-5" aria-hidden />
+                </span>
+                {tr(`${displayName(closedSpace.name)} ${leftVerb(closedSpace.gender)} из пары`, `${displayName(closedSpace.name)} left the pair`)}
+              </Link>
+            ) : (
+              <Link
+                href="/couple"
+                className="tap -m-2 flex items-center gap-3.5 rounded-xl p-2 text-headline font-semibold text-accent transition-colors hover:bg-sunken"
+              >
+                <span className="flex size-11 items-center justify-center rounded-full bg-accent-soft">
+                  <UserPlus className="size-5" aria-hidden />
+                </span>
+                {tr('Позвать партнёра', 'Invite your partner')}
+              </Link>
+            )}
           </motion.section>
         )}
 

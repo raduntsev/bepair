@@ -16,6 +16,11 @@ export function verb(gender: Gender, masculine: string) {
   return gender === 'f' ? `${masculine}а` : `${masculine}(а)`;
 }
 
+/* «вышел» is irregular: the feminine drops the «е» — «вышла», not «вышела». */
+export function leftVerb(gender: Gender) {
+  return gender === 'f' ? 'вышла' : gender === 'm' ? 'вышел' : 'вышел(а)';
+}
+
 export function displayName(name: string | null | undefined, fallback = tr('Партнёр', 'Partner')) {
   const trimmed = name?.trim();
   return trimmed ? trimmed : fallback;

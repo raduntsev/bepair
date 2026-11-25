@@ -53,6 +53,13 @@ export interface SpaceSettings {
   pending_by: string | null;
 }
 
+/* The partner left: the space is closed, its history stays with the one who stayed. */
+export interface ClosedSpace {
+  at: string;
+  name: string | null;
+  gender: Gender;
+}
+
 const PROFILE_COLUMNS =
   'id, space_id, display_name, avatar_url, timezone, gender, onboarded_at, cycle_tracking, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound, widget_hide_colors, lang';
 
@@ -65,6 +72,7 @@ interface State {
   partner: Partner | null;
   settings: SpaceSettings | null;
   inviteCode: string | null;
+  closedSpace: ClosedSpace | null;
   isLoading: boolean;
   /* A load failure, worded for the person — never raw PostgREST text. */
   error: string | null;
@@ -81,6 +89,8 @@ interface Value extends State {
   signInWithGoogle: () => Promise<void>;
   createSpace: () => Promise<boolean>;
   joinSpace: (code: string) => Promise<boolean>;
+  leaveSpace: () => Promise<boolean>;
+  deleteAccount: () => Promise<boolean>;
   updateProfile: (patch: Partial<Omit<Profile, 'id' | 'space_id'>>) => Promise<boolean>;
   updateDisplayName: (name: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -99,6 +109,7 @@ const EMPTY: State = {
   partner: null,
   settings: null,
   inviteCode: null,
+  closedSpace: null,
   isLoading: true,
   error: null,
   needsMigration: false,
@@ -152,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       let partner: Partner | null = null;
       let inviteCode: string | null = null;
+      let closedSpace: ClosedSpace | null = null;
       let settings: SpaceSettings | null = null;
 
       if (current?.space_id) {
@@ -162,11 +174,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .eq('space_id', current.space_id)
             .neq('id', current.id)
             .maybeSingle(),
-          supabase.from('spaces').select('invite_code').eq('id', current.space_id).maybeSingle(),
+          supabase.from('spaces').select('invite_code, closed_at, left_name, left_gender').eq('id', current.space_id).maybeSingle(),
           loadSettings(),
         ]);
         partner = (partnerResult.data as Partner | null) ?? null;
-        inviteCode = spaceResult.data?.invite_code ?? null;
+        const space = spaceResult.data as { invite_code: string; closed_at: string | null; left_name: string | null; left_gender: Gender } | null;
+        /* A closed space takes nobody new: there is no code to hand out. */
+        inviteCode = space && !space.closed_at ? space.invite_code : null;
+        closedSpace = space?.closed_at && !partner ? { at: space.closed_at, name: space.left_name, gender: space.left_gender } : null;
         settings = settingsResult;
       }
 
@@ -177,6 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         partner,
         settings,
         inviteCode,
+        closedSpace,
         isLoading: false,
         error: null,
         needsMigration: false,
@@ -223,7 +239,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
         const kind = (payload.new as { kind?: string }).kind;
-        if (kind === 'joined') load(sessionRef.current);
+        if (kind === 'joined' || kind === 'left') load(sessionRef.current);
       })
       .subscribe();
     return () => {
@@ -317,29 +333,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  /* Membership changes only on the server (0020): it checks the code, the count and the lock. */
   const createSpace = useCallback(async () => {
     const user = sessionRef.current?.user;
     if (!user) return false;
     setState((s) => ({ ...s, error: null }));
 
-    const { data: space, error: spaceError } = await supabase
-      .from('spaces')
-      .insert({ name: tr('Наше пространство', 'Our space') })
-      .select('id, invite_code')
-      .single();
-
-    if (spaceError || !space) {
+    const { error } = await supabase.rpc('bp_create_space', { space_name: tr('Наше пространство', 'Our space') });
+    if (error) {
       setState((s) => ({ ...s, error: tr('Не получилось создать пространство. Попробуйте ещё раз.', 'Couldn’t create the space. Please try again.') }));
       return false;
     }
 
-    const { error: profileError } = await supabase.from('profiles').update({ space_id: space.id }).eq('id', user.id);
-    if (profileError) {
-      setState((s) => ({ ...s, error: tr('Пространство создано, но не привязалось к вам. Попробуйте ещё раз.', 'The space was created but didn’t link to you. Please try again.') }));
-      return false;
-    }
-
-    await supabase.from('wallet').insert({ space_id: space.id, balance: 0 });
     await load(sessionRef.current);
     return true;
   }, [load]);
@@ -351,25 +356,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const code = rawCode.trim().toLowerCase();
       setState((s) => ({ ...s, error: null }));
 
-      const { data: space } = await supabase.from('spaces').select('id').eq('invite_code', code).maybeSingle();
-      if (!space) {
-        setState((s) => ({ ...s, error: tr('Такого кода нет. Проверьте, что он скопирован целиком.', 'No such code. Check it was copied in full.') }));
-        return false;
-      }
-
-      const { count } = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('space_id', space.id);
-
-      if ((count ?? 0) >= 2) {
-        setState((s) => ({ ...s, error: tr('В этом пространстве уже двое. Попросите у партнёра свежий код.', 'This space already has two people. Ask your partner for a fresh code.') }));
-        return false;
-      }
-
-      const { error: joinError } = await supabase.from('profiles').update({ space_id: space.id }).eq('id', user.id);
-      if (joinError) {
-        setState((s) => ({ ...s, error: tr('Не получилось войти в пространство. Попробуйте ещё раз.', 'Couldn’t join the space. Please try again.') }));
+      const { data, error } = await supabase.rpc('bp_join_space', { code });
+      const result = error ? 'error' : (data as string);
+      if (result !== 'joined') {
+        const message =
+          result === 'no-such-code'
+            ? tr('Такого кода нет. Проверьте, что он скопирован целиком.', 'No such code. Check it was copied in full.')
+            : result === 'full'
+              ? tr('В этом пространстве уже двое. Попросите у партнёра свежий код.', 'This space already has two people. Ask your partner for a fresh code.')
+              : result === 'closed'
+                ? tr('Это пространство закрыто: один из пары из него вышел. Попросите новый код.', 'This space is closed: someone left it. Ask for a new code.')
+                : result === 'already-in-space'
+                  ? tr('Вы уже в пространстве. Чтобы перейти в другое, сначала выйдите из пары в профиле.', 'You’re already in a space. To move, leave your pair in your profile first.')
+                  : tr('Не получилось войти в пространство. Попробуйте ещё раз.', 'Couldn’t join the space. Please try again.');
+        setState((s) => ({ ...s, error: message }));
         return false;
       }
 
@@ -381,6 +381,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     [load],
   );
+
+  /* Alone, without the partner's consent: they keep the history, the space closes (0020). */
+  const leaveSpace = useCallback(async () => {
+    const token = sessionRef.current?.access_token;
+    if (!token) return false;
+    /* Through the server, so the partner's push goes out at once (bp_leave_space is the same step without it). */
+    const response = await fetch('/api/space/leave', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+    if (!response?.ok) return false;
+    /* The widget's key was revoked with the leave; the phone should stop showing the old space. */
+    await clearWidgets();
+    await load(sessionRef.current);
+    return true;
+  }, [load]);
+
+  /* The server deletes files, rows and the account itself, then this phone forgets the session. */
+  const deleteAccount = useCallback(async () => {
+    const token = sessionRef.current?.access_token;
+    if (!token) return false;
+    const response = await fetch('/api/account/delete', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+    if (!response?.ok) return false;
+    await clearWidgets();
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    setState({ ...EMPTY, isLoading: false });
+    router.replace('/');
+    return true;
+  }, [router]);
 
   const updateProfile = useCallback(async (patch: Partial<Omit<Profile, 'id' | 'space_id'>>) => {
     const user = sessionRef.current?.user;
@@ -424,6 +450,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInWithGoogle,
       createSpace,
       joinSpace,
+      leaveSpace,
+      deleteAccount,
       updateProfile,
       updateDisplayName,
       refresh,
@@ -440,6 +468,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInWithGoogle,
       createSpace,
       joinSpace,
+      leaveSpace,
+      deleteAccount,
       updateProfile,
       updateDisplayName,
       refresh,

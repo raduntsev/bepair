@@ -1,5 +1,5 @@
 import { adminClient } from '@/lib/pushDelivery';
-import { BUCKET } from '@/lib/media';
+import { listFiles, removeFiles } from '@/lib/storageAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,31 +31,11 @@ export async function POST(request: Request) {
   if (partner && !agreed) return Response.json({ error: 'not-agreed' }, { status: 403 });
 
   /* Files first: once the space row is gone, nothing points at them any more. */
-  const paths = await listAll(admin, spaceId);
-  for (let i = 0; i < paths.length; i += 100) {
-    const { error } = await admin.storage.from(BUCKET).remove(paths.slice(i, i + 100));
-    if (error) return Response.json({ error: 'storage' }, { status: 502 });
-  }
+  const paths = await listFiles(admin, spaceId);
+  if (!(await removeFiles(admin, paths))) return Response.json({ error: 'storage' }, { status: 502 });
 
   const { error } = await admin.rpc('bp_reset_space', { sp: spaceId });
   if (error) return Response.json({ error: 'database' }, { status: 500 });
 
   return Response.json({ ok: true, files: paths.length });
-}
-
-/* Every file under <space>/, through its sub-folders. */
-async function listAll(admin: ReturnType<typeof adminClient>, prefix: string): Promise<string[]> {
-  const out: string[] = [];
-  for (let offset = 0; ; offset += 1000) {
-    const { data, error } = await admin.storage.from(BUCKET).list(prefix, { limit: 1000, offset });
-    if (error || !data || data.length === 0) break;
-    for (const item of data) {
-      const path = `${prefix}/${item.name}`;
-      /* Folders come back without an id. */
-      if (item.id) out.push(path);
-      else out.push(...(await listAll(admin, path)));
-    }
-    if (data.length < 1000) break;
-  }
-  return out;
 }

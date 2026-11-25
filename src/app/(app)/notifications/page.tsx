@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { Bell, BellRing, BookOpen, Eye, Gift, ListChecks, Mail, MapPin, Moon, Send, Settings2, SlidersHorizontal, Sun, Sunrise, UserPlus } from 'lucide-react';
+import { Bell, BellRing, BookOpen, Eye, Gift, ListChecks, Mail, MapPin, Moon, Send, Settings2, SlidersHorizontal, Sun, Sunrise, UserMinus, UserPlus } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { relativeStamp } from '@/lib/dates';
 import { noticeHref, noticeText, type NoticeKind } from '@/lib/notices';
@@ -24,6 +24,7 @@ const ICONS: Record<NoticeKind, LucideIcon> = {
   paired_proposal: SlidersHorizontal,
   paired_answer: Settings2,
   joined: UserPlus,
+  left: UserMinus,
   remind_morning: Sunrise,
   remind_evening: Moon,
   course_step: BookOpen,
