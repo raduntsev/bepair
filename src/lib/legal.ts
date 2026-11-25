@@ -1,18 +1,19 @@
 /*
   Who answers for the data, and which edition of the documents is in force.
 
-  Fill in the square brackets before publishing. The documents read these
+  Replace each placeholder in square brackets with the value itself — without
+  the brackets — before publishing. The documents read these
   values, so nothing else needs editing. When a document's meaning changes,
   raise its version: everyone is asked to agree again on their next visit.
 */
 export const OPERATOR = {
   /* Фамилия, имя, отчество полностью. */
-  name: '[Радунцев Алексей Евгеньевич]',
-  inn: '[250504487207]',
+  name: 'Радунцев Алексей Евгеньевич',
+  inn: '250504487207',
   /* Адрес для почтовых обращений: ч. 4 ст. 9 152-ФЗ требует адрес оператора в письменном согласии. */
-  address: '[г. Дальнегорск, ул. Пионерская, д.1, кв. 75, 692441]',
+  address: 'г. Дальнегорск, ул. Пионерская, д.1, кв. 75, 692441',
   /* Публичный адрес для запросов по данным. */
-  email: '[alekradunc@gmail.com]',
+  email: 'alekradunc@gmail.com',
   status: 'физическое лицо, применяющее специальный налоговый режим «Налог на профессиональный доход» (самозанятый)',
 };
 
