@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { authorizeWidget } from '@/lib/widgetAuth';
-import { agoLabel, distanceLabel, distanceM, isStale, TOGETHER_M } from '@/lib/location';
+import { agoLabel, distanceLabel, distanceM, freshBattery, isStale, TOGETHER_M, type Battery } from '@/lib/location';
 import { displayName } from '@/lib/words';
 import { inLang, tr, trIn, type Lang } from '@/lib/i18n';
 
@@ -14,7 +14,8 @@ export const dynamic = 'force-dynamic';
   language. The reciprocity rule is re-applied here (the service role sees
   everything): the partner's point comes only while both share.
 
-  POST {lat, lng, accuracy?, at?} — the owner's own point, from the phone's
+  POST {lat, lng, accuracy?, at?, battery?, charging?} — the owner's own point
+  (and the phone's charge, which rides with it), from the phone's
   location service, then the same answer as GET. Dropped, not stored, when the
   owner does not share; `sharing: false` in the answer tells the service to stop.
   POST {sharing: false} — switch sharing off from the phone's notification.
@@ -36,6 +37,8 @@ export interface MapPayload {
   line: string;
   me: Dot | null;
   partner: Dot | null;
+  /* The partner's charge under the same rule; also folded into `title` («Аня · 84 %») for older APKs. */
+  partnerBattery: Battery | null;
   updatedAt: string;
 }
 
@@ -51,7 +54,7 @@ async function build(admin: SupabaseClient, userId: string): Promise<MapPayload 
   const lang: Lang = me.lang === 'en' ? 'en' : 'ru';
   const sharing = !!me.share_location;
   const updatedAt = new Date().toISOString();
-  const base = { v: 1 as const, sharing, me: null, partner: null, updatedAt };
+  const base = { v: 1 as const, sharing, me: null, partner: null, partnerBattery: null, updatedAt };
 
   if (!me.space_id) {
     return { ...base, state: 'no-space', title: trIn(lang, 'Где мы', 'Where we are'), line: trIn(lang, 'Откройте Впаре, чтобы начать', 'Open Bepair to begin') };
@@ -67,8 +70,8 @@ async function build(admin: SupabaseClient, userId: string): Promise<MapPayload 
   /* Both points under the rule, read before any wording: inLang blocks hold no await. */
   const mutual = sharing && !!partner?.share_location;
   const { data: rows } = mutual
-    ? await admin.from('locations').select('user_id, lat, lng, recorded_at').in('user_id', [me.id, partner.id])
-    : { data: [] as { user_id: string; lat: number; lng: number; recorded_at: string }[] };
+    ? await admin.from('locations').select('user_id, lat, lng, recorded_at, battery, charging').in('user_id', [me.id, partner.id])
+    : { data: [] as { user_id: string; lat: number; lng: number; recorded_at: string; battery: number | null; charging: boolean | null }[] };
 
   return inLang(lang, (): MapPayload => {
     const name = displayName(partner?.display_name);
@@ -97,11 +100,14 @@ async function build(admin: SupabaseClient, userId: string): Promise<MapPayload 
       initial: initial(who),
       stale: isStale(row.recorded_at),
     });
+    const battery = freshBattery(theirs ?? null);
     const payload = {
       ...base,
       me: mine ? dot(mine, displayName(me.display_name, tr('Вы', 'You'))) : null,
       partner: theirs ? dot(theirs, name) : null,
-      title: name,
+      partnerBattery: battery,
+      /* «Аня · 84 %» — the bolt while charging. */
+      title: battery ? `${name} · ${battery.charging ? '⚡' : ''}${tr(`${battery.level} %`, `${battery.level}%`)}` : name,
     };
 
     if (!theirs) return { ...payload, state: 'waiting' as const, line: tr(`${name} пока не на карте`, `${name} isn’t on the map yet`) };
@@ -149,6 +155,7 @@ export async function POST(request: Request) {
   }
   const accuracy = Number(body?.accuracy);
   const at = typeof body?.at === 'number' ? new Date(body.at) : null;
+  const battery = typeof body?.battery === 'number' ? Math.round(body.battery) : NaN;
 
   const { error } = await admin.rpc('bp_put_location', {
     who: userId,
@@ -156,6 +163,8 @@ export async function POST(request: Request) {
     ln: lng,
     acc: Number.isFinite(accuracy) && accuracy >= 0 ? accuracy : null,
     at: at && !Number.isNaN(at.getTime()) ? at.toISOString() : null,
+    batt: Number.isInteger(battery) && battery >= 0 && battery <= 100 ? battery : null,
+    chg: typeof body?.charging === 'boolean' ? body.charging : null,
   });
   if (error) return Response.json({ error: 'failed' }, { status: 500 });
 

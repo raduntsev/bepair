@@ -149,8 +149,27 @@ public final class WidgetApi {
     /** The phone's own point; the answer is the same as refreshLocation's. */
     public static Result sendLocation(Context context, double lat, double lng, float accuracy, long at) {
         String body = String.format(java.util.Locale.ROOT,
-            "{\"lat\":%.6f,\"lng\":%.6f,\"accuracy\":%.1f,\"at\":%d}", lat, lng, accuracy, at);
+            "{\"lat\":%.6f,\"lng\":%.6f,\"accuracy\":%.1f,\"at\":%d%s}", lat, lng, accuracy, at, batteryJson(context));
         return location(context, "POST", body);
+    }
+
+    /* The phone's charge rides with the point: «,"battery":84,"charging":false», or nothing when the phone does not say. */
+    static String batteryJson(Context context) {
+        try {
+            android.content.Intent status = androidx.core.content.ContextCompat.registerReceiver(context, null,
+                new android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED),
+                androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
+            if (status == null) return "";
+            int level = status.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
+            int scale = status.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
+            if (level < 0 || scale <= 0) return "";
+            int state = status.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1);
+            boolean charging = state == android.os.BatteryManager.BATTERY_STATUS_CHARGING || state == android.os.BatteryManager.BATTERY_STATUS_FULL;
+            int percent = Math.round(level * 100f / scale);
+            return String.format(java.util.Locale.ROOT, ",\"battery\":%d,\"charging\":%b", Math.max(0, Math.min(100, percent)), charging);
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     /** «Не делиться» from the service's notification: switches sharing off for the account. */
