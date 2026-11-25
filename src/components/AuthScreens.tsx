@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Field';
 import { Alert } from '@/components/ui/Blocks';
 import { PairLoader } from '@/components/PairLoader';
 import { PairMark } from '@/components/PairMark';
+import { chooseLang, getLang, type Lang } from '@/lib/i18n';
 import { tr } from '@/lib/i18n';
 
 export function Centered({ children }: { children: React.ReactNode }) {
@@ -156,6 +157,37 @@ export function ConsentPanel() {
   );
 }
 
+/*
+  The language is chosen here, before anything else: the phone's language is
+  only a first guess. Switching reloads (see i18n.ts), which is harmless on
+  the very first screen.
+*/
+function LanguageSwitch() {
+  const [lang] = useState<Lang>(getLang);
+  const options: { value: Lang; label: string }[] = [
+    { value: 'ru', label: 'Русский' },
+    { value: 'en', label: 'English' },
+  ];
+  return (
+    <div role="group" aria-label="Язык / Language" className="mx-auto mb-6 flex w-fit gap-1 rounded-full bg-sunken p-1">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          lang={o.value}
+          aria-pressed={lang === o.value}
+          onClick={() => lang !== o.value && chooseLang(o.value)}
+          className={`h-9 rounded-full px-4 text-subhead font-medium transition-colors ${
+            lang === o.value ? 'bg-surface text-ink shadow-card' : 'text-ink-faint hover:text-ink'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function LoginPanel({ intro }: { intro?: string }) {
   const { sendMagicLink, verifyEmailCode, error, clearError } = useSpaceAuth();
   const [email, setEmail] = useState('');
@@ -168,6 +200,7 @@ export function LoginPanel({ intro }: { intro?: string }) {
 
   return (
     <Centered>
+      <LanguageSwitch />
       <div className="mb-8 flex flex-col items-center text-center">
         <PairMark className="mb-5 size-16" />
         <h1 className="text-3xl font-semibold tracking-tight">{tr('Впаре', 'Bepair')}</h1>

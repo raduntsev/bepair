@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Clock, Lock, Reply, UserMinus, UserPlus } from 'lucide-react';
 import { moodColor, moodColorName } from '@/lib/mood';
 import { timeIn } from '@/lib/dates';
-import { displayName, genitive, leftVerb, verb } from '@/lib/words';
+import { displayName, leftVerb, verb } from '@/lib/words';
 import type { DayEntry } from '@/hooks/useCoupleDay';
 import { useSpaceAuth, type Partner } from '@/hooks/useSpaceAuth';
 import { tr } from '@/lib/i18n';
@@ -26,6 +26,15 @@ type CardState = 'alone' | 'sealed' | 'waiting' | 'open';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
+/* The partner's local time: one quiet line under the name, never its own row. */
+function ClockMeta({ clock }: { clock: string }) {
+  return (
+    <span className="flex items-center gap-1 text-subhead text-ink-faint">
+      <Clock className="size-3.5" aria-hidden /> {clock}
+    </span>
+  );
+}
+
 export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, justUnsealed, partnerMarked }: PartnerDayCardProps) {
   const reduce = useReducedMotion();
   const { closedSpace } = useSpaceAuth();
@@ -41,11 +50,6 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
   const playReveal = !reduce && !!justUnsealed && state === 'open';
 
   const clock = showTime && partner ? timeIn(partner.timezone) : null;
-  const clockLine = clock ? (
-    <p className="mt-3 flex items-center gap-1.5 text-subhead text-ink-faint">
-      <Clock className="size-4" aria-hidden /> {clock}
-    </p>
-  ) : null;
 
   return (
     <div aria-live="polite">
@@ -97,8 +101,8 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-footnote text-ink-faint">{tr('День', 'Day')}</p>
-                <h2 className="text-headline font-semibold">{tr(genitive(name, partner?.gender ?? null), name)}</h2>
+                <h2 className="truncate text-headline font-semibold">{name}</h2>
+                {clock && <ClockMeta clock={clock} />}
               </div>
             </div>
             <div aria-hidden className="mt-4 space-y-2 blur-[3px] select-none">
@@ -106,7 +110,6 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
               <div className="h-3 w-3/4 rounded-full bg-sunken" />
             </div>
             <span className="sr-only">{tr('Откроется, когда вы отметите свой день.', 'Opens once you mark your own day.')}</span>
-            {clockLine}
           </motion.section>
         )}
 
@@ -122,13 +125,13 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
             <div className="flex items-center gap-3.5">
               <span aria-hidden className="size-11 shrink-0 rounded-full border-2 border-dashed border-line-strong" />
               <div className="min-w-0 flex-1">
-                <p className="text-footnote text-ink-faint">{name}</p>
-                <h2 className="text-headline font-semibold text-ink-faint">
+                <h2 className="truncate text-headline font-semibold">{name}</h2>
+                <p className="flex flex-wrap items-center gap-x-2 text-subhead text-ink-faint">
                   {tr(`${isToday ? 'Ещё не' : 'Не'} ${verb(partner?.gender, 'отметил')}`, isToday ? 'Not marked yet' : 'Not marked')}
-                </h2>
+                  {clock && <ClockMeta clock={clock} />}
+                </p>
               </div>
             </div>
-            {clockLine}
           </motion.section>
         )}
 
@@ -149,11 +152,12 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
                 style={{ backgroundColor: moodColor(entry.mood) }}
                 aria-hidden
               />
-              <div>
-                <h2 className="text-headline font-semibold">
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate text-headline font-semibold">
                   {name}
                   <span className="sr-only">, {moodColorName(entry.mood)}</span>
                 </h2>
+                {clock && <ClockMeta clock={clock} />}
               </div>
             </div>
             <motion.div
@@ -171,7 +175,6 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
                   <Reply className="size-4" aria-hidden /> {tr('Ответить', 'Reply')}
                 </Link>
               )}
-              {clockLine}
             </motion.div>
           </motion.section>
         )}
