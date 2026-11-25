@@ -106,39 +106,28 @@ export default function StorePage() {
     if (!user || !spaceId || claiming || balance < item.cost_points) return;
     setClaiming(item.id);
 
-    /* The guarded update is the lock: a double tap claims nothing twice. */
-    const { data: claimed, error: claimError } = await supabase
-      .from('shop_items')
-      .update({ is_claimed: true, claimed_by: user.id, claimed_at: new Date().toISOString() })
-      .eq('id', item.id)
-      .eq('is_claimed', false)
-      .select('id');
+    /*
+      One server step (bp_claim_service, 0022): it checks the balance, takes the
+      favour and spends the points together, under a lock — a double tap claims
+      nothing twice, and a claim is never left unpaid.
+    */
+    const { data, error: claimError } = await supabase.rpc('bp_claim_service', { item: item.id });
+    const result = claimError ? 'error' : (data as string);
 
-    if (claimError || !claimed || claimed.length === 0) {
-      setClaiming(null);
-      setError(claimError ? tr('Не получилось попросить об услуге. Попробуйте ещё раз.', 'Couldn’t ask for the favour. Please try again.') : tr('Об этой услуге уже попросили.', 'Someone already asked for this favour.'));
-      await load();
-      return;
-    }
-
-    const { error: ledgerError } = await supabase.from('points_ledger').insert({
-      space_id: spaceId,
-      from_user: user.id,
-      to_user: user.id,
-      amount: -item.cost_points,
-      reason: 'service',
-      reference: item.id,
-    });
-
-    if (ledgerError) {
-      /* Never leave a claim standing that was not paid for. */
-      await supabase.from('shop_items').update({ is_claimed: false, claimed_by: null, claimed_at: null }).eq('id', item.id);
-      setError(tr('Баллы не списались, услуга осталась свободной. Попробуйте ещё раз.', 'Points weren’t spent; the favour is still free. Please try again.'));
-    } else {
+    if (result === 'claimed') {
       setError(null);
       setItems((list) => list.map((i) => (i.id === item.id ? { ...i, is_claimed: true, claimed_by: user.id } : i)));
       setBalance((b) => b - item.cost_points);
       flushPush();
+    } else {
+      setError(
+        result === 'taken'
+          ? tr('Об этой услуге уже попросили.', 'Someone already asked for this favour.')
+          : result === 'not-enough'
+            ? tr('Баллов пока не хватает.', 'Not enough points yet.')
+            : tr('Не получилось попросить об услуге. Попробуйте ещё раз.', 'Couldn’t ask for the favour. Please try again.'),
+      );
+      await load();
     }
 
     setClaiming(null);
