@@ -77,6 +77,7 @@ interface Value extends State {
   isAuthenticated: boolean;
   hasSpace: boolean;
   sendMagicLink: (email: string) => Promise<boolean>;
+  verifyEmailCode: (email: string, code: string) => Promise<boolean>;
   signInWithGoogle: () => Promise<void>;
   createSpace: () => Promise<boolean>;
   joinSpace: (code: string) => Promise<boolean>;
@@ -259,6 +260,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, []);
 
+  /*
+    The code from the same email. On iPhone a web app added to the home screen
+    keeps its own storage, apart from Safari, and the link in the email always
+    opens in Safari: the person signs in there, and the icon stays signed out.
+    Typing the code signs in exactly where it is typed.
+  */
+  const verifyEmailCode = useCallback(async (email: string, code: string) => {
+    setState((s) => ({ ...s, error: null }));
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code.replace(/\s+/g, ''),
+      type: 'email',
+    });
+    if (error) {
+      setState((s) => ({
+        ...s,
+        error:
+          error.status === 429
+            ? tr('Слишком много попыток подряд. Подождите минуту и попробуйте снова.', 'Too many tries in a row. Wait a minute and try again.')
+            : tr('Код не подошёл или устарел. Проверьте его или запросите новое письмо.', 'That code didn’t work or has expired. Check it or ask for a new email.'),
+      }));
+      return false;
+    }
+    return true;
+  }, []);
+
   const signInWithGoogle = useCallback(async () => {
     setState((s) => ({ ...s, error: null }));
     /*
@@ -393,6 +420,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: !!state.user,
       hasSpace: !!spaceId,
       sendMagicLink,
+      verifyEmailCode,
       signInWithGoogle,
       createSpace,
       joinSpace,
@@ -408,6 +436,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       state,
       spaceId,
       sendMagicLink,
+      verifyEmailCode,
       signInWithGoogle,
       createSpace,
       joinSpace,

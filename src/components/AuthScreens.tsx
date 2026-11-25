@@ -35,6 +35,12 @@ export function Opening({ label = tr('Открываем пространств�
   );
 }
 
+/* An iPhone web app opened from its home-screen icon: storage of its own, apart from Safari. */
+function isIosHomeScreenApp() {
+  if (typeof window === 'undefined') return false;
+  return (navigator as Navigator & { standalone?: boolean }).standalone === true;
+}
+
 function GoogleButton() {
   const { signInWithGoogle } = useSpaceAuth();
   const [busy, setBusy] = useState(false);
@@ -56,10 +62,13 @@ function GoogleButton() {
 }
 
 export function LoginPanel({ intro }: { intro?: string }) {
-  const { sendMagicLink, error, clearError } = useSpaceAuth();
+  const { sendMagicLink, verifyEmailCode, error, clearError } = useSpaceAuth();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [code, setCode] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [homeScreenApp] = useState(isIosHomeScreenApp);
 
   return (
     <Centered>
@@ -73,9 +82,48 @@ export function LoginPanel({ intro }: { intro?: string }) {
         {sent ? (
           <div className="flex flex-col items-center gap-3 py-2 text-center">
             <MailCheck className="size-7 text-accent" aria-hidden />
-            <p className="font-medium">{tr('Ссылка отправлена', 'Link sent')}</p>
-            <p className="text-sm text-ink-soft">{tr(`Откройте письмо на ${email}. Загляните в спам, если его не видно.`, `Open the email sent to ${email}. Check spam if you can’t see it.`)}</p>
-            <Button variant="ghost" onClick={() => setSent(false)}>
+            <p className="font-medium">{tr('Письмо отправлено', 'Email sent')}</p>
+            <p className="text-sm text-ink-soft">
+              {homeScreenApp
+                ? tr(`В письме на ${email} есть код — введите его здесь. Ссылка из письма откроется в Safari, а не в этом приложении.`, `The email sent to ${email} has a code — enter it here. The link in it opens in Safari, not in this app.`)
+                : tr(`Введите код из письма на ${email} или просто нажмите ссылку в нём. Загляните в спам, если письма не видно.`, `Enter the code from the email sent to ${email}, or just tap the link in it. Check spam if you can’t see it.`)}
+            </p>
+            <form
+              onSubmit={async (event) => {
+                event.preventDefault();
+                setChecking(true);
+                await verifyEmailCode(email, code);
+                setChecking(false);
+              }}
+              className="mt-1 w-full space-y-3"
+            >
+              <Input
+                aria-label={tr('Код из письма', 'Code from the email')}
+                value={code}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                autoFocus
+                maxLength={10}
+                onChange={(event) => {
+                  setCode(event.target.value.replace(/\D+/g, ''));
+                  if (error) clearError();
+                }}
+                placeholder={tr('Код из письма', 'Code from the email')}
+                className="text-center text-lg tracking-[0.3em]"
+              />
+              <Button type="submit" size="lg" block loading={checking} disabled={code.length < 6}>
+                {tr('Войти', 'Sign in')}
+              </Button>
+            </form>
+            {error && <Alert>{error}</Alert>}
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSent(false);
+                setCode('');
+                clearError();
+              }}
+            >
               {tr('Другой адрес', 'Another address')}
             </Button>
           </div>
@@ -84,7 +132,7 @@ export function LoginPanel({ intro }: { intro?: string }) {
             <GoogleButton />
             <div className="flex items-center gap-3 text-xs text-ink-faint" aria-hidden>
               <span className="h-px flex-1 bg-line" />
-              {tr('или по ссылке на почту', 'or with a link by email')}
+              {tr('или по коду на почту', 'or with a code by email')}
               <span className="h-px flex-1 bg-line" />
             </div>
             <form
@@ -114,7 +162,7 @@ export function LoginPanel({ intro }: { intro?: string }) {
                 placeholder="you@example.com"
               />
               <Button type="submit" size="lg" block loading={busy} disabled={!email}>
-                {tr('Войти по ссылке', 'Sign in with a link')} <ArrowRight className="size-4" aria-hidden />
+                {tr('Получить код на почту', 'Email me a code')} <ArrowRight className="size-4" aria-hidden />
               </Button>
             </form>
             {error && <Alert>{error}</Alert>}
