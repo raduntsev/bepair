@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
-import { moodColor, moodLabel } from '@/lib/mood';
+import { moodColor, moodColorName } from '@/lib/mood';
 import { tr } from '@/lib/i18n';
 
 interface MoodScaleProps {
@@ -71,7 +71,7 @@ export function MoodScale({ value, onChange, disabled = false }: MoodScaleProps)
         aria-valuemin={0}
         aria-valuemax={1}
         aria-valuenow={value ?? undefined}
-        aria-valuetext={isSet ? moodLabel(value) : tr('не выбрано', 'not set')}
+        aria-valuetext={isSet ? moodColorName(value) : tr('не выбрано', 'not set')}
         aria-disabled={disabled || undefined}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -110,15 +110,6 @@ export function MoodScale({ value, onChange, disabled = false }: MoodScaleProps)
         </span>
       </div>
 
-      {/* The value, never an instruction: the breathing handle already says «drag me». */}
-      <p className="mt-3 flex min-h-6 items-center gap-2 text-subhead font-medium text-ink" aria-hidden={!isSet}>
-        {isSet && (
-          <>
-            <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-            <span className="first-letter:uppercase">{moodLabel(value)}</span>
-          </>
-        )}
-      </p>
     </div>
   );
 }

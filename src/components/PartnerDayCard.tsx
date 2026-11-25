@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Clock, Lock, Reply, UserMinus, UserPlus } from 'lucide-react';
-import { moodColor, moodLabel } from '@/lib/mood';
+import { moodColor, moodColorName } from '@/lib/mood';
 import { timeIn } from '@/lib/dates';
 import { displayName, genitive, leftVerb, verb } from '@/lib/words';
 import type { DayEntry } from '@/hooks/useCoupleDay';
@@ -150,8 +150,10 @@ export function PartnerDayCard({ partner, entry, isUnlocked, isToday, showTime, 
                 aria-hidden
               />
               <div>
-                <p className="text-footnote text-ink-faint">{name}</p>
-                <h2 className="text-headline font-semibold first-letter:uppercase">{moodLabel(entry.mood)}</h2>
+                <h2 className="text-headline font-semibold">
+                  {name}
+                  <span className="sr-only">, {moodColorName(entry.mood)}</span>
+                </h2>
               </div>
             </div>
             <motion.div

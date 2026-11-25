@@ -2,12 +2,12 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Bell, BookOpen, CalendarHeart, Check, ChevronRight, Droplet, ListTodo, Lock, Mail, Pencil, Users } from 'lucide-react';
+import { Bell, BookOpen, CalendarHeart, Check, ChevronRight, Droplet, Heart, ListTodo, Lock, Mail, Pencil, Users, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { displayName, genitive } from '@/lib/words';
 import { promptsFor } from '@/lib/dayPrompts';
 import supabase from '@/lib/supabase';
-import { moodColor, moodLabel } from '@/lib/mood';
+import { moodColor, moodColorName } from '@/lib/mood';
 import { fmt, longDate, plural, todayISO } from '@/lib/dates';
 import { planerkaWeek, todoWeek } from '@/lib/planerka';
 import { MoodScale } from '@/components/MoodScale';
@@ -28,6 +28,7 @@ import { useImportantDates } from '@/hooks/useImportantDates';
 import { occursOn, withAnniversary, upcoming } from '@/lib/importantDates';
 import { taskState } from '@/hooks/useTasks';
 import { useCourses } from '@/hooks/useCourses';
+import { useDayEvents, type DayEventKind } from '@/hooks/useDayEvents';
 import { COURSES, nextLesson } from '@/lib/courses';
 import { tr } from '@/lib/i18n';
 
@@ -105,6 +106,58 @@ function DatesChip({ date, isToday, togetherSince }: { date: string; isToday: bo
       <CalendarHeart className="size-4" aria-hidden />
       {isToday ? tr('Сегодня', 'Today') : tr('В этот день', 'On this day')}: {todays.map((o) => o.title).join(', ')}
     </p>
+  );
+}
+
+/*
+  «Ссора» and «Близость» belong to the pair's day, not to one person: a tap
+  saves at once and shows on both phones. Today they are toggles; a past day
+  only shows what was marked. Neutral ink, like the cycle mark — the spectrum
+  is mood's alone.
+*/
+function DayEvents({ date, isToday }: { date: string; isToday: boolean }) {
+  const events = useDayEvents(date, date);
+  const [failed, setFailed] = useState(false);
+  if (!events.available) return null;
+
+  const kinds: { kind: DayEventKind; label: string; Icon: typeof Zap }[] = [
+    { kind: 'quarrel', label: tr('Ссора', 'A fight'), Icon: Zap },
+    ...(events.intimacyOn ? [{ kind: 'intimacy' as const, label: tr('Близость', 'Intimacy'), Icon: Heart }] : []),
+  ];
+  const shown = isToday ? kinds : kinds.filter((k) => events.has(date, k.kind));
+  if (shown.length === 0) return null;
+
+  return (
+    <section className="rounded-2xl bg-surface p-4 shadow-card" aria-label={tr('Отметки дня для вас двоих', 'Marks of the day for you both')}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-subhead text-ink-faint">{isToday ? tr('Сегодня было', 'Today there was') : tr('В этот день', 'On this day')}</span>
+        {shown.map(({ kind, label, Icon }) => {
+          const on = events.has(date, kind);
+          return isToday ? (
+            <button
+              key={kind}
+              type="button"
+              aria-pressed={on}
+              onClick={async () => setFailed(!(await events.toggle(date, kind)))}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-subhead font-medium transition-colors duration-300 ${
+                on ? 'bg-ink text-surface' : 'bg-sunken text-ink-soft hover:text-ink'
+              }`}
+            >
+              <Icon className="size-4" aria-hidden /> {label}
+            </button>
+          ) : (
+            <span key={kind} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-sunken px-3.5 text-subhead font-medium text-ink">
+              <Icon className="size-4" aria-hidden /> {label}
+            </span>
+          );
+        })}
+      </div>
+      {failed && (
+        <div className="mt-3">
+          <Alert>{tr('Не получилось сохранить. Проверьте связь и попробуйте ещё раз.', 'Couldn’t save. Check your connection and try again.')}</Alert>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -373,9 +426,9 @@ function DayView() {
                           style={{ backgroundColor: moodColor(mine.mood) }}
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="text-footnote text-ink-faint">{tr('Ваш день', 'Your day')}</p>
                           <h2 className="flex items-center gap-1.5 text-headline font-semibold">
-                            <span className="first-letter:uppercase">{moodLabel(mine.mood)}</span>
+                            {tr('Ваш день', 'Your day')}
+                            <span className="sr-only">, {moodColorName(mine.mood)}</span>
                             {showCycle && cycle.stored && <Droplet className="size-4 text-ink-faint" aria-label={tr('День цикла', 'Cycle day')} />}
                           </h2>
                         </div>
@@ -414,6 +467,8 @@ function DayView() {
               </AnimatePresence>
             </AutoHeight>
           </section>
+
+          {partner && <DayEvents date={date} isToday={isToday} />}
 
           <div data-tour="day-partner">
           <PartnerDayCard

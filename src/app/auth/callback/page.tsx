@@ -47,9 +47,9 @@ export default function AuthCallback() {
         <div className="flex flex-col items-center gap-3 text-center">
           <AlertCircle className="size-7 text-danger" aria-hidden />
           <p className="font-medium">{tr('Ссылка больше не действует', 'This link no longer works')}</p>
-          <p className="text-sm text-ink-soft">{tr('Ссылки живут недолго — так безопаснее. Запросите новую, это займёт минуту.', 'Links don’t live long — it’s safer. Ask for a new one, it takes a minute.')}</p>
+          <p className="text-sm text-ink-soft">{tr('Ссылка работает один раз, час и только из самого нового письма. Надёжнее войти по коду: запросите письмо ещё раз и введите код из него.', 'A link works once, for an hour, and only from the newest email. The code is more reliable: ask for a new email and type the code from it.')}</p>
           <Button className="mt-2" onClick={() => router.replace('/day')}>
-            {tr('Получить новую ссылку', 'Get a new link')}
+            {tr('Войти по коду', 'Sign in with a code')}
           </Button>
         </div>
       </Panel>

@@ -12,11 +12,12 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, Zap } from 'lucide-react';
 import { MOOD_INK, moodColor } from '@/lib/mood';
 import { fmt, sentence, todayISO } from '@/lib/dates';
 import { Alert } from '@/components/ui/Blocks';
 import { useMonthEntries, type DayMark } from '@/hooks/useMonthEntries';
+import { useDayEvents } from '@/hooks/useDayEvents';
 import { useImportantDates, useShowMoon } from '@/hooks/useImportantDates';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { occursOn, withAnniversary } from '@/lib/importantDates';
@@ -73,6 +74,7 @@ export default function CalendarPage() {
 
   const { marks, error, isLoading } = useMonthEntries(iso(gridStart), iso(gridEnd));
   const { settings } = useSpaceAuth();
+  const events = useDayEvents(iso(gridStart), iso(gridEnd));
   const dates = useImportantDates();
   const { showMoon } = useShowMoon();
   const allDates = useMemo(() => withAnniversary(dates.items, settings?.together_since ?? null), [dates.items, settings?.together_since]);
@@ -137,6 +139,8 @@ export default function CalendarPage() {
             const mark = marks[key];
             const special = allDates.filter((d) => occursOn(d, key));
             const moon = moonByDay[key];
+            const quarrel = events.has(key, 'quarrel');
+            const intimacy = events.has(key, 'intimacy');
 
             return (
               <button
@@ -144,7 +148,7 @@ export default function CalendarPage() {
                 type="button"
                 disabled={isFuture}
                 onClick={() => router.push(`/day?d=${key}`)}
-                aria-label={`${fmt(day, 'd MMMM yyyy')}${mark?.theirsMarked ? tr(', партнёр отметил день', ', partner marked the day') : ''}${mark?.mineMarked ? tr(', ваш день отмечен', ', your day is marked') : ''}${special.length ? `, ${special.map((d) => (d.id ? d.title : tr('годовщина', 'anniversary'))).join(', ')}` : ''}${moon ? `, ${PRINCIPAL_LABEL[moon]}` : ''}`}
+                aria-label={`${fmt(day, 'd MMMM yyyy')}${mark?.theirsMarked ? tr(', партнёр отметил день', ', partner marked the day') : ''}${mark?.mineMarked ? tr(', ваш день отмечен', ', your day is marked') : ''}${special.length ? `, ${special.map((d) => (d.id ? d.title : tr('годовщина', 'anniversary'))).join(', ')}` : ''}${moon ? `, ${PRINCIPAL_LABEL[moon]}` : ''}${quarrel ? tr(', ссора', ', a fight') : ''}${intimacy ? tr(', близость', ', intimacy') : ''}`}
                 className={`relative flex aspect-square min-h-11 items-center justify-center rounded-full text-sm font-medium transition-colors enabled:hover:bg-sunken disabled:cursor-default ${
                   special.length ? 'disabled:opacity-60' : 'disabled:opacity-30'
                 }`}
@@ -155,6 +159,17 @@ export default function CalendarPage() {
                     className="pointer-events-none absolute bottom-1 left-1/2 z-10 size-1.5 -translate-x-1/2 rounded-full bg-accent ring-[1.5px] ring-surface"
                     aria-hidden
                   />
+                )}
+                {/* The pair's marks: tiny badges on the surface, so they read on any mood colour. */}
+                {intimacy && (
+                  <span className="pointer-events-none absolute top-0.5 left-0.5 z-10 flex size-3.5 items-center justify-center rounded-full bg-surface text-ink shadow-card" aria-hidden>
+                    <Heart className="size-2.5" fill="currentColor" strokeWidth={0} />
+                  </span>
+                )}
+                {quarrel && (
+                  <span className="pointer-events-none absolute right-0.5 bottom-0.5 z-10 flex size-3.5 items-center justify-center rounded-full bg-surface text-ink shadow-card" aria-hidden>
+                    <Zap className="size-2.5" fill="currentColor" strokeWidth={0} />
+                  </span>
                 )}
                 {moon && (
                   <MoonGlyph phase={PRINCIPAL_PHASE[moon]} size={10} className="pointer-events-none absolute top-0.5 right-0.5 z-10 text-ink-soft" />
@@ -211,6 +226,22 @@ export default function CalendarPage() {
               <span className="size-1.5 rounded-full bg-accent" />
             </span>
             {tr('важная дата', 'important date')}
+          </span>
+        )}
+        {events.available && (
+          <span className="flex items-center gap-2">
+            <span className="flex size-5 items-center justify-center" aria-hidden>
+              <Zap className="size-3.5 text-ink" fill="currentColor" strokeWidth={0} />
+            </span>
+            {tr('ссора', 'a fight')}
+          </span>
+        )}
+        {events.intimacyOn && (
+          <span className="flex items-center gap-2">
+            <span className="flex size-5 items-center justify-center" aria-hidden>
+              <Heart className="size-3.5 text-ink" fill="currentColor" strokeWidth={0} />
+            </span>
+            {tr('близость', 'intimacy')}
           </span>
         )}
         {showMoon && (

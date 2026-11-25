@@ -24,6 +24,7 @@ export const APP_URL = 'https://bepair.vercel.app';
 export const PRIVACY_VERSION = '2026-11-25';
 export const CONSENT_VERSION = '2026-11-25';
 export const HEALTH_CONSENT_VERSION = '2026-11-25';
+export const INTIMACY_CONSENT_VERSION = '2026-11-25';
 
 export const MIN_AGE = 18;
 

@@ -1,0 +1,15 @@
+<!--
+  Supabase → Authentication → Emails → «Confirm signup» (первый вход нового адреса).
+  Subject: Код для входа во Впаре: {{ .Token }}
+  (the code in the subject keeps Gmail from stacking every letter into one
+  thread with the oldest, already dead, link on top — and shows it in the
+  notification itself)
+-->
+<div style="font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #2b2230;">
+  <h2 style="margin: 0 0 16px; font-size: 20px;">Вход во Впаре</h2>
+  <p style="margin: 0 0 8px; font-size: 15px;">Ваш код:</p>
+  <p style="margin: 0 0 24px; font-size: 32px; font-weight: 700; letter-spacing: 6px;">{{ .Token }}</p>
+  <p style="margin: 0 0 16px; font-size: 15px;">Введите его в приложении, на том экране, где запрашивали письмо. Или нажмите ссылку — откроется в браузере:</p>
+  <p style="margin: 0 0 24px;"><a href="{{ .ConfirmationURL }}" style="color: #b0567a;">Войти во Впаре</a></p>
+  <p style="margin: 0; font-size: 13px; color: #8a7f8c;">Код и ссылка действуют один час и только из самого нового письма. Если вы не входили — просто удалите это письмо.</p>
+</div>
