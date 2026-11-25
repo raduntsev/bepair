@@ -1,7 +1,7 @@
 import 'server-only';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { moodHex, moodLabel, moodLevel, type MoodLevel } from './mood';
+import { moodHex, moodColorName, moodLevel, type MoodLevel } from './mood';
 import { streaks } from './streak';
 import { displayName, verb, type Gender } from './words';
 import { fmt, plural, sentence } from './dates';
@@ -104,7 +104,8 @@ export async function buildSnapshot(admin: SupabaseClient, userId: string): Prom
 
   function compose(): WidgetSnapshot {
   const show = (mood: number | undefined | null) => (mood == null || hideMood ? null : moodHex(mood));
-  const word = (mood: number | undefined | null) => (mood == null || hideMood ? null : moodLabel(mood));
+  /* The colour's name, for screen readers on the widget — never a caption of what the day meant. */
+  const word = (mood: number | undefined | null) => (mood == null || hideMood ? null : moodColorName(mood));
   const level = (mood: number | undefined | null) => (mood == null || hideMood ? null : moodLevel(mood));
 
   const snapshot: WidgetSnapshot = {
@@ -144,12 +145,11 @@ export async function buildSnapshot(admin: SupabaseClient, userId: string): Prom
     }
   } else if (!theirs) {
     snapshot.headline = tr(`${name} ещё не ${verb(partner!.gender, 'отметил')} день`, `${name} hasn’t marked the day yet`);
-    snapshot.sub = snapshot.me.label ? tr(`Ваш день: ${snapshot.me.label}`, `Your day: ${snapshot.me.label}`) : tr('Ваш день отмечен', 'Your day is marked');
+    snapshot.sub = tr('Ваш день отмечен', 'Your day is marked');
   } else {
-    snapshot.headline = snapshot.partner.label
-      ? tr(`${name}: день ${snapshot.partner.label}`, `${name}: a ${snapshot.partner.label} day`)
-      : tr(`${name} ${verb(partner!.gender, 'отметил')} день`, `${name} marked the day`);
-    snapshot.sub = snapshot.me.label ? tr(`Ваш: ${snapshot.me.label}`, `Yours: ${snapshot.me.label}`) : tr('Вы оба отметились', 'You both marked the day');
+    /* The colours speak for themselves: no word says what a day was. */
+    snapshot.headline = tr(`${name} ${verb(partner!.gender, 'отметил')} день`, `${name} marked the day`);
+    snapshot.sub = tr('Вы оба отметились', 'You both marked the day');
   }
 
   return snapshot;

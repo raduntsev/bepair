@@ -182,7 +182,7 @@ export function LoginPanel({ intro }: { intro?: string }) {
             <p className="text-sm text-ink-soft">
               {homeScreenApp
                 ? tr(`В письме на ${email} есть код — введите его здесь. Ссылка из письма откроется в Safari, а не в этом приложении.`, `The email sent to ${email} has a code — enter it here. The link in it opens in Safari, not in this app.`)
-                : tr(`Введите код из письма на ${email} или просто нажмите ссылку в нём. Загляните в спам, если письма не видно.`, `Enter the code from the email sent to ${email}, or just tap the link in it. Check spam if you can’t see it.`)}
+                : tr(`Введите код из письма на ${email} или нажмите ссылку в нём. Писем несколько — берите самое новое. Загляните в спам, если письма не видно.`, `Enter the code from the email sent to ${email}, or tap the link in it. Got several — use the newest. Check spam if you can’t see it.`)}
             </p>
             <form
               onSubmit={async (event) => {

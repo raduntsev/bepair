@@ -243,8 +243,11 @@ The product's one required control (`src/components/MoodScale.tsx`).
   grip, not a value.
 - The handle is inset half its width at each end so it never spills past the card;
   pointer mapping must use that same inset or taps land off the handle.
-- The verbal label (`moodLabel`) is the non-colour channel — it is what a screen
-  reader announces and what a colour-blind user reads. It is words, never numbers.
+- **No captions.** Nothing on screen says what a colour means — no «лёгкий» or
+  «тяжёлый» under the scale, on the day card or in the widget. Each person decides
+  what green or red is for them. The colour's name (`moodColorName`: «зелёный» …
+  «красный») is the non-colour channel: what a screen reader announces, visually
+  hidden. It is a colour name, never a verdict and never a number.
 - Stays focusable when disabled so a closed past day can still be read aloud.
 
 ## Reciprocity
@@ -465,5 +468,5 @@ Amber stays for shapes and icons; text uses the ink.
 
 Push copy is fact-only by design, which also hides harmless ping text from the
 lock screen — revisit if couples ask for it. Calendar mood colours stay
-indistinguishable for colour-blind users beyond the verbal label on the day
-itself.
+indistinguishable for colour-blind users beyond the screen-reader colour name
+on the day itself.

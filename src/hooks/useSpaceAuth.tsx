@@ -14,7 +14,7 @@ import { localTimezone } from '@/lib/dates';
 import { clearWidgets } from '@/lib/native';
 import type { Gender } from '@/lib/words';
 import { tr } from '@/lib/i18n';
-import { CONSENT_VERSION, HEALTH_CONSENT_VERSION } from '@/lib/legal';
+import { CONSENT_VERSION, HEALTH_CONSENT_VERSION, INTIMACY_CONSENT_VERSION } from '@/lib/legal';
 
 export interface Profile {
   id: string;
@@ -100,8 +100,9 @@ interface Value extends State {
   deleteAccount: () => Promise<boolean>;
   /* Signed in, but the current edition of the consent is not on record. */
   needsConsent: boolean;
-  giveConsent: (kind: 'personal' | 'health') => Promise<boolean>;
+  giveConsent: (kind: 'personal' | 'health' | 'intimacy') => Promise<boolean>;
   withdrawHealthConsent: () => Promise<boolean>;
+  withdrawIntimacyConsent: () => Promise<boolean>;
   updateProfile: (patch: Partial<Omit<Profile, 'id' | 'space_id' | 'consent_version' | 'consent_at' | 'health_consent_at'>>) => Promise<boolean>;
   updateDisplayName: (name: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -440,10 +441,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, [router]);
 
-  const giveConsent = useCallback(async (kind: 'personal' | 'health') => {
-    const version = kind === 'personal' ? CONSENT_VERSION : HEALTH_CONSENT_VERSION;
+  const giveConsent = useCallback(async (kind: 'personal' | 'health' | 'intimacy') => {
+    const version = kind === 'personal' ? CONSENT_VERSION : kind === 'health' ? HEALTH_CONSENT_VERSION : INTIMACY_CONSENT_VERSION;
     const { error } = await supabase.rpc('bp_give_consent', { kind, version, agent: navigator.userAgent });
     if (error) return false;
+    /* Not kept on the profile: useDayEvents asks bp_intimacy_state, so an older database never breaks the profile load. */
+    if (kind === 'intimacy') return true;
     const now = new Date().toISOString();
     setState((s) => ({
       ...s,
@@ -462,6 +465,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) return false;
     setState((s) => ({ ...s, profile: s.profile ? { ...s.profile, health_consent_at: null, cycle_tracking: false } : s.profile }));
     return true;
+  }, []);
+
+  /* «Близость» off: the couple's intimacy marks are deleted (ч. 5 ст. 21 152-ФЗ). */
+  const withdrawIntimacyConsent = useCallback(async () => {
+    const { error } = await supabase.rpc('bp_withdraw_intimacy_consent', { version: INTIMACY_CONSENT_VERSION, agent: navigator.userAgent });
+    return !error;
   }, []);
 
   const updateProfile = useCallback(async (patch: Partial<Omit<Profile, 'id' | 'space_id' | 'consent_version' | 'consent_at' | 'health_consent_at'>>) => {
@@ -504,6 +513,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       needsConsent: !!state.profile && state.profile.consent_version !== CONSENT_VERSION,
       giveConsent,
       withdrawHealthConsent,
+      withdrawIntimacyConsent,
       sendMagicLink,
       verifyEmailCode,
       signInWithGoogle,
@@ -531,6 +541,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       deleteAccount,
       giveConsent,
       withdrawHealthConsent,
+      withdrawIntimacyConsent,
       updateProfile,
       updateDisplayName,
       refresh,

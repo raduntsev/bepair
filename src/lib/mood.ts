@@ -3,8 +3,7 @@ import { tr } from '@/lib/i18n';
 /*
   Mood is stored as a float 0..1 and read as colour, never as a number.
   A 1–10 readout was rejected deliberately: it makes days comparable.
-  The verbal label exists so the scale is not colour-only — it is what a
-  screen reader announces and what a colour-blind user reads.
+  There are no captions either: green or red means whatever the person decides.
 */
 
 interface Stop {
@@ -40,17 +39,22 @@ export function moodColor(value: number): string {
   return `rgb(${channel(0)} ${channel(1)} ${channel(2)})`;
 }
 
-export function moodLabel(value: number): string {
-  if (value < 0.2) return tr('лёгкий', 'light');
-  if (value < 0.4) return tr('спокойный', 'calm');
-  if (value < 0.6) return tr('обычный', 'ordinary');
-  if (value < 0.8) return tr('непростой', 'not easy');
-  return tr('тяжёлый', 'heavy');
+/*
+  What each colour means is the person's own: the app never names a day light
+  or heavy. The colour's name is what a screen reader announces and what a
+  colour-blind user reads, so the scale is still not colour-only.
+*/
+export function moodColorName(value: number): string {
+  if (value < 0.15) return tr('зелёный', 'green');
+  if (value < 0.38) return tr('салатовый', 'yellow-green');
+  if (value < 0.62) return tr('жёлтый', 'yellow');
+  if (value < 0.85) return tr('оранжевый', 'orange');
+  return tr('красный', 'red');
 }
 
 /*
   Three words a widget character can act out: a light day, an ordinary one, a
-  heavy one. Coarser than moodLabel on purpose — a pose has to read at a glance.
+  heavy one. Coarser than the colour name on purpose — a pose has to read at a glance.
 */
 export type MoodLevel = 'light' | 'normal' | 'heavy';
 

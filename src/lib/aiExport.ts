@@ -1,6 +1,6 @@
 import { format, parseISO } from 'date-fns';
 import supabase from '@/lib/supabase';
-import { moodLabel } from '@/lib/mood';
+import { moodColorName } from '@/lib/mood';
 import { QUESTIONS } from '@/lib/questions';
 import { tr } from '@/lib/i18n';
 
@@ -28,6 +28,7 @@ export interface ExportData {
   pings: { body: string; track_title: string | null; track_artist: string | null; created_at: string; direction: 'sent' | 'received'; has_photo: boolean; has_voice: boolean }[];
   tasks: { content: string; points: number; created_at: string; completed_at: string | null; acknowledged_at: string | null; direction: 'asked' | 'asked_of_me' }[];
   cycle: string[];
+  events: { day: string; kind: 'quarrel' | 'intimacy' }[];
   answers: { question: number; answer: string }[];
 }
 
@@ -55,13 +56,18 @@ export async function collectExport(userId: string, name: string, from: string |
   let cycleQ = supabase.from('cycle_days').select('day').eq('user_id', userId).lte('day', to);
   if (from) cycleQ = cycleQ.gte('day', from);
 
-  const [days, letters, pings, tasks, cycle, answers] = await Promise.all([
+  /* The pair's marks; intimacy rows come back only while both partners have its consent (RLS, 0024). */
+  let eventsQ = supabase.from('day_events').select('day, kind').lte('day', to);
+  if (from) eventsQ = eventsQ.gte('day', from);
+
+  const [days, letters, pings, tasks, cycle, answers, events] = await Promise.all([
     daysQ.order('entry_date'),
     lettersQ.order('created_at'),
     pingsQ.order('created_at'),
     tasksQ.order('created_at'),
     cycleQ.order('day'),
     supabase.from('couple_answers').select('question, answer').eq('user_id', userId).order('question'),
+    eventsQ.order('day'),
   ]);
 
   if (days.error || letters.error) return null;
@@ -96,6 +102,8 @@ export async function collectExport(userId: string, name: string, from: string |
       direction: t.user_id === userId ? 'asked' : 'asked_of_me',
     })),
     cycle: (cycle.data ?? []).map((row) => row.day as string),
+    /* Before migration 0024 the table is missing: no marks, nothing else breaks. */
+    events: events.error ? [] : ((events.data ?? []) as ExportData['events']),
     answers: (answers.data ?? []) as ExportData['answers'],
   };
 }
@@ -110,6 +118,8 @@ export function exportSummary(data: ExportData) {
     [tr('Весточек', 'Notes sent'), data.pings.length],
     [tr('Просьб', 'Requests'), data.tasks.length],
     ...(data.cycle.length ? [[tr('Дней цикла', 'Cycle days'), data.cycle.length] as [string, number]] : []),
+    ...(data.events.some((e) => e.kind === 'quarrel') ? [[tr('Ссор', 'Fights'), data.events.filter((e) => e.kind === 'quarrel').length] as [string, number]] : []),
+    ...(data.events.some((e) => e.kind === 'intimacy') ? [[tr('Дней близости', 'Days of intimacy'), data.events.filter((e) => e.kind === 'intimacy').length] as [string, number]] : []),
   ] as [string, number, string?][];
 }
 
@@ -153,7 +163,7 @@ export function buildMarkdown(data: ExportData, goal: ExportGoal, concern: strin
     GOAL_PROMPT[goal](concern.trim()),
     '',
     tr('Как читать данные:', 'How to read the data:'),
-    tr('- Настроение дня в приложении — цвет на шкале без цифр. Здесь оно записано числом от 0 (лёгкий день) до 1 (тяжёлый) и словом. Это не оценка: не называй дни хорошими или плохими, говори о том, что было легче или тяжелее.', '- In the app a day’s mood is a colour on a scale with no numbers. Here it is written as a number from 0 (light day) to 1 (heavy) and a word. It is not a grade: don’t call days good or bad, talk about what was easier or harder.'),
+    tr('- Настроение дня в приложении — цвет на шкале без цифр. Здесь оно записано числом от 0 (зелёный край шкалы) до 1 (красный) и названием цвета. Что значит каждый цвет, человек решает сам — приложение не подписывает их. Это не оценка: не называй дни хорошими или плохими; если смысл цвета важен для ответа, спроси.', '- In the app a day’s mood is a colour on a scale with no numbers. Here it is written as a number from 0 (the green end) to 1 (the red end) and the colour’s name. What each colour means is the person’s own choice — the app doesn’t caption them. It is not a grade: don’t call days good or bad; if the meaning of a colour matters for your answer, ask.'),
     tr('- Просьбы — то, о чём партнёры просят друг друга. Баллы — вес, который поставил тот, кто просит. «Увидено» — партнёр заметил, что просьба выполнена.', '- Requests are what the partners ask of each other. Points are the weight set by the one asking. “Seen” means the partner noticed it was done.'),
     tr('- Пропущенные дни — не провал, а просто дни без записи.', '- Missing days are not failures, just days without an entry.'),
     '',
@@ -164,7 +174,7 @@ export function buildMarkdown(data: ExportData, goal: ExportGoal, concern: strin
   out.push(tr('## Дни', '## Days'), '');
   if (!data.days.length) out.push(tr('Дней с отметкой за период нет.', 'No marked days in this period.'), '');
   for (const d of data.days) {
-    out.push(`### ${d.entry_date} · ${d.mood.toFixed(2)} (${moodLabel(d.mood)})`);
+    out.push(`### ${d.entry_date} · ${d.mood.toFixed(2)} (${moodColorName(d.mood)})`);
     out.push(clean(d.note) ? clean(d.note) : tr('_без заметки_', '_no note_'), '');
   }
 
@@ -199,6 +209,11 @@ export function buildMarkdown(data: ExportData, goal: ExportGoal, concern: strin
     }
     out.push('');
   }
+
+  const quarrels = data.events.filter((e) => e.kind === 'quarrel').map((e) => e.day);
+  const intimacy = data.events.filter((e) => e.kind === 'intimacy').map((e) => e.day);
+  if (quarrels.length) out.push(tr('## Дни, отмеченные как ссора (отметка общая для пары)', '## Days marked as a fight (a shared mark of the couple)'), '', quarrels.join(', '), '');
+  if (intimacy.length) out.push(tr('## Дни близости (отметка общая для пары)', '## Days of intimacy (a shared mark of the couple)'), '', intimacy.join(', '), '');
 
   if (data.cycle.length) {
     out.push(tr('## Дни цикла', '## Cycle days'), '', data.cycle.join(', '), '');
