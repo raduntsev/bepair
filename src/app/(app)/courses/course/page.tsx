@@ -18,6 +18,7 @@ import { Sheet } from '@/components/ui/Sheet';
 import { PairProgress, StepDot, stepState } from '@/components/courses/Progress';
 import { CourseReminder, ShareSwitch } from '@/components/courses/CourseSettings';
 import { CoursesUnavailable } from '@/components/courses/Unavailable';
+import { CareNote } from '@/components/courses/CareNote';
 import { Celebration, RewardsCard } from '@/components/courses/Rewards';
 import { tr } from '@/lib/i18n';
 
@@ -107,6 +108,9 @@ function CourseView() {
               </Link>
             ) : null}
           </Card>
+
+          {/* Before the first step it is said in full; afterwards it stays one tap away. */}
+          <CareNote compact={started} />
 
           {started && (
             <RewardsCard

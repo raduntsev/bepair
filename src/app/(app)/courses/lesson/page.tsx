@@ -15,6 +15,7 @@ import { AutoHeight } from '@/components/ui/AutoHeight';
 import { FieldEditor, AnswersView } from '@/components/courses/CourseFields';
 import { ThoughtDiary } from '@/components/courses/ThoughtDiary';
 import { CoursesUnavailable } from '@/components/courses/Unavailable';
+import { CareNote } from '@/components/courses/CareNote';
 import { TheoryCard } from '@/components/courses/Theory';
 import { Celebration } from '@/components/courses/Rewards';
 import { tr } from '@/lib/i18n';
@@ -336,6 +337,10 @@ function LessonView() {
                 </span>
               ))}
           </nav>
+
+          <div className="pt-4">
+            <CareNote compact />
+          </div>
         </div>
       )}
     </Page>
