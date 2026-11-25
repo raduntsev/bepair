@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import type { Circle, Map as LeafletMap, Marker } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LocateFixed } from 'lucide-react';
-import { isStale, TILE_ATTRIBUTION_HTML, TILE_MAX_ZOOM, TILE_URL, type Point } from '@/lib/location';
+import { isStale, TILE_ATTRIBUTION_HTML, TILE_ATTRIBUTION_TEXT, TILE_MAX_ZOOM, TILE_URL, type Point } from '@/lib/location';
 import { tr } from '@/lib/i18n';
 
 /*
@@ -12,6 +12,11 @@ import { tr } from '@/lib/i18n';
   touches `window` when it loads, so it is imported inside the effect, on the
   client only. The map is drawn once; new points move the dots, and the view
   follows only until the person pans it themselves.
+
+  `preview` is the profile's card, drawn like the «Карта» widget: a still
+  picture inside a link — no gestures, no button, the attribution as plain text
+  in the top corner (a link inside a link is not allowed), and room left at the
+  bottom for the caption laid over it.
 */
 
 interface Who {
@@ -32,7 +37,7 @@ function pinHtml(initial: string, who: 'me' | 'partner', stale: boolean) {
   return `<span class="pair-pin pair-pin--${who}${stale ? ' pair-pin--stale' : ''}">${safe}</span>`;
 }
 
-export function PairMap({ me, partner, className = '' }: { me: Who; partner: Who; className?: string }) {
+export function PairMap({ me, partner, className = '', preview = false }: { me: Who; partner: Who; className?: string; preview?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<LeafletMap | null>(null);
   const leaflet = useRef<typeof import('leaflet') | null>(null);
@@ -46,8 +51,15 @@ export function PairMap({ me, partner, className = '' }: { me: Who; partner: Who
     if (!L || !m) return;
     const points = [me.point, partner.point].filter(Boolean) as Point[];
     if (points.length === 0) return;
-    if (points.length === 1) m.setView([points[0].lat, points[0].lng], 15, { animate });
-    else m.fitBounds(L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number])), { padding: [56, 56], maxZoom: 16, animate });
+    /* In the preview a lone dot sits a little above the middle, clear of the caption. */
+    if (points.length === 1) {
+      m.setView([points[0].lat, points[0].lng], 15, { animate: animate && !preview });
+      if (preview) m.panBy([0, 36], { animate: false });
+      return;
+    }
+    const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
+    if (preview) m.fitBounds(bounds, { paddingTopLeft: [40, 40], paddingBottomRight: [40, 88], maxZoom: 16, animate });
+    else m.fitBounds(bounds, { padding: [56, 56], maxZoom: 16, animate });
   };
 
   const draw = () => {
@@ -94,11 +106,15 @@ export function PairMap({ me, partner, className = '' }: { me: Who; partner: Who
       const L = await import('leaflet');
       if (cancelled || !box.current || map.current) return;
       leaflet.current = L;
-      const m = L.map(box.current, { zoomControl: false, attributionControl: true, worldCopyJump: true });
+      const still = preview
+        ? { dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false }
+        : {};
+      const m = L.map(box.current, { zoomControl: false, attributionControl: true, worldCopyJump: true, ...still });
       m.attributionControl.setPrefix(false);
+      if (preview) m.attributionControl.setPosition('topright');
       L.tileLayer(TILE_URL, {
         maxZoom: TILE_MAX_ZOOM,
-        attribution: TILE_ATTRIBUTION_HTML,
+        attribution: preview ? TILE_ATTRIBUTION_TEXT : TILE_ATTRIBUTION_HTML,
         className: darkTheme() ? 'pair-tiles pair-tiles--dark' : 'pair-tiles',
       }).addTo(m);
       /* Only the person's own gestures count, not fitBounds. */
@@ -126,6 +142,14 @@ export function PairMap({ me, partner, className = '' }: { me: Who; partner: Who
     if (!touched.current) fit(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me.point?.lat, me.point?.lng, partner.point?.lat, partner.point?.lng, partner.point?.recorded_at, me.initial, partner.initial]);
+
+  if (preview) {
+    return (
+      <div className={`isolate overflow-hidden bg-sunken ${className || 'relative'}`}>
+        <div ref={box} className="pair-map pointer-events-none absolute inset-0" aria-hidden />
+      </div>
+    );
+  }
 
   return (
     <div className={`relative isolate overflow-hidden rounded-2xl bg-sunken shadow-card ${className}`}>

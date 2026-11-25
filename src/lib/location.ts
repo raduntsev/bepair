@@ -78,6 +78,8 @@ export const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const TILE_MAX_ZOOM = 19;
 export const TILE_ATTRIBUTION_HTML =
   '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>';
+/* The same words without the link, for a map that is itself inside a link (the profile's card). */
+export const TILE_ATTRIBUTION_TEXT = '© OpenStreetMap';
 
 /*
   The partner's charge, beside their avatar and on the «Карта» widget. It rides
