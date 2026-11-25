@@ -19,6 +19,7 @@ import { COURSE_TABS, TabbedHeader } from '@/components/TabbedHeader';
 import { AnswersView } from '@/components/courses/CourseFields';
 import { ThoughtDiary } from '@/components/courses/ThoughtDiary';
 import { CoursesUnavailable } from '@/components/courses/Unavailable';
+import { CareNote } from '@/components/courses/CareNote';
 import { tr } from '@/lib/i18n';
 
 type View = 'notes' | 'diary' | 'course';
@@ -106,6 +107,10 @@ function JournalView() {
               </motion.div>
             </>
           )}
+
+          <div className="pt-4">
+            <CareNote compact />
+          </div>
         </div>
       )}
     </Page>
