@@ -127,7 +127,7 @@ function DayView() {
   const [justUnsealed, setJustUnsealed] = useState(false);
   const [syncedFor, setSyncedFor] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const cycleEnabled = !!user && !!profile?.cycle_tracking && profile?.gender === 'f' && date === todayISO();
+  const cycleEnabled = !!user && !!profile?.cycle_tracking && !!profile?.health_consent_at && profile?.gender === 'f' && date === todayISO();
   const cycle = useCycleMark(cycleEnabled ? user!.id : null, date);
   const [cycleDraft, setCycleDraft] = useState<boolean | null>(null);
   const cycleValue = cycleDraft ?? cycle.stored ?? false;
@@ -182,7 +182,7 @@ function DayView() {
   /* A question from today's set stands in for any instruction about what to write. */
   const notePrompt = promptsFor(date, 1)[0] ?? tr('Заметка', 'Note');
   /* Only for those who turned it on, and only for women — a man's profile never shows it. */
-  const showCycle = isToday && !!profile?.cycle_tracking && profile?.gender === 'f' && !!user;
+  const showCycle = isToday && !!profile?.cycle_tracking && !!profile?.health_consent_at && profile?.gender === 'f' && !!user;
 
   const letters = waitingLetters.sealed + waitingLetters.unread;
   const thanks = user ? tasks.filter((t) => t.user_id === user.id && taskState(t) === 'done_unseen').length : 0;

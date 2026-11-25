@@ -14,6 +14,7 @@ import { localTimezone } from '@/lib/dates';
 import { clearWidgets } from '@/lib/native';
 import type { Gender } from '@/lib/words';
 import { tr } from '@/lib/i18n';
+import { CONSENT_VERSION, HEALTH_CONSENT_VERSION } from '@/lib/legal';
 
 export interface Profile {
   id: string;
@@ -31,6 +32,9 @@ export interface Profile {
   notify_sound: boolean;
   widget_hide_colors: boolean;
   lang: 'ru' | 'en';
+  consent_version: string | null;
+  consent_at: string | null;
+  health_consent_at: string | null;
 }
 
 export interface Partner {
@@ -61,7 +65,10 @@ export interface ClosedSpace {
 }
 
 const PROFILE_COLUMNS =
-  'id, space_id, display_name, avatar_url, timezone, gender, onboarded_at, cycle_tracking, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound, widget_hide_colors, lang';
+  'id, space_id, display_name, avatar_url, timezone, gender, onboarded_at, cycle_tracking, notify_pings, notify_day, notify_tasks, notify_letters, notify_sound, widget_hide_colors, lang, consent_version, consent_at, health_consent_at';
+
+/* A consent ticked on the sign-in screen, waiting for the session to record it. */
+export const CONSENT_PENDING_KEY = 'bepair-consent';
 
 export const INVITE_KEY = 'bepair-invite';
 
@@ -91,7 +98,11 @@ interface Value extends State {
   joinSpace: (code: string) => Promise<boolean>;
   leaveSpace: () => Promise<boolean>;
   deleteAccount: () => Promise<boolean>;
-  updateProfile: (patch: Partial<Omit<Profile, 'id' | 'space_id'>>) => Promise<boolean>;
+  /* Signed in, but the current edition of the consent is not on record. */
+  needsConsent: boolean;
+  giveConsent: (kind: 'personal' | 'health') => Promise<boolean>;
+  withdrawHealthConsent: () => Promise<boolean>;
+  updateProfile: (patch: Partial<Omit<Profile, 'id' | 'space_id' | 'consent_version' | 'consent_at' | 'health_consent_at'>>) => Promise<boolean>;
   updateDisplayName: (name: string) => Promise<void>;
   refresh: () => Promise<void>;
   refreshSettings: () => Promise<void>;
@@ -153,6 +164,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       let current = (profile as Profile | null) ?? null;
+
+      /* Ticked on the sign-in screen before there was a session to record it on. */
+      if (current && current.consent_version !== CONSENT_VERSION) {
+        let pending: string | null = null;
+        try {
+          pending = localStorage.getItem(CONSENT_PENDING_KEY);
+        } catch {}
+        if (pending === CONSENT_VERSION) {
+          const { error: consentError } = await supabase.rpc('bp_give_consent', {
+            kind: 'personal',
+            version: CONSENT_VERSION,
+            agent: navigator.userAgent,
+          });
+          if (!consentError) {
+            current = { ...current, consent_version: CONSENT_VERSION, consent_at: new Date().toISOString() };
+            try {
+              localStorage.removeItem(CONSENT_PENDING_KEY);
+            } catch {}
+          }
+        }
+      }
 
       /* «Сегодня» is computed in the person's own zone; keep the database told. */
       const zone = localTimezone();
@@ -408,7 +440,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, [router]);
 
-  const updateProfile = useCallback(async (patch: Partial<Omit<Profile, 'id' | 'space_id'>>) => {
+  const giveConsent = useCallback(async (kind: 'personal' | 'health') => {
+    const version = kind === 'personal' ? CONSENT_VERSION : HEALTH_CONSENT_VERSION;
+    const { error } = await supabase.rpc('bp_give_consent', { kind, version, agent: navigator.userAgent });
+    if (error) return false;
+    const now = new Date().toISOString();
+    setState((s) => ({
+      ...s,
+      profile: s.profile
+        ? kind === 'personal'
+          ? { ...s.profile, consent_version: version, consent_at: now }
+          : { ...s.profile, health_consent_at: now }
+        : s.profile,
+    }));
+    return true;
+  }, []);
+
+  /* Stops cycle tracking and deletes the marks: what withdrawing this consent means (ч. 5 ст. 21 152-ФЗ). */
+  const withdrawHealthConsent = useCallback(async () => {
+    const { error } = await supabase.rpc('bp_withdraw_health_consent', { version: HEALTH_CONSENT_VERSION, agent: navigator.userAgent });
+    if (error) return false;
+    setState((s) => ({ ...s, profile: s.profile ? { ...s.profile, health_consent_at: null, cycle_tracking: false } : s.profile }));
+    return true;
+  }, []);
+
+  const updateProfile = useCallback(async (patch: Partial<Omit<Profile, 'id' | 'space_id' | 'consent_version' | 'consent_at' | 'health_consent_at'>>) => {
     const user = sessionRef.current?.user;
     if (!user) return false;
     const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
@@ -445,6 +501,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       spaceId,
       isAuthenticated: !!state.user,
       hasSpace: !!spaceId,
+      needsConsent: !!state.profile && state.profile.consent_version !== CONSENT_VERSION,
+      giveConsent,
+      withdrawHealthConsent,
       sendMagicLink,
       verifyEmailCode,
       signInWithGoogle,
@@ -470,6 +529,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       joinSpace,
       leaveSpace,
       deleteAccount,
+      giveConsent,
+      withdrawHealthConsent,
       updateProfile,
       updateDisplayName,
       refresh,

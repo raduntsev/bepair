@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { ArrowRight, MailCheck, Plus } from 'lucide-react';
-import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { CONSENT_PENDING_KEY, useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { CONSENT_VERSION, MIN_AGE } from '@/lib/legal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Alert } from '@/components/ui/Blocks';
@@ -41,7 +43,7 @@ function isIosHomeScreenApp() {
   return (navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
-function GoogleButton() {
+function GoogleButton({ disabled }: { disabled: boolean }) {
   const { signInWithGoogle } = useSpaceAuth();
   const [busy, setBusy] = useState(false);
   return (
@@ -50,6 +52,7 @@ function GoogleButton() {
       size="lg"
       block
       loading={busy}
+      disabled={disabled}
       onClick={async () => {
         setBusy(true);
         await signInWithGoogle();
@@ -61,6 +64,98 @@ function GoogleButton() {
   );
 }
 
+const docLink = 'font-medium text-accent underline-offset-2 hover:underline';
+
+/*
+  The consent is its own act, apart from signing in (ч. 1 ст. 9 152-ФЗ): an
+  unticked box, the document one tap away, and nothing goes anywhere until it
+  is ticked. The policy is linked beside it, not folded into it.
+*/
+function ConsentCheck({ checked, onChange }: { checked: boolean; onChange: (next: boolean) => void }) {
+  return (
+    <div className="space-y-2">
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl p-1 -m-1 text-sm text-ink">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          className="mt-0.5 size-5 shrink-0 cursor-pointer accent-[var(--c-accent)]"
+        />
+        <span>
+          {tr('Я даю ', 'I give my ')}
+          <Link href="/consent" target="_blank" className={docLink}>
+            {tr('согласие на обработку персональных данных', 'consent to the processing of personal data')}
+          </Link>
+          {tr(` и подтверждаю, что мне есть ${MIN_AGE} лет`, ` and confirm I am ${MIN_AGE} or older`)}
+        </span>
+      </label>
+      <p className="pl-8 text-xs text-ink-faint">
+        {tr('Как мы обращаемся с данными — в ', 'How we handle data — see the ')}
+        <Link href="/privacy" target="_blank" className={docLink}>
+          {tr('политике', 'policy')}
+        </Link>
+        .
+      </p>
+    </div>
+  );
+}
+
+function rememberConsent() {
+  try {
+    localStorage.setItem(CONSENT_PENDING_KEY, CONSENT_VERSION);
+  } catch {}
+}
+
+/* Signed in before the consent existed, or on a device where it was not ticked. */
+export function ConsentPanel() {
+  const { giveConsent, signOut } = useSpaceAuth();
+  const [checked, setChecked] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <Centered>
+      <Panel>
+        <h1 className="text-xl font-semibold">{tr('Согласие на обработку данных', 'Consent to data processing')}</h1>
+        <p className="mt-2 text-sm text-ink-soft">
+          {tr(
+            'Чтобы продолжить, нужно ваше согласие. Это отдельный документ — его можно прочитать целиком по ссылке.',
+            'To go on, we need your consent. It is a separate document — you can read it in full via the link.',
+          )}
+        </p>
+        <div className="mt-5">
+          <ConsentCheck checked={checked} onChange={setChecked} />
+        </div>
+        {failed && (
+          <div className="mt-4">
+            <Alert>{tr('Не получилось сохранить. Проверьте связь и попробуйте ещё раз.', 'Couldn’t save. Check your connection and try again.')}</Alert>
+          </div>
+        )}
+        <div className="mt-5 space-y-2">
+          <Button
+            size="lg"
+            block
+            loading={busy}
+            disabled={!checked}
+            onClick={async () => {
+              setBusy(true);
+              setFailed(false);
+              const ok = await giveConsent('personal');
+              if (!ok) setFailed(true);
+              setBusy(false);
+            }}
+          >
+            {tr('Продолжить', 'Continue')}
+          </Button>
+          <Button variant="ghost" block onClick={signOut}>
+            {tr('Выйти', 'Sign out')}
+          </Button>
+        </div>
+      </Panel>
+    </Centered>
+  );
+}
+
 export function LoginPanel({ intro }: { intro?: string }) {
   const { sendMagicLink, verifyEmailCode, error, clearError } = useSpaceAuth();
   const [email, setEmail] = useState('');
@@ -69,6 +164,7 @@ export function LoginPanel({ intro }: { intro?: string }) {
   const [code, setCode] = useState('');
   const [checking, setChecking] = useState(false);
   const [homeScreenApp] = useState(isIosHomeScreenApp);
+  const [agreed, setAgreed] = useState(false);
 
   return (
     <Centered>
@@ -129,7 +225,14 @@ export function LoginPanel({ intro }: { intro?: string }) {
           </div>
         ) : (
           <div className="space-y-4">
-            <GoogleButton />
+            <ConsentCheck
+              checked={agreed}
+              onChange={(next) => {
+                setAgreed(next);
+                if (next) rememberConsent();
+              }}
+            />
+            <GoogleButton disabled={!agreed} />
             <div className="flex items-center gap-3 text-xs text-ink-faint" aria-hidden>
               <span className="h-px flex-1 bg-line" />
               {tr('или по коду на почту', 'or with a code by email')}
@@ -161,7 +264,7 @@ export function LoginPanel({ intro }: { intro?: string }) {
                 }}
                 placeholder="you@example.com"
               />
-              <Button type="submit" size="lg" block loading={busy} disabled={!email}>
+              <Button type="submit" size="lg" block loading={busy} disabled={!email || !agreed}>
                 {tr('Получить код на почту', 'Email me a code')} <ArrowRight className="size-4" aria-hidden />
               </Button>
             </form>

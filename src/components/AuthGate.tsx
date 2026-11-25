@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { INVITE_KEY, useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { Alert } from '@/components/ui/Blocks';
-import { Centered, ConfigNotice, LoginPanel, MigrationNotice, Opening, Panel, SpaceChoice } from '@/components/AuthScreens';
+import { Centered, ConfigNotice, ConsentPanel, LoginPanel, MigrationNotice, Opening, Panel, SpaceChoice } from '@/components/AuthScreens';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { tr } from '@/lib/i18n';
@@ -22,7 +22,7 @@ function readInvite() {
   `onboarding` routes pass requireOnboarded={false} so the questions can render.
 */
 export function AuthGate({ children, requireOnboarded = true }: { children: React.ReactNode; requireOnboarded?: boolean }) {
-  const { isAuthenticated, hasSpace, isLoading, profile, error, needsMigration, joinSpace, refresh } = useSpaceAuth();
+  const { isAuthenticated, hasSpace, isLoading, profile, error, needsMigration, needsConsent, joinSpace, refresh } = useSpaceAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [joining, setJoining] = useState(false);
@@ -30,13 +30,14 @@ export function AuthGate({ children, requireOnboarded = true }: { children: Reac
 
   /* Arrived through /join/<code> before signing in: finish joining now. */
   useEffect(() => {
-    if (isLoading || !isAuthenticated || hasSpace || tried.current) return;
+    /* Not before the consent: joining a space is already processing. */
+    if (isLoading || !isAuthenticated || hasSpace || needsConsent || tried.current) return;
     const code = readInvite();
     if (!code) return;
     tried.current = true;
     setJoining(true);
     joinSpace(code).finally(() => setJoining(false));
-  }, [isLoading, isAuthenticated, hasSpace, joinSpace]);
+  }, [isLoading, isAuthenticated, hasSpace, needsConsent, joinSpace]);
 
   const mustOnboard = requireOnboarded && hasSpace && profile !== null && !profile.onboarded_at;
 
@@ -64,6 +65,7 @@ export function AuthGate({ children, requireOnboarded = true }: { children: Reac
     );
   }
 
+  if (needsConsent) return <ConsentPanel />;
   if (joining) return <Opening label={tr('Входим в пространство партнёра…', 'Joining your partner’s space…')} />;
   if (!hasSpace) return <SpaceChoice />;
   if (mustOnboard) return <Opening />;
