@@ -25,8 +25,11 @@ drop policy if exists "spaces: members can view" on public.spaces;
 create policy "spaces: members can view" on public.spaces
   for select to authenticated using (id = public.bp_my_space());
 
--- The old helper moved any user into any space; nothing calls it any more.
+-- Old Lumina helpers, server-only and unused: join_space moved any user into
+-- any space; leave_space's «wipe_mine» compared user_id with itself and would
+-- have deleted everyone's rows.
 drop function if exists public.join_space(text, uuid);
+drop function if exists public.leave_space(text, uuid);
 
 -- ── A profile changes space only through the server ─────────────────────
 -- Inside a security definer function current_user is its owner, and the
