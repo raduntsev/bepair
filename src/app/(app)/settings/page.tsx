@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
-import { Bell, Check, ChevronRight, GraduationCap, Images, LayoutGrid, Lock, LogOut, MapPin, Monitor, Moon, Smartphone, Sun, UserCog, UserRound } from 'lucide-react';
+import { Bell, Check, ChevronRight, GraduationCap, Images, LayoutGrid, Lock, LogOut, Monitor, Moon, Smartphone, Sun, UserCog, UserRound } from 'lucide-react';
 import { displayName } from '@/lib/words';
 import { plural, todayISO } from '@/lib/dates';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
@@ -14,6 +14,7 @@ import { InviteCard } from '@/components/InviteCard';
 import { PartnerLeftCard } from '@/components/PartnerLeft';
 import { Avatar, AvatarPicker } from '@/components/Avatar';
 import { PartnerBatteryBadge, usePartnerBattery } from '@/components/PartnerBattery';
+import { PairMapCard } from '@/components/PairMapCard';
 import { useTour } from '@/components/Tour';
 import { chooseLang, savedLang, tr } from '@/lib/i18n';
 
@@ -128,11 +129,7 @@ export default function SettingsPage() {
         ) : (
           <div data-tour="profile-pair">{closedSpace ? <PartnerLeftCard /> : <InviteCard />}</div>
         )}
-        {partner && (
-          <RowGroup label={tr('Вместе', 'Together')}>
-            <LinkRow href="/map" Icon={MapPin} title={tr('Где мы', 'Where we are')} sub={tr('Вы и партнёр на карте', 'The two of you on a map')} />
-          </RowGroup>
-        )}
+        {partner && <PairMapCard />}
 
         <SectionHeader title={tr('Приложение', 'App')} />
         <div data-tour="profile-settings" className="space-y-3">

@@ -588,6 +588,11 @@
 .pair-map .leaflet-control-attribution a {
   color: inherit;
 }
+/* The profile's card puts it in the top corner, as the widget does: a chip clear of the rounded edge. */
+.pair-map .leaflet-top.leaflet-right .leaflet-control-attribution {
+  margin: 8px;
+  border-radius: 6px;
+}
 /* OpenStreetMap's colours quieted to grey, so only the two pins carry colour. */
 .pair-tiles {
   filter: grayscale(1) contrast(0.9) brightness(1.06);
