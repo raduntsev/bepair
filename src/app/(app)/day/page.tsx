@@ -111,54 +111,54 @@ function DatesChip({ date, isToday, togetherSince }: { date: string; isToday: bo
 
 /*
   «Ссора» and «Близость» belong to the pair's day, not to one person: a tap
-  saves at once and shows on both phones. Today they are toggles; a past day
-  only shows what was marked. Neutral ink, like the cycle mark — the spectrum
-  is mood's alone.
+  saves at once and shows on both phones. Icons only, beside the day's own
+  button — no caption, no heading. On a closed day only what was marked shows,
+  and it cannot be changed. Neutral ink, like the cycle mark: the spectrum is
+  mood's alone.
 */
-function DayEvents({ date, isToday }: { date: string; isToday: boolean }) {
-  const events = useDayEvents(date, date);
-  const [failed, setFailed] = useState(false);
+function DayEventIcons({
+  events,
+  date,
+  editable,
+  compact = false,
+  onResult,
+}: {
+  events: ReturnType<typeof useDayEvents>;
+  date: string;
+  editable: boolean;
+  /* In the folded day: round and the pencil's size, so the line stays one line. */
+  compact?: boolean;
+  onResult: (ok: boolean) => void;
+}) {
   if (!events.available) return null;
-
   const kinds: { kind: DayEventKind; label: string; Icon: typeof Zap }[] = [
     { kind: 'quarrel', label: tr('Ссора', 'A fight'), Icon: Zap },
     ...(events.intimacyOn ? [{ kind: 'intimacy' as const, label: tr('Близость', 'Intimacy'), Icon: Heart }] : []),
   ];
-  const shown = isToday ? kinds : kinds.filter((k) => events.has(date, k.kind));
-  if (shown.length === 0) return null;
+  const shown = editable ? kinds : kinds.filter((k) => events.has(date, k.kind));
 
-  return (
-    <section className="rounded-2xl bg-surface p-4 shadow-card" aria-label={tr('Отметки дня для вас двоих', 'Marks of the day for you both')}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-subhead text-ink-faint">{isToday ? tr('Сегодня было', 'Today there was') : tr('В этот день', 'On this day')}</span>
-        {shown.map(({ kind, label, Icon }) => {
-          const on = events.has(date, kind);
-          return isToday ? (
-            <button
-              key={kind}
-              type="button"
-              aria-pressed={on}
-              onClick={async () => setFailed(!(await events.toggle(date, kind)))}
-              className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-subhead font-medium transition-colors duration-300 ${
-                on ? 'bg-ink text-surface' : 'bg-sunken text-ink-soft hover:text-ink'
-              }`}
-            >
-              <Icon className="size-4" aria-hidden /> {label}
-            </button>
-          ) : (
-            <span key={kind} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-sunken px-3.5 text-subhead font-medium text-ink">
-              <Icon className="size-4" aria-hidden /> {label}
-            </span>
-          );
-        })}
-      </div>
-      {failed && (
-        <div className="mt-3">
-          <Alert>{tr('Не получилось сохранить. Проверьте связь и попробуйте ещё раз.', 'Couldn’t save. Check your connection and try again.')}</Alert>
-        </div>
-      )}
-    </section>
-  );
+  return shown.map(({ kind, label, Icon }) => {
+    const on = events.has(date, kind);
+    return editable ? (
+      <button
+        key={kind}
+        type="button"
+        aria-pressed={on}
+        aria-label={label}
+        title={label}
+        onClick={async () => onResult(await events.toggle(date, kind))}
+        className={`flex shrink-0 items-center justify-center transition-colors duration-300 ${compact ? 'size-10 rounded-full' : 'size-[3.25rem] rounded-[0.875rem]'} ${
+          on ? 'bg-ink text-surface' : 'bg-sunken text-ink-faint hover:text-ink'
+        }`}
+      >
+        <Icon className={compact ? 'size-4.5' : 'size-5'} fill={on ? 'currentColor' : 'none'} aria-hidden />
+      </button>
+    ) : (
+      <span key={kind} role="img" aria-label={label} title={label} className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sunken text-ink">
+        <Icon className="size-4.5" fill="currentColor" aria-hidden />
+      </span>
+    );
+  });
 }
 
 function DayView() {
@@ -167,6 +167,8 @@ function DayView() {
   const { user, profile, settings } = useSpaceAuth();
 
   const { partner, mine, theirs, isLoading, error, save, isUnlocked, isToday } = useCoupleDay(date);
+  const dayEvents = useDayEvents(date, date);
+  const [eventFailed, setEventFailed] = useState(false);
   const { tasks, templates, add: addTask, complete, acknowledge, error: taskError } = useTasks();
   const planerka = usePlanerka();
   const presence = usePresence();
@@ -413,6 +415,7 @@ function DayView() {
                             <Button size="lg" className="min-w-0 flex-1" loading={saving} disabled={mood === null || !isDirty} onClick={onSave}>
                               {mine ? tr('Сохранить', 'Save') : tr('Отметить день', 'Mark the day')}
                             </Button>
+                            {partner && <DayEventIcons events={dayEvents} date={date} editable onResult={(ok) => setEventFailed(!ok)} />}
                           </motion.div>
                         )}
                       </AutoHeight>
@@ -435,6 +438,9 @@ function DayView() {
                         <span role="status" aria-live="polite" className="contents">
                           {justSaved && <Check className="size-5 text-accent" aria-label={tr('Сохранено', 'Saved')} />}
                         </span>
+                        {partner && (
+                          <DayEventIcons events={dayEvents} date={date} editable={!isClosed} compact onResult={(ok) => setEventFailed(!ok)} />
+                        )}
                         {!isClosed && (
                           <Button
                             variant="ghost"
@@ -454,21 +460,20 @@ function DayView() {
                   ) : (
                     <div className="flex items-center gap-3.5 text-ink-faint">
                       <span aria-hidden className="size-11 shrink-0 rounded-full border-2 border-dashed border-line-strong" />
-                      <h2 className="text-headline font-semibold">{tr('Не отмечен', 'Not marked')}</h2>
+                      <h2 className="min-w-0 flex-1 text-headline font-semibold">{tr('Не отмечен', 'Not marked')}</h2>
+                      {partner && <DayEventIcons events={dayEvents} date={date} editable={false} onResult={(ok) => setEventFailed(!ok)} />}
                     </div>
                   )}
 
-                  {error && (
+                  {(error || eventFailed) && (
                     <div className="mt-4">
-                      <Alert>{error}</Alert>
+                      <Alert>{error ?? tr('Не получилось сохранить отметку. Проверьте связь и попробуйте ещё раз.', 'Couldn’t save the mark. Check your connection and try again.')}</Alert>
                     </div>
                   )}
                 </motion.div>
               </AnimatePresence>
             </AutoHeight>
           </section>
-
-          {partner && <DayEvents date={date} isToday={isToday} />}
 
           <div data-tour="day-partner">
           <PartnerDayCard
