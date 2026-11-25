@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { INVITE_KEY, useSpaceAuth } from '@/hooks/useSpaceAuth';
-import { Centered, LoginPanel, Opening, Panel } from '@/components/AuthScreens';
+import { Centered, ConsentPanel, LoginPanel, Opening, Panel } from '@/components/AuthScreens';
 import { Alert } from '@/components/ui/Blocks';
 import { LinkButton } from '@/components/ui/Button';
 import { tr } from '@/lib/i18n';
@@ -16,7 +16,7 @@ export default function JoinPage() {
   const params = useParams<{ code: string }>();
   const code = decodeURIComponent(params.code ?? '').trim().toLowerCase();
   const router = useRouter();
-  const { isLoading, isAuthenticated, hasSpace, inviteCode, joinSpace, error } = useSpaceAuth();
+  const { isLoading, isAuthenticated, hasSpace, inviteCode, joinSpace, error, needsConsent } = useSpaceAuth();
   const [failed, setFailed] = useState(false);
   const started = useRef(false);
 
@@ -28,15 +28,16 @@ export default function JoinPage() {
   }, [code]);
 
   useEffect(() => {
-    if (isLoading || !isAuthenticated || hasSpace || started.current || !code) return;
+    if (isLoading || !isAuthenticated || hasSpace || needsConsent || started.current || !code) return;
     started.current = true;
     joinSpace(code).then((ok) => {
       if (ok) router.replace('/onboarding');
       else setFailed(true);
     });
-  }, [isLoading, isAuthenticated, hasSpace, code, joinSpace, router]);
+  }, [isLoading, isAuthenticated, hasSpace, needsConsent, code, joinSpace, router]);
 
   if (isLoading) return <Opening />;
+  if (isAuthenticated && needsConsent) return <ConsentPanel />;
   if (!isAuthenticated) return <LoginPanel intro={tr('Вас позвали в общее пространство. Войдите — и вы сразу окажетесь внутри.', 'You’ve been invited to a shared space. Sign in and you’ll be right inside.')} />;
 
   if (hasSpace) {

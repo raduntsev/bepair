@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, LogOut, Trash2 } from 'lucide-react';
+import { Download, FileText, LogOut, Trash2 } from 'lucide-react';
 import { displayName, genitive } from '@/lib/words';
 import { tr } from '@/lib/i18n';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
@@ -37,6 +37,12 @@ export default function AccountPage() {
           footer={tr('Перед уходом можно сохранить всё, что вы написали, одним файлом.', 'Before you go, you can save everything you wrote as one file.')}
         >
           <LinkRow href="/settings/personal" Icon={Download} title={tr('Скачать мои данные', 'Download my data')} />
+        </RowGroup>
+
+        <RowGroup label={tr('Документы', 'Documents')}>
+          <LinkRow href="/privacy" Icon={FileText} title={tr('Политика обработки данных', 'Privacy policy')} />
+          <LinkRow href="/consent" Icon={FileText} title={tr('Согласие на обработку данных', 'Consent to data processing')} />
+          <LinkRow href="/consent/health" Icon={FileText} title={tr('Согласие на сведения о здоровье', 'Consent to health data')} />
         </RowGroup>
 
         {partner && <LeavePair name={name} gender={partner.gender} />}
