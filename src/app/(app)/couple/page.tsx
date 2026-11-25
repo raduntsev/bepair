@@ -10,6 +10,7 @@ import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { usePresence } from '@/hooks/usePresence';
 import { Counters } from '@/components/Counters';
 import { Avatar } from '@/components/Avatar';
+import { PartnerBatteryBadge, usePartnerBattery } from '@/components/PartnerBattery';
 import { PartnerRhythm } from '@/components/PartnerRhythm';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
@@ -27,6 +28,7 @@ interface Facts {
 export default function CouplePage() {
   const { user, partner, profile, settings, refreshSettings } = useSpaceAuth();
   const presence = usePresence();
+  const partnerBattery = usePartnerBattery(!!partner);
   const [facts, setFacts] = useState<Facts | null>(null);
   const [answers, setAnswers] = useState<{ user_id: string; question: number; answer: string }[]>([]);
   const [whose, setWhose] = useState<'mine' | 'theirs'>('theirs');
@@ -53,9 +55,16 @@ export default function CouplePage() {
       <PageHeader title={partner ? tr(`Вы и ${name}`, `You and ${name}`) : tr('Пара', 'Couple')} back={{ href: '/settings', label: tr('Профиль', 'Profile') }} />
 
       {partner && (
-        <div aria-hidden className="-mt-2 mb-5 flex">
-          <Avatar path={profile?.avatar_url} name={profile?.display_name ?? ''} who="me" className="size-16 text-title-2 ring-4 ring-canvas" />
-          <Avatar path={partner.avatar_url} name={name} who="partner" className="-ml-4 size-16 text-title-2 ring-4 ring-canvas" />
+        <div className="-mt-2 mb-5 flex">
+          <span aria-hidden className="flex">
+            <Avatar path={profile?.avatar_url} name={profile?.display_name ?? ''} who="me" className="size-16 text-title-2 ring-4 ring-canvas" />
+          </span>
+          <span className="relative -ml-4 flex">
+            <span aria-hidden className="flex">
+              <Avatar path={partner.avatar_url} name={name} who="partner" className="size-16 text-title-2 ring-4 ring-canvas" />
+            </span>
+            <PartnerBatteryBadge battery={partnerBattery} name={name} />
+          </span>
         </div>
       )}
 

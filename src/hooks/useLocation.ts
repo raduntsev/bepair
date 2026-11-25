@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import supabase from '@/lib/supabase';
-import { SEND_EVERY_MS, type LocationState } from '@/lib/location';
+import { readBattery, SEND_EVERY_MS, type LocationState } from '@/lib/location';
 import { nativeLocation, type LocationNative } from '@/lib/native';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
 import { tr } from '@/lib/i18n';
@@ -34,11 +34,14 @@ export function currentPosition(prompt: boolean): Promise<GeolocationPosition> {
 }
 
 export async function sendPosition(position: GeolocationPosition) {
+  const battery = await readBattery();
   const { data } = await supabase.rpc('bp_set_location', {
     la: position.coords.latitude,
     ln: position.coords.longitude,
     acc: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
     at: new Date(position.timestamp).toISOString(),
+    batt: battery?.level ?? null,
+    chg: battery?.charging ?? null,
   });
   return data === true;
 }

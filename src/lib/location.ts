@@ -11,6 +11,9 @@ export interface Point {
   lng: number;
   accuracy: number | null;
   recorded_at: string;
+  /* The phone's charge when the point was sent, 0–100; null when the phone does not say. */
+  battery?: number | null;
+  charging?: boolean | null;
 }
 
 export interface LocationState {
@@ -75,3 +78,36 @@ export const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const TILE_MAX_ZOOM = 19;
 export const TILE_ATTRIBUTION_HTML =
   '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>';
+
+/*
+  The partner's charge, beside their avatar and on the «Карта» widget. It rides
+  with the point, so it obeys the same rule; an old point says nothing about
+  the phone now, so a stale one shows no charge at all.
+*/
+export interface Battery {
+  level: number;
+  charging: boolean;
+}
+
+export function freshBattery(point: Pick<Point, 'recorded_at' | 'battery' | 'charging'> | null | undefined, now = Date.now()): Battery | null {
+  if (!point || point.battery == null || isStale(point.recorded_at, now)) return null;
+  return { level: Math.round(point.battery), charging: !!point.charging };
+}
+
+/* «84 %», «84 %, заряжается». */
+export function batteryLabel(b: Battery, lang: Lang) {
+  return b.charging ? trIn(lang, `${b.level} %, заряжается`, `${b.level}%, charging`) : trIn(lang, `${b.level} %`, `${b.level}%`);
+}
+
+/* What the browser (or the Android WebView) knows of its own charge; null where it keeps it to itself (Safari, Firefox). */
+export async function readBattery(): Promise<Battery | null> {
+  try {
+    const nav = navigator as Navigator & { getBattery?: () => Promise<{ level: number; charging: boolean }> };
+    if (typeof nav.getBattery !== 'function') return null;
+    const b = await nav.getBattery();
+    if (!Number.isFinite(b.level)) return null;
+    return { level: Math.round(b.level * 100), charging: !!b.charging };
+  } catch {
+    return null;
+  }
+}

@@ -12,6 +12,7 @@ import { Segment } from '@/components/ui/Controls';
 import { Card, LinkRow, Page, RowGroup, RowIcon, SectionHeader } from '@/components/ui/Blocks';
 import { InviteCard } from '@/components/InviteCard';
 import { Avatar, AvatarPicker } from '@/components/Avatar';
+import { PartnerBatteryBadge, usePartnerBattery } from '@/components/PartnerBattery';
 import { useTour } from '@/components/Tour';
 import { chooseLang, savedLang, tr } from '@/lib/i18n';
 
@@ -63,6 +64,7 @@ export default function SettingsPage() {
   };
 
   const partnerName = displayName(partner?.display_name);
+  const partnerBattery = usePartnerBattery(!!partner);
   const together = settings?.together_since ? differenceInCalendarDays(parseISO(todayISO()), parseISO(settings.together_since)) + 1 : null;
 
   return (
@@ -107,7 +109,10 @@ export default function SettingsPage() {
           >
             <span className="flex shrink-0">
               <Avatar path={profile?.avatar_url} name={profile?.display_name ?? ''} who="me" className="size-12 text-headline ring-2 ring-surface" />
-              <Avatar path={partner.avatar_url} name={partnerName} who="partner" className="-ml-3 size-12 text-headline ring-2 ring-surface" />
+              <span className="relative -ml-3 flex">
+                <Avatar path={partner.avatar_url} name={partnerName} who="partner" className="size-12 text-headline ring-2 ring-surface" />
+                <PartnerBatteryBadge battery={partnerBattery} name={partnerName} />
+              </span>
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-headline font-semibold">{tr(`Вы и ${partnerName}`, `You and ${partnerName}`)}</span>
