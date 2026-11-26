@@ -97,13 +97,21 @@ export function TodayTasks({
     <section data-tour="day-tasks" className="overflow-hidden rounded-2xl bg-surface shadow-card">
       <div className="flex items-baseline justify-between gap-3 px-4 pt-4 pb-1">
         <h3 className="text-headline font-semibold">{tr('Дела на сегодня', 'Today’s to-dos')}</h3>
-        {open.length > 0 && <span className="text-footnote text-ink-faint">{tr(`осталось ${open.length}`, `${open.length} left`)}</span>}
+        {open.length > 0 && <span className="text-subhead text-ink-faint">{tr(`осталось ${open.length}`, `${open.length} left`)}</span>}
       </div>
 
-      <p className="px-4 pt-2 text-footnote font-medium text-ink-faint">{tr(`${name} просит`, `${name} asks`)}</p>
       {open.length === 0 && doneToday.length === 0 ? (
-        <p className="px-4 pt-1 pb-3 text-subhead text-ink-faint">{tr('Пока ни о чём — день свободен.', 'Nothing yet — the day is yours.')}</p>
+        /* Nothing asked yet: the partner's colour where their asks will appear, and one plain line. */
+        <div className="flex min-h-13 items-center gap-3.5 px-4 py-2">
+          <span aria-hidden className="size-[1.625rem] shrink-0 rounded-full bg-partner" />
+          <span className="text-body text-ink-faint">
+            <span className="sr-only">{name}: </span>
+            {tr(`Ещё не ${verb(partner?.gender, 'придумал')}`, 'Nothing asked yet')}
+          </span>
+        </div>
       ) : (
+        <>
+        <p className="px-4 pt-2 text-subhead text-ink-faint">{tr(`${name} просит`, `${name} asks`)}</p>
         <ul className="pb-1">
           <AnimatePresence initial={false}>
             {open.map((task) => (
@@ -128,7 +136,7 @@ export function TodayTasks({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-body text-ink">{task.content}</span>
-                    <span className="block text-footnote text-ink-faint">{points(task.points)}</span>
+                    <span className="block text-subhead text-ink-faint">{points(task.points)}</span>
                   </span>
                   <span className="sr-only">{tr(`Отметить «${task.content}» выполненной`, `Mark “${task.content}” as done`)}</span>
                 </button>
@@ -141,7 +149,7 @@ export function TodayTasks({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-body text-ink-faint line-through decoration-ink-faint">{task.content}</span>
-                  <span className="block text-footnote text-ink-faint">
+                  <span className="block text-subhead text-ink-faint">
                     {taskState(task) === 'confirmed' ? tr('партнёр увидел', 'partner saw it') : tr('сделано сегодня', 'done today')}
                   </span>
                 </span>
@@ -149,11 +157,12 @@ export function TodayTasks({
             ))}
           </AnimatePresence>
         </ul>
+        </>
       )}
 
       {mine.length > 0 && (
         <>
-          <p className="border-t border-line px-4 pt-3 text-footnote font-medium text-ink-faint">{tr('Вы попросили', 'You asked')}</p>
+          <p className="border-t border-line px-4 pt-3 text-subhead text-ink-faint">{tr('Вы попросили', 'You asked')}</p>
           <ul className="pb-1">
             <AnimatePresence initial={false}>
               {mine.map((task) => {
@@ -171,7 +180,7 @@ export function TodayTasks({
                     <span className={`min-w-0 flex-1 text-body ${done ? 'text-ink-faint line-through decoration-ink-faint' : 'text-ink-soft'}`}>
                       {task.content}
                     </span>
-                    <span className="shrink-0 text-footnote text-ink-faint">{done ? tr('сделано', 'done') : tr('ждёт', 'waiting')}</span>
+                    <span className="shrink-0 text-subhead text-ink-faint">{done ? tr('сделано', 'done') : tr('ждёт', 'waiting')}</span>
                   </motion.li>
                 );
               })}

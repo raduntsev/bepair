@@ -508,7 +508,7 @@ function DayView() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-body font-semibold">{planerkaStarted ? tr('Продолжить планёрку', 'Continue the check-in') : tr('Планёрка', 'Weekly check-in')}</span>
-                      <span className="block text-footnote text-ink-faint">{planerka.settings.at_time}</span>
+                      <span className="block text-subhead text-ink-faint">{planerka.settings.at_time}</span>
                     </span>
                     <ChevronRight className="size-5 text-line-strong" aria-hidden />
                   </Link>
@@ -523,7 +523,7 @@ function DayView() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-body font-semibold">{tr('Дела на неделю', 'This week’s to-dos')}</span>
-                      <span className="block text-footnote text-ink-faint">
+                      <span className="block text-subhead text-ink-faint">
                         {week.daysLeft === 0
                           ? tr('планёрка сегодня', 'check-in today')
                           : tr(`до планёрки ${week.daysLeft} ${plural(week.daysLeft, 'день', 'дня', 'дней')}`, `${week.daysLeft} ${week.daysLeft === 1 ? 'day' : 'days'} to the check-in`)}
@@ -571,7 +571,7 @@ function DayView() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-body font-semibold">{courseCard.course.title}</span>
-                <span className="block truncate text-footnote text-ink-faint">
+                <span className="block truncate text-subhead text-ink-faint">
                   {courseCard.streak > 1 && `${tr(`${courseCard.streak} ${plural(courseCard.streak, 'день', 'дня', 'дней')} подряд`, `${courseCard.streak} days in a row`)} · `}
                   {tr('Дальше', 'Next')}: {courseCard.next.code} {courseCard.next.title}
                 </span>

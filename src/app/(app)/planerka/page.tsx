@@ -15,11 +15,12 @@ import { Segment } from '@/components/ui/Controls';
 import { Alert, EmptyState, Loading, Page } from '@/components/ui/Blocks';
 import { TIME_TABS, TabbedHeader } from '@/components/TabbedHeader';
 import { TodosBoard } from '@/components/PlanerkaSession';
+import { Budget } from '@/components/Budget';
 import { AutoHeight } from '@/components/ui/AutoHeight';
 import { Sheet } from '@/components/ui/Sheet';
 import { tr } from '@/lib/i18n';
 
-type View = 'week' | 'todos' | 'history';
+type View = 'week' | 'todos' | 'budget' | 'history';
 const EASE = [0.32, 0.72, 0, 1] as const;
 /* Sessions shown in «История» before «Показать все». */
 const HISTORY_PAGE = 6;
@@ -52,7 +53,8 @@ function PlanerkaView() {
   const { user, partner } = useSpaceAuth();
   const store = usePlanerka();
   const { planerkas, wheels, settings, isLoading, error, saveSettings } = store;
-  const [view, setView] = useState<View>(params.get('view') === 'todos' ? 'todos' : 'week');
+  const asked = params.get('view');
+  const [view, setView] = useState<View>(asked === 'todos' || asked === 'budget' ? asked : 'week');
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const closeSchedule = useCallback(() => setScheduleOpen(false), []);
   const partnerName = displayName(partner?.display_name);
@@ -119,6 +121,7 @@ function PlanerkaView() {
         options={[
           { value: 'week' as const, label: tr('Неделя', 'Week') },
           { value: 'todos' as const, label: tr('Дела', 'To-dos') },
+          { value: 'budget' as const, label: tr('Бюджет', 'Budget') },
           { value: 'history' as const, label: tr('История', 'History') },
         ]}
         value={view}
@@ -132,6 +135,7 @@ function PlanerkaView() {
         <motion.div key={view} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: EASE }} className="mt-5">
           {view === 'week' && <WeekView store={store} userId={user?.id} partnerId={partner?.id} partnerName={partnerName} />}
           {view === 'todos' && <TodosBoard planerkaId={null} store={store} />}
+          {view === 'budget' && <Budget />}
           {view === 'history' && <HistoryView store={store} userId={user?.id} partnerId={partner?.id} partnerName={partnerName} />}
         </motion.div>
       )}

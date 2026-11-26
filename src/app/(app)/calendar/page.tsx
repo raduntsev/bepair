@@ -1,18 +1,20 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
+  addDays,
   addMonths,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
   format,
   isSameMonth,
+  parseISO,
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Heart, Zap } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Heart, Zap } from 'lucide-react';
 import { MOOD_INK, moodColor } from '@/lib/mood';
 import { fmt, sentence, todayISO } from '@/lib/dates';
 import { Alert } from '@/components/ui/Blocks';
@@ -24,6 +26,7 @@ import { occursOn, withAnniversary } from '@/lib/importantDates';
 import { PRINCIPAL_LABEL, phasesBetween, type Principal } from '@/lib/moon';
 import { ImportantDates } from '@/components/ImportantDates';
 import { MoonGlyph } from '@/components/MoonGlyph';
+import { CalendarDay } from '@/components/CalendarDay';
 import { TIME_TABS, TabbedHeader } from '@/components/TabbedHeader';
 import { tr } from '@/lib/i18n';
 
@@ -60,9 +63,17 @@ function DayCell({ mark, muted }: { mark: DayMark | undefined; muted: boolean })
   );
 }
 
+const EASE = [0.32, 0.72, 0, 1] as const;
+
 export default function CalendarPage() {
-  const router = useRouter();
+  const reduce = useReducedMotion();
   const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
+  /*
+    A tapped day: the month folds into the one week that holds it, and the day
+    opens underneath. The strip then pages by week (arrows or a swipe); the
+    calendar icon unfolds the month again.
+  */
+  const [selected, setSelected] = useState<string | null>(null);
   const today = todayISO();
 
   const gridStart = startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 });
@@ -71,6 +82,7 @@ export default function CalendarPage() {
     () => eachDayOfInterval({ start: gridStart, end: gridEnd }),
     [gridStart, gridEnd],
   );
+  const weeks = useMemo(() => Array.from({ length: days.length / 7 }, (_, i) => days.slice(i * 7, i * 7 + 7)), [days]);
 
   const { marks, error, isLoading } = useMonthEntries(iso(gridStart), iso(gridEnd));
   const { settings } = useSpaceAuth();
@@ -89,6 +101,74 @@ export default function CalendarPage() {
   const monthHasDays = days.some((day) => isSameMonth(day, cursor) && (marks[iso(day)]?.mineMarked || marks[iso(day)]?.theirsMarked));
   const isCurrentMonth = isSameMonth(cursor, new Date());
 
+  const select = (key: string) => {
+    const clamped = key > today ? today : key;
+    setSelected(clamped);
+    /* The month whose grid holds the day, so its week and marks are loaded. */
+    setCursor(startOfMonth(parseISO(clamped)));
+  };
+  const shiftWeek = (delta: number) => selected && select(iso(addDays(parseISO(selected), delta * 7)));
+  const canGoForward = !!selected && iso(startOfWeek(addDays(parseISO(selected), 7), { weekStartsOn: 1 })) <= today;
+  const selectedWeek = selected ? iso(startOfWeek(parseISO(selected), { weekStartsOn: 1 })) : null;
+  const specialOn = (key: string) => allDates.filter((d) => occursOn(d, key));
+
+  const cell = (day: Date) => {
+    const key = iso(day);
+    const outside = !selected && !isSameMonth(day, cursor);
+    const isToday = key === today;
+    const isFuture = key > today;
+    const isSelected = key === selected;
+    const mark = marks[key];
+    const special = specialOn(key);
+    const moon = moonByDay[key];
+    const quarrel = events.has(key, 'quarrel');
+    const intimacy = events.has(key, 'intimacy');
+
+    return (
+      <button
+        key={key}
+        type="button"
+        disabled={isFuture}
+        aria-pressed={selected ? isSelected : undefined}
+        onClick={() => select(key)}
+        aria-label={`${fmt(day, 'd MMMM yyyy')}${mark?.theirsMarked ? tr(', партнёр отметил день', ', partner marked the day') : ''}${mark?.mineMarked ? tr(', ваш день отмечен', ', your day is marked') : ''}${special.length ? `, ${special.map((d) => (d.id ? d.title : tr('годовщина', 'anniversary'))).join(', ')}` : ''}${moon ? `, ${PRINCIPAL_LABEL[moon]}` : ''}${quarrel ? tr(', ссора', ', a fight') : ''}${intimacy ? tr(', близость', ', intimacy') : ''}`}
+        className={`relative flex aspect-square min-h-11 items-center justify-center rounded-full text-sm font-medium transition-[background-color,box-shadow] enabled:hover:bg-sunken disabled:cursor-default ${
+          special.length ? 'disabled:opacity-60' : 'disabled:opacity-30'
+        } ${isSelected ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface' : ''}`}
+      >
+        <DayCell mark={mark} muted={outside} />
+        {special.length > 0 && (
+          <span
+            className="pointer-events-none absolute bottom-1 left-1/2 z-10 size-1.5 -translate-x-1/2 rounded-full bg-accent ring-[1.5px] ring-surface"
+            aria-hidden
+          />
+        )}
+        {/* The pair's marks: badges on the surface, so they read on any mood colour. Heart top-left, lightning bottom-right. */}
+        {intimacy && (
+          <span className="pointer-events-none absolute -top-0.5 -left-0.5 z-10 flex size-4 items-center justify-center rounded-full bg-surface text-ink shadow-card" aria-hidden>
+            <Heart className="size-2.5" fill="currentColor" strokeWidth={0} />
+          </span>
+        )}
+        {quarrel && (
+          <span className="pointer-events-none absolute -right-0.5 -bottom-0.5 z-10 flex size-4 items-center justify-center rounded-full bg-surface text-ink shadow-card" aria-hidden>
+            <Zap className="size-2.5" fill="currentColor" strokeWidth={0} />
+          </span>
+        )}
+        {moon && <MoonGlyph phase={PRINCIPAL_PHASE[moon]} size={10} className="pointer-events-none absolute top-0.5 right-0.5 z-10 text-ink-soft" />}
+        <span
+          className={`relative z-10 ${mark?.theirsMood == null && outside ? 'text-ink-faint' : 'text-ink'} ${
+            isToday ? 'font-bold underline decoration-2 underline-offset-4' : ''
+          }`}
+          style={mark?.theirsMood != null ? { color: MOOD_INK } : undefined}
+        >
+          {format(day, 'd')}
+        </span>
+      </button>
+    );
+  };
+
+  const navButton = 'tap flex items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-sunken hover:text-ink disabled:opacity-30';
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-8 sm:px-6 md:pt-12">
       <TabbedHeader id="time" title={tr('Календарь', 'Calendar')} tabs={TIME_TABS} current="/calendar" />
@@ -100,101 +180,89 @@ export default function CalendarPage() {
       )}
 
       <div data-tour="calendar-grid" className="rounded-2xl bg-surface p-3 shadow-card md:p-6">
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-5 flex items-center justify-between gap-2">
           <button
             type="button"
-            aria-label={tr('Предыдущий месяц', 'Previous month')}
-            onClick={() => setCursor((value) => addMonths(value, -1))}
-            className="tap flex items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-sunken hover:text-ink"
+            aria-label={selected ? tr('Предыдущая неделя', 'Previous week') : tr('Предыдущий месяц', 'Previous month')}
+            onClick={() => (selected ? shiftWeek(-1) : setCursor((value) => addMonths(value, -1)))}
+            className={navButton}
           >
             <ChevronLeft className="size-5" aria-hidden />
           </button>
 
-          <h2 className="text-base font-semibold" aria-live="polite">
-            {sentence(fmt(cursor, 'LLLL yyyy'))}
+          <h2 className="flex items-center gap-2 text-headline font-semibold" aria-live="polite">
+            {selected ? fmt(selected, 'd MMMM') : sentence(fmt(cursor, 'LLLL yyyy'))}
           </h2>
 
-          <button
-            type="button"
-            aria-label={tr('Следующий месяц', 'Next month')}
-            onClick={() => setCursor((value) => addMonths(value, 1))}
-            className="tap flex items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-sunken hover:text-ink"
-          >
-            <ChevronRight className="size-5" aria-hidden />
-          </button>
+          <div className="flex items-center gap-1">
+            {selected && (
+              <button type="button" aria-label={tr('Весь месяц', 'Whole month')} onClick={() => setSelected(null)} className={navButton}>
+                <CalendarDays className="size-5" aria-hidden />
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={!!selected && !canGoForward}
+              aria-label={selected ? tr('Следующая неделя', 'Next week') : tr('Следующий месяц', 'Next month')}
+              onClick={() => (selected ? shiftWeek(1) : setCursor((value) => addMonths(value, 1)))}
+              className={navButton}
+            >
+              <ChevronRight className="size-5" aria-hidden />
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-7 gap-1">
           {WEEKDAYS.map((day) => (
-            <div key={day} className="pb-2 text-center text-xs font-medium text-ink-faint">
+            <div key={day} className="pb-2 text-center text-subhead text-ink-faint">
               {day}
             </div>
           ))}
-
-          {days.map((day) => {
-            const key = iso(day);
-            const outside = !isSameMonth(day, cursor);
-            const isToday = key === today;
-            const isFuture = key > today;
-            const mark = marks[key];
-            const special = allDates.filter((d) => occursOn(d, key));
-            const moon = moonByDay[key];
-            const quarrel = events.has(key, 'quarrel');
-            const intimacy = events.has(key, 'intimacy');
-
-            return (
-              <button
-                key={key}
-                type="button"
-                disabled={isFuture}
-                onClick={() => router.push(`/day?d=${key}`)}
-                aria-label={`${fmt(day, 'd MMMM yyyy')}${mark?.theirsMarked ? tr(', партнёр отметил день', ', partner marked the day') : ''}${mark?.mineMarked ? tr(', ваш день отмечен', ', your day is marked') : ''}${special.length ? `, ${special.map((d) => (d.id ? d.title : tr('годовщина', 'anniversary'))).join(', ')}` : ''}${moon ? `, ${PRINCIPAL_LABEL[moon]}` : ''}${quarrel ? tr(', ссора', ', a fight') : ''}${intimacy ? tr(', близость', ', intimacy') : ''}`}
-                className={`relative flex aspect-square min-h-11 items-center justify-center rounded-full text-sm font-medium transition-colors enabled:hover:bg-sunken disabled:cursor-default ${
-                  special.length ? 'disabled:opacity-60' : 'disabled:opacity-30'
-                }`}
-              >
-                <DayCell mark={mark} muted={outside} />
-                {special.length > 0 && (
-                  <span
-                    className="pointer-events-none absolute bottom-1 left-1/2 z-10 size-1.5 -translate-x-1/2 rounded-full bg-accent ring-[1.5px] ring-surface"
-                    aria-hidden
-                  />
-                )}
-                {/* The pair's marks: tiny badges on the surface, so they read on any mood colour. */}
-                {intimacy && (
-                  <span className="pointer-events-none absolute top-0.5 left-0.5 z-10 flex size-3.5 items-center justify-center rounded-full bg-surface text-ink shadow-card" aria-hidden>
-                    <Heart className="size-2.5" fill="currentColor" strokeWidth={0} />
-                  </span>
-                )}
-                {quarrel && (
-                  <span className="pointer-events-none absolute right-0.5 bottom-0.5 z-10 flex size-3.5 items-center justify-center rounded-full bg-surface text-ink shadow-card" aria-hidden>
-                    <Zap className="size-2.5" fill="currentColor" strokeWidth={0} />
-                  </span>
-                )}
-                {moon && (
-                  <MoonGlyph phase={PRINCIPAL_PHASE[moon]} size={10} className="pointer-events-none absolute top-0.5 right-0.5 z-10 text-ink-soft" />
-                )}
-                <span
-                  className={`relative z-10 ${
-                    mark?.theirsMood == null && outside ? 'text-ink-faint' : 'text-ink'
-                  } ${isToday ? 'font-bold underline decoration-2 underline-offset-4' : ''}`}
-                  style={mark?.theirsMood != null ? { color: MOOD_INK } : undefined}
-                >
-                  {format(day, 'd')}
-                </span>
-              </button>
-            );
-          })}
         </div>
 
-        {!isLoading && !error && !monthHasDays && (
+        {/*
+          Each week is its own row, so folding is just the other weeks closing
+          to nothing around the chosen one. In strip mode a horizontal swipe
+          turns the week.
+        */}
+        <motion.div
+          drag={selected ? 'x' : false}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.25}
+          dragSnapToOrigin
+          onDragEnd={(_, info) => {
+            if (!selected) return;
+            if (info.offset.x < -60 && canGoForward) shiftWeek(1);
+            else if (info.offset.x > 60) shiftWeek(-1);
+          }}
+          className={selected ? 'touch-pan-y' : undefined}
+        >
+          {weeks.map((week) => {
+            const weekKey = iso(week[0]);
+            const open = !selected || weekKey === selectedWeek;
+            return (
+              <motion.div
+                key={weekKey}
+                initial={false}
+                animate={open ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+                transition={reduce ? { duration: 0 } : { duration: 0.42, ease: EASE }}
+                className="overflow-hidden"
+                aria-hidden={!open || undefined}
+              >
+                <div className="grid grid-cols-7 gap-1 p-0.5 pb-1">{week.map(cell)}</div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+
+        {!selected && !isLoading && !error && !monthHasDays && (
           <p className="mt-4 rounded-xl bg-sunken px-4 py-3 text-center text-sm text-ink-soft">
             {isCurrentMonth
               ? tr('В этом месяце пока ни одного отмеченного дня. Начните с сегодняшнего.', 'No marked days this month yet. Start with today.')
               : tr('Этот месяц пуст. Дни появляются здесь, когда вы их отмечаете.', 'This month is empty. Days appear here as you mark them.')}
           </p>
         )}
-        {!isCurrentMonth && (
+        {!selected && !isCurrentMonth && (
           <div className="mt-3 flex justify-center">
             <button
               type="button"
@@ -207,7 +275,29 @@ export default function CalendarPage() {
         )}
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-sm text-ink-soft">
+      <AnimatePresence mode="wait" initial={false}>
+        {selected && (
+          <motion.div
+            key={selected}
+            initial={reduce ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
+            transition={{ duration: 0.3, ease: EASE }}
+            className="mt-3"
+          >
+            <CalendarDay
+              date={selected}
+              quarrel={events.has(selected, 'quarrel')}
+              intimacy={events.has(selected, 'intimacy')}
+              special={specialOn(selected).map((d) => (d.id ? d.title : tr('Годовщина', 'Anniversary')))}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {!selected && (
+      <>
+      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-subhead text-ink-soft">
         <span className="flex items-center gap-2">
           <span className="size-5 rounded-full ring-[2.5px] ring-inset ring-line-strong" aria-hidden />
           {tr('ваш день', 'your day')}
@@ -262,6 +352,8 @@ export default function CalendarPage() {
             onRemove={dates.remove}
           />
         </div>
+      )}
+      </>
       )}
     </div>
   );

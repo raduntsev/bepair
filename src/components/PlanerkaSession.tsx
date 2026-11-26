@@ -1,5 +1,6 @@
 'use client';
 
+import { Budget } from '@/components/Budget';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, Check, ChevronDown, Plus, Trash2 } from 'lucide-react';
@@ -602,7 +603,7 @@ function ClosePart({
 
 /* ——— Сессия ——— */
 
-type Step = 'wheel' | 'questions' | 'todos';
+type Step = 'wheel' | 'questions' | 'todos' | 'budget';
 
 export function PlanerkaSession({ heldOn }: { heldOn: string }) {
   const { user, partner, profile } = useSpaceAuth();
@@ -662,12 +663,13 @@ export function PlanerkaSession({ heldOn }: { heldOn: string }) {
           { value: 'wheel' as const, label: tr('Колесо', 'Wheel') },
           { value: 'questions' as const, label: tr('Вопросы', 'Questions') },
           { value: 'todos' as const, label: tr('Дела', 'To-dos') },
+          { value: 'budget' as const, label: tr('Бюджет', 'Budget') },
         ]}
         value={step}
         onChange={setStep}
       />
 
-      {step !== 'todos' && partner && (
+      {(step === 'wheel' || step === 'questions') && partner && (
         <div className="flex items-center gap-3 px-1">
           <span className="shrink-0 text-subhead text-ink-faint">{tr('Заполняет', 'Filling in')}</span>
           <div className="min-w-0 flex-1">
@@ -719,6 +721,8 @@ export function PlanerkaSession({ heldOn }: { heldOn: string }) {
             </div>
           )}
           {step === 'todos' && <TodosBoard planerkaId={id} store={store} />}
+          {/* The month the check-in falls in: its totals are what the couple talks through. */}
+          {step === 'budget' && <Budget initialMonth={heldOn} />}
         </motion.div>
       </AnimatePresence>
 
