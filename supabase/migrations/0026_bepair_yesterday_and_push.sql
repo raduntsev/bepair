@@ -77,6 +77,7 @@ grant execute on function public.bp_save_push_subscription(text, text, text, tex
 -- 3. Keep the last known charge when a point arrives without one.
 --    battery_at: when the charge was last reported, so a kept charge still expires.
 alter table public.locations add column if not exists battery_at timestamptz;
+update public.locations set battery_at = updated_at where battery is not null and battery_at is null;
 
 create or replace function public.bp_put_location(
   who uuid, la double precision, ln double precision, acc real, at timestamptz,
@@ -118,3 +119,45 @@ end;
 $$;
 
 revoke execute on function public.bp_put_location(uuid, double precision, double precision, real, timestamptz, smallint, boolean) from public, anon, authenticated;
+
+-- 4. The state says when the charge was measured, so a reader can let it expire.
+create or replace function public.bp_location_state()
+returns jsonb
+language plpgsql stable security definer set search_path = public
+as $$
+declare
+  me public.profiles;
+  partner public.profiles;
+  mutual boolean;
+  mine public.locations;
+  theirs public.locations;
+begin
+  select * into me from public.profiles where id = auth.uid();
+  if me.id is null then
+    raise exception 'not signed in';
+  end if;
+  if me.space_id is not null then
+    select * into partner from public.profiles where space_id = me.space_id and id <> me.id limit 1;
+  end if;
+
+  mutual := me.share_location and coalesce(partner.share_location, false);
+  select * into mine from public.locations where user_id = me.id;
+  if mutual then
+    select * into theirs from public.locations where user_id = partner.id;
+  end if;
+
+  return jsonb_build_object(
+    'sharing', me.share_location,
+    'partner_sharing', coalesce(partner.share_location, false),
+    'has_partner', partner.id is not null,
+    'me', case when mine.user_id is null then null else jsonb_build_object(
+      'lat', mine.lat, 'lng', mine.lng, 'accuracy', mine.accuracy, 'recorded_at', mine.recorded_at,
+      'battery', mine.battery, 'charging', mine.charging, 'battery_at', mine.battery_at) end,
+    'partner', case when theirs.user_id is null then null else jsonb_build_object(
+      'lat', theirs.lat, 'lng', theirs.lng, 'accuracy', theirs.accuracy, 'recorded_at', theirs.recorded_at,
+      'battery', theirs.battery, 'charging', theirs.charging, 'battery_at', theirs.battery_at) end
+  );
+end;
+$$;
+
+grant execute on function public.bp_location_state() to authenticated;

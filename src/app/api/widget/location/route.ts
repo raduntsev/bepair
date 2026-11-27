@@ -76,8 +76,8 @@ async function build(admin: SupabaseClient, userId: string): Promise<MapPayload 
   /* Both points under the rule, read before any wording: inLang blocks hold no await. */
   const mutual = sharing && !!partner?.share_location;
   const { data: rows } = mutual
-    ? await admin.from('locations').select('user_id, lat, lng, recorded_at, battery, charging').in('user_id', [me.id, partner.id])
-    : { data: [] as { user_id: string; lat: number; lng: number; recorded_at: string; battery: number | null; charging: boolean | null }[] };
+    ? await admin.from('locations').select('*').in('user_id', [me.id, partner.id])
+    : { data: [] as { user_id: string; lat: number; lng: number; recorded_at: string; battery: number | null; charging: boolean | null; battery_at?: string | null }[] };
 
   /* Only a photo from this couple's own avatars folder is signed: the service role must not hand out other paths. */
   const avatarPath =
