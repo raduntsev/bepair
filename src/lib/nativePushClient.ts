@@ -1,6 +1,7 @@
 import supabase from './supabase';
 import { WidgetBridge, isNative, nativePlatform } from './native';
 import { tr } from '@/lib/i18n';
+import { storePushSubscription } from '@/lib/push';
 
 /*
   Native push inside the iOS/Android shell. Web push does not work in an app's
@@ -55,27 +56,27 @@ export async function subscribeNativePush(userId: string): Promise<NativePushRes
     await PushNotifications.createChannel({ id: 'quiet', name: tr('Без звука', 'Silent'), importance: 3 }).catch(() => {});
   }
 
+  const handles: Promise<{ remove: () => Promise<void> }>[] = [];
   return new Promise<NativePushResult>((resolve) => {
     let settled = false;
     const finish = (result: NativePushResult) => {
       if (settled) return;
       settled = true;
+      handles.forEach((handle) => handle.then((h) => h.remove()).catch(() => {}));
       resolve(result);
     };
 
-    PushNotifications.addListener('registration', async ({ value }) => {
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .upsert({ user_id: userId, endpoint: value, kind, p256dh: '', auth: '' }, { onConflict: 'endpoint' });
-      if (!error) {
+    handles.push(PushNotifications.addListener('registration', async ({ value }) => {
+      const ok = await storePushSubscription(userId, value, kind);
+      if (ok) {
         try {
           localStorage.setItem('bepair-native-push', 'on');
           localStorage.setItem('bepair-native-push-token', value);
         } catch {}
       }
-      finish(error ? 'failed' : 'subscribed');
-    });
-    PushNotifications.addListener('registrationError', () => finish('failed'));
+      finish(ok ? 'subscribed' : 'failed');
+    }));
+    handles.push(PushNotifications.addListener('registrationError', () => finish('failed')));
 
     PushNotifications.register().catch(() => finish('failed'));
     setTimeout(() => finish('failed'), 15_000);

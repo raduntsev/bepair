@@ -7,8 +7,11 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
+import android.graphics.BitmapShader;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 
 import java.io.ByteArrayOutputStream;
@@ -23,8 +26,10 @@ import java.util.Locale;
 
 /**
  * Draws the «Карта» widget's picture: OpenStreetMap tiles stitched around the
- * two points, quieted to grey (inverted in the dark theme, as in the app), with
- * the two pins on top — you in the accent, your partner in theirs.
+ * partner's point, quieted to grey (inverted in the dark theme, as in the app),
+ * with their pin on top — their photo in a ring, or their initial when there is
+ * no photo. The owner's own point is not drawn: the widget answers «where is
+ * my partner», at street level.
  *
  * OSM tiles are 256 px; each is drawn at twice its size, so the map has the
  * same scale and legible labels as a 2× map on the phone's screen. One tile
@@ -47,11 +52,7 @@ public final class MapTiles {
     static final int MIN_ZOOM = 2;
     private static final long TILE_MAX_AGE_MS = 30L * 24 * 3600 * 1000;
     private static final int TILE_CACHE_FILES = 240;
-    /* Two pins closer than this would cover each other: they lean apart like the pair mark. */
-    private static final float OVERLAP_PX = 44f;
 
-    private static final int ACCENT = 0xFF5856D6;
-    private static final int ACCENT_INK = 0xFFFFFFFF;
     private static final int PARTNER_LIGHT = 0xFFD98324;
     private static final int PARTNER_DARK = 0xFFE8A552;
     private static final int PARTNER_INK = 0xFF101018;
@@ -92,8 +93,13 @@ public final class MapTiles {
     }
 
     /* What a picture of this payload looks like; equal keys draw equal pictures. */
+    public static String key(MapPayload p, boolean dark, boolean withPhoto) {
+        String battery = p.partnerBattery == null ? "-" : p.partnerBattery.level + (p.partnerBattery.charging ? "+" : "");
+        return String.format(Locale.ROOT, "%s|%s|%s|%s", dot(p.partner), withPhoto && p.partner != null ? p.partner.photoKey : "-", battery, dark ? "dark" : "light");
+    }
+
     public static String key(MapPayload p, boolean dark) {
-        return String.format(Locale.ROOT, "%s|%s|%s", dot(p.me), dot(p.partner), dark ? "dark" : "light");
+        return key(p, dark, false);
     }
 
     private static String dot(MapPayload.Dot d) {
@@ -112,30 +118,16 @@ public final class MapTiles {
     }
 
     public static Result compose(Context context, MapPayload p, boolean dark) {
-        if (p == null || !p.hasMap()) return null;
-        int z = zoomFor(p.me, p.partner);
-        long world = TILE * (1L << z);
+        return compose(context, p, dark, null);
+    }
 
-        double[] me = p.me != null ? new double[] { worldX(p.me.lng, z), worldY(p.me.lat, z) } : null;
-        double[] partner = p.partner != null ? new double[] { worldX(p.partner.lng, z), worldY(p.partner.lat, z) } : null;
-        /* Across the antimeridian, bring one point next to the other. */
-        if (me != null && partner != null) {
-            if (partner[0] - me[0] > world / 2.0) partner[0] -= world;
-            else if (me[0] - partner[0] > world / 2.0) partner[0] += world;
-        }
-
-        double cx;
-        double cy;
-        if (me != null && partner != null) {
-            cx = (me[0] + partner[0]) / 2;
-            cy = (me[1] + partner[1]) / 2;
-        } else {
-            double[] only = me != null ? me : partner;
-            cx = only[0];
-            cy = only[1];
-        }
-        double left = cx - WIDTH / 2.0;
-        double top = cy - HEIGHT / 2.0;
+    /** {@code photo}: the partner's photo for the pin, or null for their initial. */
+    public static Result compose(Context context, MapPayload p, boolean dark, Bitmap photo) {
+        if (p == null || p.partner == null) return null;
+        int z = SINGLE_ZOOM;
+        double[] partner = new double[] { worldX(p.partner.lng, z), worldY(p.partner.lat, z) };
+        double left = partner[0] - WIDTH / 2.0;
+        double top = partner[1] - HEIGHT / 2.0;
 
         Bitmap bitmap = Bitmap.createBitmap(WIDTH, HEIGHT, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
@@ -165,43 +157,78 @@ public final class MapTiles {
             }
         }
 
-        float[] mePx = me != null ? new float[] { (float) (me[0] - left), (float) (me[1] - top) } : null;
-        float[] partnerPx = partner != null ? new float[] { (float) (partner[0] - left), (float) (partner[1] - top) } : null;
-        if (mePx != null && partnerPx != null && Math.hypot(mePx[0] - partnerPx[0], mePx[1] - partnerPx[1]) < OVERLAP_PX) {
-            float mx = (mePx[0] + partnerPx[0]) / 2;
-            float my = (mePx[1] + partnerPx[1]) / 2;
-            mePx = new float[] { mx - OVERLAP_PX / 2, my };
-            partnerPx = new float[] { mx + OVERLAP_PX / 2, my };
-        }
         int surface = dark ? SURFACE_DARK : SURFACE_LIGHT;
-        if (mePx != null) pin(canvas, mePx[0], mePx[1], ACCENT, ACCENT_INK, surface, p.me.initial, false);
-        if (partnerPx != null) pin(canvas, partnerPx[0], partnerPx[1], dark ? PARTNER_DARK : PARTNER_LIGHT, PARTNER_INK, surface, p.partner.initial, p.partner.stale);
+        pin(canvas, WIDTH / 2f, HEIGHT / 2f, dark ? PARTNER_DARK : PARTNER_LIGHT, PARTNER_INK, surface, p.partner.initial, p.partner.stale, photo);
+        if (p.partnerBattery != null) batteryTag(canvas, WIDTH / 2f, HEIGHT / 2f + PIN_OUTER, p.partnerBattery, dark);
 
         return new Result(bitmap, complete);
     }
 
-    private static void pin(Canvas canvas, float x, float y, int fill, int ink, int ring, String initial, boolean stale) {
-        int alpha = stale ? 130 : 255;
+    /* The pin: a white (dark: graphite) disc, the partner's colour as a ring, the photo or initial inside. */
+    static final float PIN_OUTER = 54f;
+    static final float PIN_RING = 48f;
+    static final float PIN_INNER = 42f;
+
+    private static void pin(Canvas canvas, float x, float y, int fill, int ink, int ring, String initial, boolean stale, Bitmap photo) {
+        int alpha = stale ? 140 : 255;
         Paint outer = new Paint(Paint.ANTI_ALIAS_FLAG);
         outer.setColor(ring);
         outer.setAlpha(alpha);
-        outer.setShadowLayer(8f, 0f, 3f, stale ? 0x22000000 : 0x40000000);
-        canvas.drawCircle(x, y, 31f, outer);
+        outer.setShadowLayer(12f, 0f, 4f, stale ? 0x22000000 : 0x48000000);
+        canvas.drawCircle(x, y, PIN_OUTER, outer);
 
         Paint inner = new Paint(Paint.ANTI_ALIAS_FLAG);
         inner.setColor(fill);
         inner.setAlpha(alpha);
-        canvas.drawCircle(x, y, 25f, inner);
+        canvas.drawCircle(x, y, PIN_RING, inner);
+
+        if (photo != null) {
+            /* centerCrop the photo into the inner circle. */
+            float size = PIN_INNER * 2f;
+            float scale = size / Math.min(photo.getWidth(), photo.getHeight());
+            Matrix matrix = new Matrix();
+            matrix.setScale(scale, scale);
+            matrix.postTranslate(x - photo.getWidth() * scale / 2f, y - photo.getHeight() * scale / 2f);
+            BitmapShader shader = new BitmapShader(photo, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            shader.setLocalMatrix(matrix);
+            Paint picture = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            picture.setShader(shader);
+            picture.setAlpha(alpha);
+            canvas.drawCircle(x, y, PIN_INNER, picture);
+            return;
+        }
 
         Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
         text.setColor(ink);
         text.setAlpha(alpha);
-        text.setTextSize(27f);
+        text.setTextSize(44f);
         text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         text.setTextAlign(Paint.Align.CENTER);
         String letter = initial == null || initial.isEmpty() ? "·" : initial.substring(0, Math.min(initial.length(), 2));
         Paint.FontMetrics m = text.getFontMetrics();
         canvas.drawText(letter, x, y - (m.ascent + m.descent) / 2f, text);
+    }
+
+    private static final int BATTERY_LOW = 0xFFE5484D;
+
+    /* «84%» on a small chip right under the pin, as under the avatar in the app: red when low, a bolt while charging. */
+    private static void batteryTag(Canvas canvas, float cx, float top, MapPayload.Battery battery, boolean dark) {
+        String label = (battery.charging ? "\u26A1" : "") + battery.level + "%";
+        Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
+        text.setTextSize(30f);
+        text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        text.setTextAlign(Paint.Align.CENTER);
+        boolean low = battery.level <= 15 && !battery.charging;
+        text.setColor(low ? BATTERY_LOW : dark ? 0xFFF2F2F7 : PARTNER_INK);
+        float w = text.measureText(label) + 28f;
+        float h = 40f;
+        float y = top - 10f;
+        Paint chip = new Paint(Paint.ANTI_ALIAS_FLAG);
+        chip.setColor(dark ? SURFACE_DARK : SURFACE_LIGHT);
+        chip.setShadowLayer(8f, 0f, 2f, 0x40000000);
+        canvas.drawRoundRect(cx - w / 2f, y, cx + w / 2f, y + h, h / 2f, h / 2f, chip);
+        Paint.FontMetrics m = text.getFontMetrics();
+        canvas.drawText(label, cx, y + h / 2f - (m.ascent + m.descent) / 2f, text);
     }
 
     /* The app's .pair-tiles filter: grey, a little softer; in the dark, inverted and dimmed. */

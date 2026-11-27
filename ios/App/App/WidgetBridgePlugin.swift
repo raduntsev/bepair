@@ -13,6 +13,7 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "refresh", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clear", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "battery", returnType: CAPPluginReturnPromise),
     ]
 
     static let appGroup = "group.app.bepair.vpare"
@@ -34,6 +35,21 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         defaults.removeObject(forKey: "snapshot")
         reload()
         call.resolve()
+    }
+
+    /// The phone's charge for the «Где мы» point: WKWebView does not tell it.
+    @objc func battery(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let device = UIDevice.current
+            device.isBatteryMonitoringEnabled = true
+            let level = device.batteryLevel
+            guard level >= 0 else {
+                call.resolve([:])
+                return
+            }
+            let charging = device.batteryState == .charging || device.batteryState == .full
+            call.resolve(["level": Int((level * 100).rounded()), "charging": charging])
+        }
     }
 
     @objc func refresh(_ call: CAPPluginCall) {

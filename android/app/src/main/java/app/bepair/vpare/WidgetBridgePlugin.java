@@ -18,6 +18,7 @@ import app.bepair.vpare.widget.LockStatus;
 import app.bepair.vpare.widget.MapRenderer;
 import app.bepair.vpare.widget.PhotoStore;
 import app.bepair.vpare.widget.TasksStore;
+import app.bepair.vpare.widget.WidgetApi;
 import app.bepair.vpare.widget.WidgetRefreshWorker;
 import app.bepair.vpare.widget.WidgetRenderer;
 import app.bepair.vpare.widget.WidgetStore;
@@ -48,6 +49,18 @@ public class WidgetBridgePlugin extends Plugin {
         WidgetRenderer.updateAll(getContext());
         WidgetRefreshWorker.refreshNow(getContext());
         call.resolve();
+    }
+
+    /* The phone's charge for the open app's own «Где мы» point: the WebView does not tell it. */
+    @PluginMethod
+    public void battery(PluginCall call) {
+        JSObject result = new JSObject();
+        int[] b = WidgetApi.battery(getContext());
+        if (b != null) {
+            result.put("level", b[0]);
+            result.put("charging", b[1] == 1);
+        }
+        call.resolve(result);
     }
 
     @PluginMethod

@@ -167,6 +167,7 @@ export function noticeHref(kind: NoticeKind, payload?: Record<string, unknown> |
     case 'ping':
       return '/messages';
     case 'day':
+      return typeof payload?.date === 'string' ? `/day?d=${payload.date}` : '/day';
     case 'joined':
       return '/day';
     case 'left':

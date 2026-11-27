@@ -1,5 +1,6 @@
 import { plural } from './dates';
 import { trIn, type Lang } from './i18n';
+import { isNative, WidgetBridge } from './native';
 
 /*
   «Где мы»: shared by the map screen and the «Карта» widget's endpoint, so the
@@ -14,6 +15,8 @@ export interface Point {
   /* The phone's charge when the point was sent, 0–100; null when the phone does not say. */
   battery?: number | null;
   charging?: boolean | null;
+  /* When the charge was measured; absent before migration 0026. */
+  battery_at?: string | null;
 }
 
 export interface LocationState {
@@ -91,8 +94,14 @@ export interface Battery {
   charging: boolean;
 }
 
-export function freshBattery(point: Pick<Point, 'recorded_at' | 'battery' | 'charging'> | null | undefined, now = Date.now()): Battery | null {
+const BATTERY_FRESH_MS = 30 * 60_000;
+
+export function freshBattery(
+  point: Pick<Point, 'recorded_at' | 'battery' | 'charging' | 'battery_at'> | null | undefined,
+  now = Date.now(),
+): Battery | null {
   if (!point || point.battery == null || isStale(point.recorded_at, now)) return null;
+  if (point.battery_at && now - Date.parse(point.battery_at) > BATTERY_FRESH_MS) return null;
   return { level: Math.round(point.battery), charging: !!point.charging };
 }
 
@@ -101,8 +110,12 @@ export function batteryLabel(b: Battery, lang: Lang) {
   return b.charging ? trIn(lang, `${b.level} %, заряжается`, `${b.level}%, charging`) : trIn(lang, `${b.level} %`, `${b.level}%`);
 }
 
-/* What the browser (or the Android WebView) knows of its own charge; null where it keeps it to itself (Safari, Firefox). */
+/* The phone's charge: from the native shell, else what the browser tells (null in Safari, Firefox, an older APK). */
 export async function readBattery(): Promise<Battery | null> {
+  if (isNative()) {
+    const b = await WidgetBridge.battery().catch(() => null);
+    if (b && typeof b.level === 'number' && Number.isFinite(b.level)) return { level: Math.round(b.level), charging: !!b.charging };
+  }
   try {
     const nav = navigator as Navigator & { getBattery?: () => Promise<{ level: number; charging: boolean }> };
     if (typeof nav.getBattery !== 'function') return null;

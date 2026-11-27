@@ -155,20 +155,27 @@ public final class WidgetApi {
 
     /* The phone's charge rides with the point: «,"battery":84,"charging":false», or nothing when the phone does not say. */
     static String batteryJson(Context context) {
+        int[] b = battery(context);
+        if (b == null) return "";
+        return String.format(java.util.Locale.ROOT, ",\"battery\":%d,\"charging\":%b", b[0], b[1] == 1);
+    }
+
+    /** {percent, charging ? 1 : 0}, or null when the phone does not say. */
+    public static int[] battery(Context context) {
         try {
             android.content.Intent status = androidx.core.content.ContextCompat.registerReceiver(context, null,
                 new android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED),
                 androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
-            if (status == null) return "";
+            if (status == null) return null;
             int level = status.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
             int scale = status.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
-            if (level < 0 || scale <= 0) return "";
+            if (level < 0 || scale <= 0) return null;
             int state = status.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1);
             boolean charging = state == android.os.BatteryManager.BATTERY_STATUS_CHARGING || state == android.os.BatteryManager.BATTERY_STATUS_FULL;
-            int percent = Math.round(level * 100f / scale);
-            return String.format(java.util.Locale.ROOT, ",\"battery\":%d,\"charging\":%b", Math.max(0, Math.min(100, percent)), charging);
+            int percent = Math.max(0, Math.min(100, Math.round(level * 100f / scale)));
+            return new int[] { percent, charging ? 1 : 0 };
         } catch (Exception e) {
-            return "";
+            return null;
         }
     }
 

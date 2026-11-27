@@ -177,6 +177,44 @@ public class MapWidgetTest {
     }
 
     @Test
+    public void partnerPhotoParses() {
+        MapPayload plain = MapPayload.parse(OK);
+        assertFalse(plain.partner.hasPhoto());
+        MapPayload withPhoto = MapPayload.parse(OK.replace(
+            "\"partner\":{\"lat\":55.7339,\"lng\":37.5886,\"initial\":\"А\",\"stale\":false}",
+            "\"partner\":{\"lat\":55.7339,\"lng\":37.5886,\"initial\":\"А\",\"stale\":false,"
+                + "\"photo\":\"https://example.com/a.jpg?token=1\",\"photoKey\":\"space/avatars/a.jpg\"}"));
+        assertTrue(withPhoto.partner.hasPhoto());
+        assertEquals("space/avatars/a.jpg", withPhoto.partner.photoKey);
+        /* A new photo is a new picture; a re-signed URL for the same photo is not. */
+        assertFalse(MapTiles.key(withPhoto, false, true).equals(MapTiles.key(plain, false, false)));
+        MapPayload resigned = MapPayload.parse(OK.replace(
+            "\"partner\":{\"lat\":55.7339,\"lng\":37.5886,\"initial\":\"А\",\"stale\":false}",
+            "\"partner\":{\"lat\":55.7339,\"lng\":37.5886,\"initial\":\"А\",\"stale\":false,"
+                + "\"photo\":\"https://example.com/a.jpg?token=2\",\"photoKey\":\"space/avatars/a.jpg\"}"));
+        assertEquals(MapTiles.key(withPhoto, false, true), MapTiles.key(resigned, false, true));
+    }
+
+    @Test
+    public void partnerBatteryParsesAndRedraws() {
+        MapPayload plain = MapPayload.parse(OK);
+        assertNull(plain.partnerBattery);
+        MapPayload low = MapPayload.parse(OK.replace("\"updatedAt\"", "\"partnerBattery\":{\"level\":12,\"charging\":false},\"updatedAt\""));
+        assertEquals(12, low.partnerBattery.level);
+        assertFalse(low.partnerBattery.charging);
+        MapPayload charging = MapPayload.parse(OK.replace("\"updatedAt\"", "\"partnerBattery\":{\"level\":12,\"charging\":true},\"updatedAt\""));
+        assertFalse(MapTiles.key(low, false).equals(MapTiles.key(plain, false)));
+        assertFalse(MapTiles.key(low, false).equals(MapTiles.key(charging, false)));
+        assertNull(MapPayload.parse(OK.replace("\"updatedAt\"", "\"partnerBattery\":null,\"updatedAt\"")).partnerBattery);
+    }
+
+    @Test
+    public void onlyThePartnerMakesAMap() {
+        assertFalse(MapPayload.parse(OK.replace(
+            "\"partner\":{\"lat\":55.7339,\"lng\":37.5886,\"initial\":\"А\",\"stale\":false}", "\"partner\":null")).hasMap());
+    }
+
+    @Test
     public void sameMapIsNotDrawnTwice() {
         MapPayload p = MapPayload.parse(OK);
         assertEquals(MapTiles.key(p, false), MapTiles.key(MapPayload.parse(OK), false));

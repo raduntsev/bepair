@@ -99,7 +99,13 @@ export async function sendFcm(deviceToken: string, message: PushMessage): Promis
     });
     if (response.ok) return 'ok';
     const text = await response.text();
-    if (response.status === 404 || text.includes('UNREGISTERED') || text.includes('INVALID_ARGUMENT')) return 'dead';
+    /*
+      Only a token FCM no longer knows is dead. INVALID_ARGUMENT alone may be
+      about the message itself, and deleting a working token for it is how a
+      phone silently stops getting anything.
+    */
+    if (response.status === 404 || text.includes('UNREGISTERED')) return 'dead';
+    if (text.includes('INVALID_ARGUMENT') && /registration token/i.test(text)) return 'dead';
     return 'failed';
   } catch {
     return 'failed';
