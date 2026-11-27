@@ -79,7 +79,9 @@ async function build(admin: SupabaseClient, userId: string): Promise<MapPayload 
     ? await admin.from('locations').select('user_id, lat, lng, recorded_at, battery, charging').in('user_id', [me.id, partner.id])
     : { data: [] as { user_id: string; lat: number; lng: number; recorded_at: string; battery: number | null; charging: boolean | null }[] };
 
-  const avatarPath = mutual && typeof partner?.avatar_url === 'string' && partner.avatar_url ? partner.avatar_url : null;
+  /* Only a photo from this couple's own avatars folder is signed: the service role must not hand out other paths. */
+  const avatarPath =
+    mutual && typeof partner?.avatar_url === 'string' && partner.avatar_url.startsWith(`${me.space_id}/avatars/`) ? partner.avatar_url : null;
   const { data: signed } = avatarPath
     ? await admin.storage.from(BUCKET).createSignedUrl(avatarPath, 60 * 60)
     : { data: null };
