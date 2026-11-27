@@ -75,6 +75,9 @@ revoke execute on function public.bp_save_push_subscription(text, text, text, te
 grant execute on function public.bp_save_push_subscription(text, text, text, text) to authenticated;
 
 -- 3. Keep the last known charge when a point arrives without one.
+--    battery_at: when the charge was last reported, so a kept charge still expires.
+alter table public.locations add column if not exists battery_at timestamptz;
+
 create or replace function public.bp_put_location(
   who uuid, la double precision, ln double precision, acc real, at timestamptz,
   batt smallint default null, chg boolean default null
@@ -94,8 +97,8 @@ begin
     batt := null;
   end if;
 
-  insert into public.locations (user_id, space_id, lat, lng, accuracy, recorded_at, updated_at, battery, charging)
-  values (me.id, me.space_id, la, ln, acc, at, now(), batt, chg)
+  insert into public.locations (user_id, space_id, lat, lng, accuracy, recorded_at, updated_at, battery, charging, battery_at)
+  values (me.id, me.space_id, la, ln, acc, at, now(), batt, chg, case when batt is not null then now() end)
   on conflict (user_id) do update
     set space_id = excluded.space_id,
         lat = excluded.lat,
@@ -104,9 +107,11 @@ begin
         recorded_at = excluded.recorded_at,
         updated_at = now(),
         battery = case when excluded.battery is not null then excluded.battery
-                       when public.locations.updated_at > now() - interval '30 minutes' then public.locations.battery end,
+                       when public.locations.battery_at > now() - interval '30 minutes' then public.locations.battery end,
         charging = case when excluded.battery is not null then excluded.charging
-                        when public.locations.updated_at > now() - interval '30 minutes' then public.locations.charging end
+                        when public.locations.battery_at > now() - interval '30 minutes' then public.locations.charging end,
+        battery_at = case when excluded.battery is not null then now()
+                          when public.locations.battery_at > now() - interval '30 minutes' then public.locations.battery_at end
     where public.locations.recorded_at <= excluded.recorded_at;
   return true;
 end;
