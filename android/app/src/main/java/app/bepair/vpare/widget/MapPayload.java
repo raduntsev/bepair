@@ -35,6 +35,17 @@ public final class MapPayload {
         }
     }
 
+    /** The partner's phone charge under the same rule: 0–100, or -1 when unknown. */
+    public static final class Battery {
+        public final int level;
+        public final boolean charging;
+
+        Battery(int level, boolean charging) {
+            this.level = level;
+            this.charging = charging;
+        }
+    }
+
     /* no-space, no-partner, off, partner-off, waiting, ok */
     public final String state;
     public final boolean sharing;
@@ -42,14 +53,16 @@ public final class MapPayload {
     public final String line;
     public final Dot me;
     public final Dot partner;
+    public final Battery partnerBattery;
 
-    private MapPayload(String state, boolean sharing, String title, String line, Dot me, Dot partner) {
+    private MapPayload(String state, boolean sharing, String title, String line, Dot me, Dot partner, Battery partnerBattery) {
         this.state = state;
         this.sharing = sharing;
         this.title = title;
         this.line = line;
         this.me = me;
         this.partner = partner;
+        this.partnerBattery = partnerBattery;
     }
 
     public boolean hasMap() {
@@ -67,10 +80,18 @@ public final class MapPayload {
                 o.optString("title", ""),
                 o.optString("line", ""),
                 dot(o.optJSONObject("me")),
-                dot(o.optJSONObject("partner")));
+                dot(o.optJSONObject("partner")),
+                battery(o.optJSONObject("partnerBattery")));
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private static Battery battery(JSONObject o) {
+        if (o == null || !o.has("level")) return null;
+        int level = o.optInt("level", -1);
+        if (level < 0 || level > 100) return null;
+        return new Battery(level, o.optBoolean("charging", false));
     }
 
     private static Dot dot(JSONObject o) {

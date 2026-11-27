@@ -94,7 +94,8 @@ public final class MapTiles {
 
     /* What a picture of this payload looks like; equal keys draw equal pictures. */
     public static String key(MapPayload p, boolean dark, boolean withPhoto) {
-        return String.format(Locale.ROOT, "%s|%s|%s", dot(p.partner), withPhoto && p.partner != null ? p.partner.photoKey : "-", dark ? "dark" : "light");
+        String battery = p.partnerBattery == null ? "-" : p.partnerBattery.level + (p.partnerBattery.charging ? "+" : "");
+        return String.format(Locale.ROOT, "%s|%s|%s|%s", dot(p.partner), withPhoto && p.partner != null ? p.partner.photoKey : "-", battery, dark ? "dark" : "light");
     }
 
     public static String key(MapPayload p, boolean dark) {
@@ -158,6 +159,7 @@ public final class MapTiles {
 
         int surface = dark ? SURFACE_DARK : SURFACE_LIGHT;
         pin(canvas, WIDTH / 2f, HEIGHT / 2f, dark ? PARTNER_DARK : PARTNER_LIGHT, PARTNER_INK, surface, p.partner.initial, p.partner.stale, photo);
+        if (p.partnerBattery != null) batteryTag(canvas, WIDTH / 2f, HEIGHT / 2f + PIN_OUTER, p.partnerBattery, dark);
 
         return new Result(bitmap, complete);
     }
@@ -205,6 +207,28 @@ public final class MapTiles {
         String letter = initial == null || initial.isEmpty() ? "·" : initial.substring(0, Math.min(initial.length(), 2));
         Paint.FontMetrics m = text.getFontMetrics();
         canvas.drawText(letter, x, y - (m.ascent + m.descent) / 2f, text);
+    }
+
+    private static final int BATTERY_LOW = 0xFFE5484D;
+
+    /* «84%» on a small chip right under the pin, as under the avatar in the app: red when low, a bolt while charging. */
+    private static void batteryTag(Canvas canvas, float cx, float top, MapPayload.Battery battery, boolean dark) {
+        String label = (battery.charging ? "\u26A1" : "") + battery.level + "%";
+        Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
+        text.setTextSize(30f);
+        text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        text.setTextAlign(Paint.Align.CENTER);
+        boolean low = battery.level <= 15 && !battery.charging;
+        text.setColor(low ? BATTERY_LOW : dark ? 0xFFF2F2F7 : PARTNER_INK);
+        float w = text.measureText(label) + 28f;
+        float h = 40f;
+        float y = top - 10f;
+        Paint chip = new Paint(Paint.ANTI_ALIAS_FLAG);
+        chip.setColor(dark ? SURFACE_DARK : SURFACE_LIGHT);
+        chip.setShadowLayer(8f, 0f, 2f, 0x40000000);
+        canvas.drawRoundRect(cx - w / 2f, y, cx + w / 2f, y + h, h / 2f, h / 2f, chip);
+        Paint.FontMetrics m = text.getFontMetrics();
+        canvas.drawText(label, cx, y + h / 2f - (m.ascent + m.descent) / 2f, text);
     }
 
     /* The app's .pair-tiles filter: grey, a little softer; in the dark, inverted and dimmed. */

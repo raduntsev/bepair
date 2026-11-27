@@ -39,31 +39,6 @@ export async function nativePushStatus(): Promise<'on' | 'off' | 'denied' | 'una
   }
 }
 
-/* «Выключить» on this phone is remembered, so the app does not quietly turn push back on. */
-function turnedOff() {
-  try {
-    return localStorage.getItem('bepair-native-push') === 'off';
-  } catch {
-    return false;
-  }
-}
-
-/*
-  On every launch: if the phone already allows notifications, register again
-  and store the current token for whoever is signed in. FCM rotates tokens, a
-  token dies with a reinstall, and the same phone may have been used by the
-  partner — any of these left the account with no device, and every «весточка»
-  went nowhere. Never asks for permission: that stays with the button.
-*/
-export async function syncNativePush(userId: string): Promise<NativePushResult | 'skipped'> {
-  if (!isNative() || turnedOff()) return 'skipped';
-  if (!(await nativePushAvailable())) return 'unavailable';
-  const { PushNotifications } = await import('@capacitor/push-notifications');
-  const permission = await PushNotifications.checkPermissions();
-  if (permission.receive !== 'granted') return 'skipped';
-  return subscribeNativePush(userId);
-}
-
 export async function subscribeNativePush(userId: string): Promise<NativePushResult> {
   if (!(await nativePushAvailable())) return 'unavailable';
   const { PushNotifications } = await import('@capacitor/push-notifications');
@@ -113,7 +88,7 @@ export async function unsubscribeNativePush() {
   let token: string | null = null;
   try {
     token = localStorage.getItem('bepair-native-push-token');
-    localStorage.setItem('bepair-native-push', 'off');
+    localStorage.removeItem('bepair-native-push');
     localStorage.removeItem('bepair-native-push-token');
   } catch {}
   if (token) await supabase.from('push_subscriptions').delete().eq('endpoint', token);

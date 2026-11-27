@@ -1,4 +1,4 @@
--- Bepair 0026 — «вчера» можно дозаполнить; партнёр видит, подключены ли у вас push. Run after 0025. Idempotent.
+-- Bepair 0026 — «вчера» можно дозаполнить; партнёр видит, подключены ли у вас push; заряд не теряется. Run after 0025. Idempotent.
 --
 -- 1. A missed day is no longer lost at midnight: your own mood and note can be
 --    added or changed for today and for yesterday (in your zone). Older days
@@ -8,6 +8,10 @@
 -- 2. bp_partner_push_devices(): how many devices the partner receives push on
 --    (a count, never the tokens). The notification settings warn when it is 0:
 --    «весточки до неё не доходят — пусть включит уведомления».
+--
+-- 3. The phone's charge is no longer wiped by a point that came without one
+--    (the open app on a phone whose WebView keeps the charge to itself, an
+--    older APK): the last known charge stays for 30 minutes.
 
 drop policy if exists "day_entries writable by author" on public.day_entries;
 create policy "day_entries writable by author"
@@ -69,3 +73,43 @@ $$;
 
 revoke execute on function public.bp_save_push_subscription(text, text, text, text) from public, anon;
 grant execute on function public.bp_save_push_subscription(text, text, text, text) to authenticated;
+
+-- 3. Keep the last known charge when a point arrives without one.
+create or replace function public.bp_put_location(
+  who uuid, la double precision, ln double precision, acc real, at timestamptz,
+  batt smallint default null, chg boolean default null
+)
+returns boolean
+language plpgsql security definer set search_path = public
+as $$
+declare
+  me public.profiles;
+begin
+  select * into me from public.profiles where id = who;
+  if me.id is null or not me.share_location or me.space_id is null then
+    return false;
+  end if;
+  at := least(coalesce(at, now()), now());
+  if batt is not null and (batt < 0 or batt > 100) then
+    batt := null;
+  end if;
+
+  insert into public.locations (user_id, space_id, lat, lng, accuracy, recorded_at, updated_at, battery, charging)
+  values (me.id, me.space_id, la, ln, acc, at, now(), batt, chg)
+  on conflict (user_id) do update
+    set space_id = excluded.space_id,
+        lat = excluded.lat,
+        lng = excluded.lng,
+        accuracy = excluded.accuracy,
+        recorded_at = excluded.recorded_at,
+        updated_at = now(),
+        battery = case when excluded.battery is not null then excluded.battery
+                       when public.locations.updated_at > now() - interval '30 minutes' then public.locations.battery end,
+        charging = case when excluded.battery is not null then excluded.charging
+                        when public.locations.updated_at > now() - interval '30 minutes' then public.locations.charging end
+    where public.locations.recorded_at <= excluded.recorded_at;
+  return true;
+end;
+$$;
+
+revoke execute on function public.bp_put_location(uuid, double precision, double precision, real, timestamptz, smallint, boolean) from public, anon, authenticated;

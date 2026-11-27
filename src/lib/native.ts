@@ -14,6 +14,8 @@ interface WidgetBridgePlugin {
   /* Forget the key: on sign-out or when revoked. */
   clear(): Promise<void>;
   status(): Promise<{ configured: boolean; api?: string }>;
+  /* The phone's charge (the app's WebView does not expose it); empty when the phone does not say. */
+  battery(): Promise<{ level?: number; charging?: boolean }>;
   /* Android: whether this build carries a Firebase project. Without one, registering for push kills the app. */
   pushAvailable(): Promise<{ available: boolean }>;
   /* Android: the quiet «today» line on the lock screen. */

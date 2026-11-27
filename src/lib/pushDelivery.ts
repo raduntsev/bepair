@@ -26,11 +26,7 @@ interface Row {
   actor_id: string | null;
   kind: NoticeKind;
   payload: Record<string, unknown> | null;
-  created_at: string;
 }
-
-/* A push that failed for a passing reason (network, FCM 5xx) is tried again by the next delivery, while it is still news. */
-const RETRY_WITHIN_MS = 30 * 60 * 1000;
 
 export function pushConfigured() {
   return !!(URL && SERVICE_KEY && (webReady() || fcmConfigured() || apnsConfigured()));
@@ -54,7 +50,7 @@ export async function claimAndDeliver(admin: SupabaseClient, spaceId: string | n
 
   let fresh = admin.from('notifications').update({ pushed_at: new Date().toISOString() }).is('pushed_at', null);
   if (spaceId) fresh = fresh.eq('space_id', spaceId);
-  const { data: claimed } = await fresh.select('id, user_id, actor_id, kind, payload, created_at');
+  const { data: claimed } = await fresh.select('id, user_id, actor_id, kind, payload');
 
   const rows = (claimed ?? []) as Row[];
   if (rows.length === 0) return 0;
@@ -82,7 +78,6 @@ export async function claimAndDeliver(admin: SupabaseClient, spaceId: string | n
 
   let sent = 0;
   const dead: string[] = [];
-  const retry: string[] = [];
 
   for (const row of rows) {
     const recipient = byId.get(row.user_id);
@@ -106,35 +101,25 @@ export async function claimAndDeliver(admin: SupabaseClient, spaceId: string | n
     };
     const message = JSON.stringify(push);
 
-    let delivered = false;
-    let transient = false;
     for (const sub of (subscriptions ?? []).filter((s) => s.user_id === row.user_id)) {
       /* Native devices: FCM for Android, APNs for iPhone. */
       if (sub.kind === 'fcm' || sub.kind === 'apns') {
         const result = sub.kind === 'fcm' ? await sendFcm(sub.endpoint, push) : await sendApns(sub.endpoint, push);
-        if (result === 'ok') {
-          sent += 1;
-          delivered = true;
-        }
+        if (result === 'ok') sent += 1;
         if (result === 'dead') dead.push(sub.id as string);
-        if (result === 'failed') transient = true;
         continue;
       }
       if (!webReady()) continue;
       try {
         await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, message, { TTL: 60 * 60 * 12 });
         sent += 1;
-        delivered = true;
       } catch (error) {
         const status = (error as { statusCode?: number }).statusCode;
         if (status === 404 || status === 410) dead.push(sub.id as string);
-        else transient = true;
       }
     }
-    if (!delivered && transient && Date.now() - new Date(row.created_at).getTime() < RETRY_WITHIN_MS) retry.push(row.id);
   }
 
   if (dead.length) await admin.from('push_subscriptions').delete().in('id', dead);
-  if (retry.length) await admin.from('notifications').update({ pushed_at: null }).in('id', retry);
   return sent;
 }

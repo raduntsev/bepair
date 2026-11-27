@@ -92,23 +92,6 @@ export async function subscribePush(userId: string): Promise<SubscribeResult> {
   }
 }
 
-/*
-  On every visit: a browser that already has a subscription stores it again for
-  whoever is signed in — the row may have been dropped (expired, or claimed by
-  the partner who used this browser). Never asks for permission.
-*/
-export async function syncWebPush(userId: string) {
-  if (!pushSupported() || !VAPID_PUBLIC_KEY || Notification.permission !== 'granted') return;
-  try {
-    const subscription = await currentSubscription();
-    if (!subscription) return;
-    const json = subscription.toJSON();
-    await storePushSubscription(userId, subscription.endpoint, 'web', json.keys?.p256dh ?? '', json.keys?.auth ?? '');
-  } catch {
-    /* offline — the next visit tries again */
-  }
-}
-
 export async function unsubscribePush() {
   const subscription = await currentSubscription();
   if (!subscription) return;
