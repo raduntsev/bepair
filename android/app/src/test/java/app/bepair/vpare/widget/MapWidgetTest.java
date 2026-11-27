@@ -177,6 +177,31 @@ public class MapWidgetTest {
     }
 
     @Test
+    public void partnerPhotoParses() {
+        MapPayload plain = MapPayload.parse(OK);
+        assertFalse(plain.partner.hasPhoto());
+        MapPayload withPhoto = MapPayload.parse(OK.replace(
+            "\"partner\":{\"lat\":55.7339,\"lng\":37.5886,\"initial\":\"А\",\"stale\":false}",
+            "\"partner\":{\"lat\":55.7339,\"lng\":37.5886,\"initial\":\"А\",\"stale\":false,"
+                + "\"photo\":\"https://example.com/a.jpg?token=1\",\"photoKey\":\"space/avatars/a.jpg\"}"));
+        assertTrue(withPhoto.partner.hasPhoto());
+        assertEquals("space/avatars/a.jpg", withPhoto.partner.photoKey);
+        /* A new photo is a new picture; a re-signed URL for the same photo is not. */
+        assertFalse(MapTiles.key(withPhoto, false, true).equals(MapTiles.key(plain, false, false)));
+        MapPayload resigned = MapPayload.parse(OK.replace(
+            "\"partner\":{\"lat\":55.7339,\"lng\":37.5886,\"initial\":\"А\",\"stale\":false}",
+            "\"partner\":{\"lat\":55.7339,\"lng\":37.5886,\"initial\":\"А\",\"stale\":false,"
+                + "\"photo\":\"https://example.com/a.jpg?token=2\",\"photoKey\":\"space/avatars/a.jpg\"}"));
+        assertEquals(MapTiles.key(withPhoto, false, true), MapTiles.key(resigned, false, true));
+    }
+
+    @Test
+    public void onlyThePartnerMakesAMap() {
+        assertFalse(MapPayload.parse(OK.replace(
+            "\"partner\":{\"lat\":55.7339,\"lng\":37.5886,\"initial\":\"А\",\"stale\":false}", "\"partner\":null")).hasMap());
+    }
+
+    @Test
     public void sameMapIsNotDrawnTwice() {
         MapPayload p = MapPayload.parse(OK);
         assertEquals(MapTiles.key(p, false), MapTiles.key(MapPayload.parse(OK), false));

@@ -8,6 +8,8 @@ import { isNative } from '@/lib/native';
 import { nativePushStatus, subscribeNativePush, unsubscribeNativePush } from '@/lib/nativePushClient';
 import { Button } from '@/components/ui/Button';
 import { tr } from '@/lib/i18n';
+import supabase from '@/lib/supabase';
+import { displayName, genitive } from '@/lib/words';
 
 type Status = 'checking' | 'on' | 'off' | 'denied' | 'unsupported' | 'unconfigured' | 'ios-install';
 
@@ -163,11 +165,43 @@ function NativePushCard() {
   );
 }
 
+/*
+  Push is per device, so a partner who never turned it on gets none of your
+  «весточки» — and neither of you can tell. Say so here (a count, never tokens).
+  Silent before migration 0026.
+*/
+function PartnerPushNote() {
+  const { partner } = useSpaceAuth();
+  const [devices, setDevices] = useState<number | null>(null);
+  const partnerId = partner?.id;
+  useEffect(() => {
+    if (!partnerId) return;
+    supabase.rpc('bp_partner_push_devices').then(({ data, error }) => {
+      if (!error && typeof data === 'number') setDevices(data);
+    });
+  }, [partnerId]);
+  if (!partner || devices !== 0) return null;
+  const name = displayName(partner.display_name);
+  return (
+    <p className="rounded-2xl bg-sunken px-4 py-3 text-sm text-ink-soft" role="status">
+      {tr(
+        `У ${genitive(name, partner.gender)} уведомления не подключены ни на одном устройстве — ваши весточки и просьбы видны только в приложении. Попросите открыть «Профиль» → «Уведомления» и включить их.`,
+        `${name} has no device with notifications on — your notes and requests show only inside the app. Ask them to open Profile → Notifications and turn them on.`,
+      )}
+    </p>
+  );
+}
+
 export function PushCard() {
   const [native, setNative] = useState<boolean | null>(null);
   useEffect(() => {
     setNative(isNative());
   }, []);
   if (native === null) return null;
-  return native ? <NativePushCard /> : <WebPushCard />;
+  return (
+    <>
+      {native ? <NativePushCard /> : <WebPushCard />}
+      <PartnerPushNote />
+    </>
+  );
 }

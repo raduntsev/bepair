@@ -18,7 +18,9 @@ public final class LocationStore {
     private static final String KEY_SENT_AT = "sent_at";
     private static final String KEY_SENT_LAT = "sent_lat";
     private static final String KEY_SENT_LNG = "sent_lng";
+    private static final String KEY_PHOTO_KEY = "photo_key";
     private static final String MAP_FILE = "widget_map.png";
+    private static final String PHOTO_FILE = "widget_partner_photo.img";
 
     private LocationStore() {}
 
@@ -45,6 +47,19 @@ public final class LocationStore {
 
     public static File mapFile(Context context) {
         return new File(context.getApplicationContext().getFilesDir(), MAP_FILE);
+    }
+
+    /* The partner's photo for the pin, and which storage path it was downloaded from. */
+    public static File photoFile(Context context) {
+        return new File(context.getApplicationContext().getFilesDir(), PHOTO_FILE);
+    }
+
+    public static String photoKey(Context context) {
+        return prefs(context).getString(KEY_PHOTO_KEY, null);
+    }
+
+    public static void setPhotoKey(Context context, String key) {
+        prefs(context).edit().putString(KEY_PHOTO_KEY, key).apply();
     }
 
     /* What the stored map shows (points, zoom, theme): an unchanged map is not drawn again. */
@@ -78,6 +93,8 @@ public final class LocationStore {
     public static void clear(Context context) {
         //noinspection ResultOfMethodCallIgnored
         mapFile(context).delete();
+        //noinspection ResultOfMethodCallIgnored
+        photoFile(context).delete();
         prefs(context).edit().clear().apply();
     }
 
@@ -85,6 +102,8 @@ public final class LocationStore {
     public static void clearMap(Context context) {
         //noinspection ResultOfMethodCallIgnored
         mapFile(context).delete();
-        prefs(context).edit().remove(KEY_PAYLOAD).remove(KEY_MAP_KEY).apply();
+        //noinspection ResultOfMethodCallIgnored
+        photoFile(context).delete();
+        prefs(context).edit().remove(KEY_PAYLOAD).remove(KEY_MAP_KEY).remove(KEY_PHOTO_KEY).apply();
     }
 }

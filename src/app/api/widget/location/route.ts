@@ -1,8 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { authorizeWidget } from '@/lib/widgetAuth';
-import { agoLabel, distanceLabel, distanceM, freshBattery, isStale, TOGETHER_M, type Battery } from '@/lib/location';
+import { agoLabel, freshBattery, isStale, type Battery } from '@/lib/location';
 import { displayName } from '@/lib/words';
 import { inLang, tr, trIn, type Lang } from '@/lib/i18n';
+import { BUCKET } from '@/lib/media';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,9 +11,11 @@ export const dynamic = 'force-dynamic';
 /*
   The «Карта» widget and the Android location service.
 
-  GET — the two points and one line about them, composed in the owner's
-  language. The reciprocity rule is re-applied here (the service role sees
-  everything): the partner's point comes only while both share.
+  GET — the partner's point and one line about it («Обновлено 4 мин назад»),
+  composed in the owner's language. The widget shows only the partner, with
+  their photo when they have one; the owner's own point is not sent. The
+  reciprocity rule is re-applied here (the service role sees everything): the
+  partner's point comes only while both share.
 
   POST {lat, lng, accuracy?, at?, battery?, charging?} — the owner's own point
   (and the phone's charge, which rides with it), from the phone's
@@ -26,6 +29,9 @@ interface Dot {
   lng: number;
   initial: string;
   stale: boolean;
+  /* The person's photo: a signed URL valid for an hour, and its storage path as a stable cache key. */
+  photo?: string | null;
+  photoKey?: string | null;
 }
 
 export interface MapPayload {
@@ -62,7 +68,7 @@ async function build(admin: SupabaseClient, userId: string): Promise<MapPayload 
 
   const { data: partner } = await admin
     .from('profiles')
-    .select('id, display_name, share_location')
+    .select('id, display_name, share_location, avatar_url')
     .eq('space_id', me.space_id)
     .neq('id', me.id)
     .maybeSingle();
@@ -72,6 +78,12 @@ async function build(admin: SupabaseClient, userId: string): Promise<MapPayload 
   const { data: rows } = mutual
     ? await admin.from('locations').select('user_id, lat, lng, recorded_at, battery, charging').in('user_id', [me.id, partner.id])
     : { data: [] as { user_id: string; lat: number; lng: number; recorded_at: string; battery: number | null; charging: boolean | null }[] };
+
+  const avatarPath = mutual && typeof partner?.avatar_url === 'string' && partner.avatar_url ? partner.avatar_url : null;
+  const { data: signed } = avatarPath
+    ? await admin.storage.from(BUCKET).createSignedUrl(avatarPath, 60 * 60)
+    : { data: null };
+  const photo = signed?.signedUrl ? { photo: signed.signedUrl, photoKey: avatarPath } : {};
 
   return inLang(lang, (): MapPayload => {
     const name = displayName(partner?.display_name);
@@ -92,31 +104,18 @@ async function build(admin: SupabaseClient, userId: string): Promise<MapPayload 
       return { ...base, state: 'partner-off' as const, title: name, line: tr(`${name} пока не делится местоположением`, `${name} isn’t sharing their location yet`) };
     }
 
-    const mine = rows?.find((r) => r.user_id === me.id);
     const theirs = rows?.find((r) => r.user_id === partner.id);
-    const dot = (row: { lat: number; lng: number; recorded_at: string }, who: string): Dot => ({
-      lat: row.lat,
-      lng: row.lng,
-      initial: initial(who),
-      stale: isStale(row.recorded_at),
-    });
     const battery = freshBattery(theirs ?? null);
     const payload = {
       ...base,
-      me: mine ? dot(mine, displayName(me.display_name, tr('Вы', 'You'))) : null,
-      partner: theirs ? dot(theirs, name) : null,
+      partner: theirs ? { lat: theirs.lat, lng: theirs.lng, initial: initial(name), stale: isStale(theirs.recorded_at), ...photo } : null,
       partnerBattery: battery,
       /* «Аня · 84 %» — the bolt while charging. */
       title: battery ? `${name} · ${battery.charging ? '⚡' : ''}${tr(`${battery.level} %`, `${battery.level}%`)}` : name,
     };
 
     if (!theirs) return { ...payload, state: 'waiting' as const, line: tr(`${name} пока не на карте`, `${name} isn’t on the map yet`) };
-    const ago = agoLabel(theirs.recorded_at, lang);
-    if (!mine) return { ...payload, state: 'ok' as const, line: tr(`Обновлено ${ago}`, `Updated ${ago}`) };
-
-    const metres = distanceM(mine, theirs);
-    const where = metres < TOGETHER_M ? tr('Вы рядом', 'You’re together') : tr(`${distanceLabel(metres, lang)} от вас`, `${distanceLabel(metres, lang)} away`);
-    return { ...payload, state: 'ok' as const, line: `${where} · ${ago}` };
+    return { ...payload, state: 'ok' as const, line: tr(`Обновлено ${agoLabel(theirs.recorded_at, lang)}`, `Updated ${agoLabel(theirs.recorded_at, lang)}`) };
   });
 }
 

@@ -1,6 +1,7 @@
 import supabase from './supabase';
 import { WidgetBridge, isNative, nativePlatform } from './native';
 import { tr } from '@/lib/i18n';
+import { storePushSubscription } from '@/lib/push';
 
 /*
   Native push inside the iOS/Android shell. Web push does not work in an app's
@@ -38,6 +39,31 @@ export async function nativePushStatus(): Promise<'on' | 'off' | 'denied' | 'una
   }
 }
 
+/* «Выключить» on this phone is remembered, so the app does not quietly turn push back on. */
+function turnedOff() {
+  try {
+    return localStorage.getItem('bepair-native-push') === 'off';
+  } catch {
+    return false;
+  }
+}
+
+/*
+  On every launch: if the phone already allows notifications, register again
+  and store the current token for whoever is signed in. FCM rotates tokens, a
+  token dies with a reinstall, and the same phone may have been used by the
+  partner — any of these left the account with no device, and every «весточка»
+  went nowhere. Never asks for permission: that stays with the button.
+*/
+export async function syncNativePush(userId: string): Promise<NativePushResult | 'skipped'> {
+  if (!isNative() || turnedOff()) return 'skipped';
+  if (!(await nativePushAvailable())) return 'unavailable';
+  const { PushNotifications } = await import('@capacitor/push-notifications');
+  const permission = await PushNotifications.checkPermissions();
+  if (permission.receive !== 'granted') return 'skipped';
+  return subscribeNativePush(userId);
+}
+
 export async function subscribeNativePush(userId: string): Promise<NativePushResult> {
   if (!(await nativePushAvailable())) return 'unavailable';
   const { PushNotifications } = await import('@capacitor/push-notifications');
@@ -55,27 +81,27 @@ export async function subscribeNativePush(userId: string): Promise<NativePushRes
     await PushNotifications.createChannel({ id: 'quiet', name: tr('Без звука', 'Silent'), importance: 3 }).catch(() => {});
   }
 
+  const handles: Promise<{ remove: () => Promise<void> }>[] = [];
   return new Promise<NativePushResult>((resolve) => {
     let settled = false;
     const finish = (result: NativePushResult) => {
       if (settled) return;
       settled = true;
+      handles.forEach((handle) => handle.then((h) => h.remove()).catch(() => {}));
       resolve(result);
     };
 
-    PushNotifications.addListener('registration', async ({ value }) => {
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .upsert({ user_id: userId, endpoint: value, kind, p256dh: '', auth: '' }, { onConflict: 'endpoint' });
-      if (!error) {
+    handles.push(PushNotifications.addListener('registration', async ({ value }) => {
+      const ok = await storePushSubscription(userId, value, kind);
+      if (ok) {
         try {
           localStorage.setItem('bepair-native-push', 'on');
           localStorage.setItem('bepair-native-push-token', value);
         } catch {}
       }
-      finish(error ? 'failed' : 'subscribed');
-    });
-    PushNotifications.addListener('registrationError', () => finish('failed'));
+      finish(ok ? 'subscribed' : 'failed');
+    }));
+    handles.push(PushNotifications.addListener('registrationError', () => finish('failed')));
 
     PushNotifications.register().catch(() => finish('failed'));
     setTimeout(() => finish('failed'), 15_000);
@@ -87,7 +113,7 @@ export async function unsubscribeNativePush() {
   let token: string | null = null;
   try {
     token = localStorage.getItem('bepair-native-push-token');
-    localStorage.removeItem('bepair-native-push');
+    localStorage.setItem('bepair-native-push', 'off');
     localStorage.removeItem('bepair-native-push-token');
   } catch {}
   if (token) await supabase.from('push_subscriptions').delete().eq('endpoint', token);

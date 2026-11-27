@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   addDays,
   addMonths,
+  differenceInCalendarDays,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
@@ -65,28 +66,146 @@ function DayCell({ mark, muted }: { mark: DayMark | undefined; muted: boolean })
 
 const EASE = [0.32, 0.72, 0, 1] as const;
 
+/* The strip holds this many days either side of where it was opened; it re-centres before the edge. */
+const STRIP_REACH = 150;
+const STRIP_RECENTER = 110;
+const VISIBLE_DAYS = 7;
+
+/*
+  A tapped day turns the month into one row of days that spins like a wheel:
+  swipe and it runs on with momentum, snapping day by day. The day under the
+  centre wears the ring while it turns; the one it stops on opens below.
+*/
+function DayStrip({
+  days,
+  selected,
+  onSelect,
+  renderCell,
+  reduce,
+}: {
+  days: Date[];
+  selected: string;
+  onSelect: (key: string) => void;
+  renderCell: (day: Date, centered: boolean) => React.ReactNode;
+  reduce: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  const cellW = width / VISIBLE_DAYS;
+  const [center, setCenter] = useState<string | null>(null);
+  const settleTimer = useRef<number | undefined>(undefined);
+  /* What the scroll position already shows, so a settle does not scroll again. */
+  const shown = useRef<{ key: string; layout: string } | null>(null);
+  const layout = `${days.length ? iso(days[0]) : ''}:${cellW}`;
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setWidth(el.clientWidth));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  /* Bring the selected day to the centre: instantly on open or after the strip re-centres, smoothly after a tap or an arrow. */
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !cellW) return;
+    const index = days.findIndex((d) => iso(d) === selected);
+    if (index < 0) return;
+    const previous = shown.current;
+    if (previous && previous.key === selected && previous.layout === layout) return;
+    const instant = !previous || previous.layout !== layout || reduce;
+    el.scrollTo({ left: index * cellW, behavior: instant ? 'auto' : 'smooth' });
+    shown.current = { key: selected, layout };
+  }, [selected, layout, cellW, days, reduce]);
+
+  const onScroll = () => {
+    const el = ref.current;
+    if (!el || !cellW || days.length === 0) return;
+    const index = Math.max(0, Math.min(days.length - 1, Math.round(el.scrollLeft / cellW)));
+    const key = iso(days[index]);
+    if (key !== center) setCenter(key);
+    window.clearTimeout(settleTimer.current);
+    settleTimer.current = window.setTimeout(() => {
+      if (key === selected) return;
+      shown.current = { key, layout };
+      onSelect(key);
+    }, 120);
+  };
+
+  const centered = center ?? selected;
+
+  return (
+    <div
+      ref={ref}
+      onScroll={onScroll}
+      className="no-scrollbar -mx-1 snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
+      style={{
+        maskImage: 'linear-gradient(to right, transparent, #000 16%, #000 84%, transparent)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent, #000 16%, #000 84%, transparent)',
+      }}
+    >
+      {cellW > 0 ? (
+        <div className="flex py-2" style={{ paddingInline: (width - cellW) / 2 }}>
+          {days.map((day) => {
+            const key = iso(day);
+            return (
+              <div key={key} className="flex shrink-0 snap-center flex-col items-stretch px-1" style={{ width: cellW }}>
+                <span className="pb-1.5 text-center text-footnote text-ink-faint" aria-hidden>
+                  {WEEKDAYS[(day.getDay() + 6) % 7]}
+                </span>
+                {renderCell(day, key === centered)}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="h-20" />
+      )}
+    </div>
+  );
+}
+
 export default function CalendarPage() {
   const reduce = useReducedMotion();
   const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
   /*
-    A tapped day: the month folds into the one week that holds it, and the day
-    opens underneath. The strip then pages by week (arrows or a swipe); the
-    calendar icon unfolds the month again.
+    A tapped day: the month turns into a strip of days (DayStrip) and the day
+    opens underneath. The strip spins day by day (a swipe, a tap or the
+    arrows); the calendar icon brings the month back.
   */
   const [selected, setSelected] = useState<string | null>(null);
   const today = todayISO();
 
   const gridStart = startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 });
   const gridEnd = endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 });
+  const gridKey = iso(gridStart);
   const days = useMemo(
     () => eachDayOfInterval({ start: gridStart, end: gridEnd }),
-    [gridStart, gridEnd],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the month: the dates are rebuilt every render
+    [gridKey],
   );
   const weeks = useMemo(() => Array.from({ length: days.length / 7 }, (_, i) => days.slice(i * 7, i * 7 + 7)), [days]);
 
-  const { marks, error, isLoading } = useMonthEntries(iso(gridStart), iso(gridEnd));
+  /* The strip's span, around where it was opened; moved once the selection nears an edge. */
+  const [anchor, setAnchor] = useState<string | null>(null);
+  if (selected && (!anchor || Math.abs(differenceInCalendarDays(parseISO(selected), parseISO(anchor))) > STRIP_RECENTER)) {
+    setAnchor(selected);
+  }
+  const stripDays = useMemo(() => {
+    if (!anchor) return [];
+    const start = addDays(parseISO(anchor), -STRIP_REACH);
+    const end = addDays(parseISO(anchor), STRIP_REACH);
+    return eachDayOfInterval({ start, end: iso(end) > today ? parseISO(today) : end });
+  }, [anchor, today]);
+
+  const strip = !!selected && stripDays.length > 0;
+  const rangeFrom = strip ? iso(stripDays[0]) : iso(gridStart);
+  const rangeTo = strip ? iso(stripDays[stripDays.length - 1]) : iso(gridEnd);
+
+  const { marks, error, isLoading } = useMonthEntries(rangeFrom, rangeTo);
   const { settings } = useSpaceAuth();
-  const events = useDayEvents(iso(gridStart), iso(gridEnd));
+  const events = useDayEvents(rangeFrom, rangeTo);
   const dates = useImportantDates();
   const { showMoon } = useShowMoon();
   const allDates = useMemo(() => withAnniversary(dates.items, settings?.together_since ?? null), [dates.items, settings?.together_since]);
@@ -95,9 +214,9 @@ export default function CalendarPage() {
   const moonByDay = useMemo(() => {
     const map: Record<string, Principal> = {};
     if (!showMoon) return map;
-    for (const e of phasesBetween(gridStart, new Date(gridEnd.getTime() + 86400000))) map[iso(e.at)] = e.kind;
+    for (const e of phasesBetween(parseISO(rangeFrom), addDays(parseISO(rangeTo), 1))) map[iso(e.at)] = e.kind;
     return map;
-  }, [showMoon, gridStart, gridEnd]);
+  }, [showMoon, rangeFrom, rangeTo]);
   const monthHasDays = days.some((day) => isSameMonth(day, cursor) && (marks[iso(day)]?.mineMarked || marks[iso(day)]?.theirsMarked));
   const isCurrentMonth = isSameMonth(cursor, new Date());
 
@@ -107,12 +226,11 @@ export default function CalendarPage() {
     /* The month whose grid holds the day, so its week and marks are loaded. */
     setCursor(startOfMonth(parseISO(clamped)));
   };
-  const shiftWeek = (delta: number) => selected && select(iso(addDays(parseISO(selected), delta * 7)));
-  const canGoForward = !!selected && iso(startOfWeek(addDays(parseISO(selected), 7), { weekStartsOn: 1 })) <= today;
-  const selectedWeek = selected ? iso(startOfWeek(parseISO(selected), { weekStartsOn: 1 })) : null;
+  const shiftDay = (delta: number) => selected && select(iso(addDays(parseISO(selected), delta)));
+  const canGoForward = !!selected && selected < today;
   const specialOn = (key: string) => allDates.filter((d) => occursOn(d, key));
 
-  const cell = (day: Date) => {
+  const cell = (day: Date, ringed = false) => {
     const key = iso(day);
     const outside = !selected && !isSameMonth(day, cursor);
     const isToday = key === today;
@@ -132,9 +250,9 @@ export default function CalendarPage() {
         aria-pressed={selected ? isSelected : undefined}
         onClick={() => select(key)}
         aria-label={`${fmt(day, 'd MMMM yyyy')}${mark?.theirsMarked ? tr(', партнёр отметил день', ', partner marked the day') : ''}${mark?.mineMarked ? tr(', ваш день отмечен', ', your day is marked') : ''}${special.length ? `, ${special.map((d) => (d.id ? d.title : tr('годовщина', 'anniversary'))).join(', ')}` : ''}${moon ? `, ${PRINCIPAL_LABEL[moon]}` : ''}${quarrel ? tr(', ссора', ', a fight') : ''}${intimacy ? tr(', близость', ', intimacy') : ''}`}
-        className={`relative flex aspect-square min-h-11 items-center justify-center rounded-full text-sm font-medium transition-[background-color,box-shadow] enabled:hover:bg-sunken disabled:cursor-default ${
+        className={`relative flex aspect-square min-h-11 w-full items-center justify-center rounded-full text-sm font-medium transition-[background-color,box-shadow] enabled:hover:bg-sunken disabled:cursor-default ${
           special.length ? 'disabled:opacity-60' : 'disabled:opacity-30'
-        } ${isSelected ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface' : ''}`}
+        } ${ringed ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface' : ''}`}
       >
         <DayCell mark={mark} muted={outside} />
         {special.length > 0 && (
@@ -183,8 +301,8 @@ export default function CalendarPage() {
         <div className="mb-5 flex items-center justify-between gap-2">
           <button
             type="button"
-            aria-label={selected ? tr('Предыдущая неделя', 'Previous week') : tr('Предыдущий месяц', 'Previous month')}
-            onClick={() => (selected ? shiftWeek(-1) : setCursor((value) => addMonths(value, -1)))}
+            aria-label={selected ? tr('Предыдущий день', 'Previous day') : tr('Предыдущий месяц', 'Previous month')}
+            onClick={() => (selected ? shiftDay(-1) : setCursor((value) => addMonths(value, -1)))}
             className={navButton}
           >
             <ChevronLeft className="size-5" aria-hidden />
@@ -203,8 +321,8 @@ export default function CalendarPage() {
             <button
               type="button"
               disabled={!!selected && !canGoForward}
-              aria-label={selected ? tr('Следующая неделя', 'Next week') : tr('Следующий месяц', 'Next month')}
-              onClick={() => (selected ? shiftWeek(1) : setCursor((value) => addMonths(value, 1)))}
+              aria-label={selected ? tr('Следующий день', 'Next day') : tr('Следующий месяц', 'Next month')}
+              onClick={() => (selected ? shiftDay(1) : setCursor((value) => addMonths(value, 1)))}
               className={navButton}
             >
               <ChevronRight className="size-5" aria-hidden />
@@ -212,48 +330,40 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-1">
-          {WEEKDAYS.map((day) => (
-            <div key={day} className="pb-2 text-center text-subhead text-ink-faint">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/*
-          Each week is its own row, so folding is just the other weeks closing
-          to nothing around the chosen one. In strip mode a horizontal swipe
-          turns the week.
-        */}
-        <motion.div
-          drag={selected ? 'x' : false}
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.25}
-          dragSnapToOrigin
-          onDragEnd={(_, info) => {
-            if (!selected) return;
-            if (info.offset.x < -60 && canGoForward) shiftWeek(1);
-            else if (info.offset.x > 60) shiftWeek(-1);
-          }}
-          className={selected ? 'touch-pan-y' : undefined}
-        >
-          {weeks.map((week) => {
-            const weekKey = iso(week[0]);
-            const open = !selected || weekKey === selectedWeek;
-            return (
-              <motion.div
-                key={weekKey}
-                initial={false}
-                animate={open ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-                transition={reduce ? { duration: 0 } : { duration: 0.42, ease: EASE }}
-                className="overflow-hidden"
-                aria-hidden={!open || undefined}
-              >
-                <div className="grid grid-cols-7 gap-1 p-0.5 pb-1">{week.map(cell)}</div>
-              </motion.div>
-            );
-          })}
-        </motion.div>
+        <AnimatePresence mode="wait" initial={false}>
+          {strip && selected ? (
+            <motion.div
+              key="strip"
+              initial={reduce ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={reduce ? undefined : { opacity: 0 }}
+              transition={{ duration: 0.25, ease: EASE }}
+            >
+              <DayStrip days={stripDays} selected={selected} onSelect={select} renderCell={cell} reduce={!!reduce} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="month"
+              initial={reduce ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={reduce ? undefined : { opacity: 0 }}
+              transition={{ duration: 0.25, ease: EASE }}
+            >
+              <div className="grid grid-cols-7 gap-1">
+                {WEEKDAYS.map((day) => (
+                  <div key={day} className="pb-2 text-center text-subhead text-ink-faint">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              {weeks.map((week) => (
+                <div key={iso(week[0])} className="grid grid-cols-7 gap-1 p-1">
+                  {week.map((day) => cell(day))}
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {!selected && !isLoading && !error && !monthHasDays && (
           <p className="mt-4 rounded-xl bg-sunken px-4 py-3 text-center text-sm text-ink-soft">

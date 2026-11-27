@@ -10,6 +10,13 @@ export function todayISO(date: Date = new Date()) {
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 10);
 }
 
+/* The local date before today: the one day that can still be filled in after midnight. */
+export function yesterdayISO(date: Date = new Date()) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - 1);
+  return todayISO(d);
+}
+
 export function isoDate(date: Date) {
   return format(date, 'yyyy-MM-dd');
 }

@@ -1680,3 +1680,11 @@
   border-radius: 999px;
   border: 3px solid var(--c-canvas);
 }
+
+/* A strip that scrolls by swipe (the calendar's day wheel): no bar under it. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

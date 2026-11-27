@@ -8,7 +8,7 @@ import { displayName, genitive } from '@/lib/words';
 import { promptsFor } from '@/lib/dayPrompts';
 import supabase from '@/lib/supabase';
 import { moodColor, moodColorName } from '@/lib/mood';
-import { fmt, longDate, plural, todayISO } from '@/lib/dates';
+import { fmt, longDate, plural, todayISO, yesterdayISO } from '@/lib/dates';
 import { planerkaWeek, todoWeek } from '@/lib/planerka';
 import { MoodScale } from '@/components/MoodScale';
 import { PartnerDayCard } from '@/components/PartnerDayCard';
@@ -196,10 +196,14 @@ function DayView() {
   }
 
   /*
-    A past day is closed whether or not it was filled in: a live editor for an
-    unmarked past date would let anyone backdate and unseal the partner's day.
+    Today and yesterday stay open, so a missed evening can still be filled in
+    the next day (0026). Older days are closed whether or not they were filled
+    in: a live editor for any past date would let anyone backdate and unseal
+    the partner's day.
   */
-  const isClosed = !isToday;
+  const yesterday = yesterdayISO();
+  const isYesterday = date === yesterday;
+  const isClosed = !isToday && !isYesterday;
   const cycleDirty = cycleDraft !== null && cycleDraft !== cycle.stored;
   const isDirty = mine === null ? mood !== null : mood !== mine.mood || note.trim() !== mine.note || cycleDirty;
 
@@ -301,7 +305,7 @@ function DayView() {
     <div className="mx-auto w-full max-w-2xl px-4 pt-6 pb-8 sm:px-6 md:pt-12">
       <PageHeader
         eyebrow={longDate(date)}
-        title={isToday ? tr('Сегодня', 'Today') : fmt(date, 'd MMMM')}
+        title={isToday ? tr('Сегодня', 'Today') : isYesterday ? tr('Вчера', 'Yesterday') : fmt(date, 'd MMMM')}
         back={isToday ? undefined : { href: '/day', label: tr('Сегодня', 'Today') }}
         action={
           isToday ? (
@@ -324,6 +328,16 @@ function DayView() {
       <div className="-mt-4 mb-6 empty:hidden">
         <DatesChip date={date} isToday={isToday} togetherSince={settings?.together_since ?? null} />
       </div>
+      {isToday && !presence.isLoading && presence.myDays > 0 && !presence.mineMarked(yesterday) && (
+        <Link
+          href={`/day?d=${yesterday}`}
+          className="-mt-3 mb-5 flex min-h-11 w-fit items-center gap-2 rounded-full bg-surface px-4 text-subhead font-medium text-ink-soft shadow-card transition-colors hover:text-ink"
+        >
+          <Pencil className="size-4" aria-hidden />
+          {tr('Вчера не отмечено — заполнить', 'Yesterday isn’t marked — fill it in')}
+          <ChevronRight className="size-4" aria-hidden />
+        </Link>
+      )}
 
       {isLoading ? (
         <Loading label={tr('Загружаем день…', 'Loading the day…')} />

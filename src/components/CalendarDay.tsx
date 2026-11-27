@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarHeart, Check, ChevronRight, Heart, Users, Zap } from 'lucide-react';
+import { CalendarHeart, Check, ChevronRight, Heart, Pencil, Users, Zap } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { moodColor, moodColorName } from '@/lib/mood';
 import { displayName } from '@/lib/words';
 import { useCoupleDay } from '@/hooks/useCoupleDay';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { yesterdayISO } from '@/lib/dates';
 import { PartnerDayCard } from '@/components/PartnerDayCard';
 import { tr } from '@/lib/i18n';
 
@@ -121,6 +122,16 @@ export function CalendarDay({
             <span role="img" aria-label={tr('Близость', 'Intimacy')} title={tr('Близость', 'Intimacy')} className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sunken text-ink">
               <Heart className="size-4.5" fill="currentColor" aria-hidden />
             </span>
+          )}
+          {/* Today and yesterday can still be filled in or changed (0026). */}
+          {(isToday || date === yesterdayISO()) && (
+            <Link
+              href={isToday ? '/day' : `/day?d=${date}`}
+              aria-label={mine ? tr('Изменить', 'Edit') : tr('Отметить день', 'Mark the day')}
+              className="flex size-10 shrink-0 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-sunken hover:text-ink"
+            >
+              <Pencil className="size-4.5" aria-hidden />
+            </Link>
           )}
         </div>
         {mine?.note && <p className="measure mt-3 text-body whitespace-pre-wrap text-ink-soft">{mine.note}</p>}

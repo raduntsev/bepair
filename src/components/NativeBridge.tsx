@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import { isNative, nativePlatform, pathFromDeepLink, refreshWidgets, WidgetBridge } from '@/lib/native';
 import { useSpaceAuth } from '@/hooks/useSpaceAuth';
+import { syncWebPush } from '@/lib/push';
+import { syncNativePush } from '@/lib/nativePushClient';
 
 /*
   Runs only inside the native shell. Gives the home-screen widget its key the
@@ -41,6 +43,14 @@ export function NativeBridge() {
       cancelled = true;
     };
   }, [user, spaceId]);
+
+  /* Keep this device's push registration filed under whoever is signed in (web too, despite the name). */
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    if (isNative()) syncNativePush(userId).catch(() => undefined);
+    else syncWebPush(userId);
+  }, [userId]);
 
   useEffect(() => {
     if (!isNative()) return;

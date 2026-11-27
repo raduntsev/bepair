@@ -23,6 +23,20 @@ export async function flushPush() {
   }
 }
 
+/*
+  Files this device under whoever is signed in, even if the token was the
+  partner's (0026's bp_save_push_subscription). Before 0026 is run, the plain
+  upsert — which cannot take a token over from the partner.
+*/
+export async function storePushSubscription(userId: string, endpoint: string, kind: 'web' | 'fcm' | 'apns', p256dh = '', auth = '') {
+  const { error } = await supabase.rpc('bp_save_push_subscription', { p_endpoint: endpoint, p_kind: kind, p_p256dh: p256dh, p_auth: auth });
+  if (!error) return true;
+  const { error: upsertError } = await supabase
+    .from('push_subscriptions')
+    .upsert({ user_id: userId, endpoint, kind, p256dh, auth }, { onConflict: 'endpoint' });
+  return !upsertError;
+}
+
 export const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
 
 export function pushSupported() {
@@ -71,18 +85,27 @@ export async function subscribePush(userId: string): Promise<SubscribeResult> {
       }));
 
     const json = subscription.toJSON();
-    const { error } = await supabase.from('push_subscriptions').upsert(
-      {
-        user_id: userId,
-        endpoint: subscription.endpoint,
-        p256dh: json.keys?.p256dh ?? '',
-        auth: json.keys?.auth ?? '',
-      },
-      { onConflict: 'endpoint' },
-    );
-    return error ? 'failed' : 'subscribed';
+    const ok = await storePushSubscription(userId, subscription.endpoint, 'web', json.keys?.p256dh ?? '', json.keys?.auth ?? '');
+    return ok ? 'subscribed' : 'failed';
   } catch {
     return 'failed';
+  }
+}
+
+/*
+  On every visit: a browser that already has a subscription stores it again for
+  whoever is signed in — the row may have been dropped (expired, or claimed by
+  the partner who used this browser). Never asks for permission.
+*/
+export async function syncWebPush(userId: string) {
+  if (!pushSupported() || !VAPID_PUBLIC_KEY || Notification.permission !== 'granted') return;
+  try {
+    const subscription = await currentSubscription();
+    if (!subscription) return;
+    const json = subscription.toJSON();
+    await storePushSubscription(userId, subscription.endpoint, 'web', json.keys?.p256dh ?? '', json.keys?.auth ?? '');
+  } catch {
+    /* offline — the next visit tries again */
   }
 }
 

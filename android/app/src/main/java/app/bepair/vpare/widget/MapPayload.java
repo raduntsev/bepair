@@ -3,8 +3,9 @@ package app.bepair.vpare.widget;
 import org.json.JSONObject;
 
 /**
- * What /api/widget/location answers: the two points under the reciprocity rule
- * and one line about them, already worded in the owner's language.
+ * What /api/widget/location answers: the partner's point under the reciprocity
+ * rule (with their photo) and one line about it, already worded in the owner's
+ * language. Older servers also sent the owner's own point; the widget ignores it.
  */
 public final class MapPayload {
     public static final class Dot {
@@ -12,12 +13,25 @@ public final class MapPayload {
         public final double lng;
         public final String initial;
         public final boolean stale;
+        /* A signed URL of the person's photo (expires), and its storage path: the stable key for the cached copy. */
+        public final String photo;
+        public final String photoKey;
 
         Dot(double lat, double lng, String initial, boolean stale) {
+            this(lat, lng, initial, stale, null, null);
+        }
+
+        Dot(double lat, double lng, String initial, boolean stale, String photo, String photoKey) {
             this.lat = lat;
             this.lng = lng;
             this.initial = initial;
             this.stale = stale;
+            this.photo = photo;
+            this.photoKey = photoKey;
+        }
+
+        public boolean hasPhoto() {
+            return photo != null && photoKey != null;
         }
     }
 
@@ -39,7 +53,7 @@ public final class MapPayload {
     }
 
     public boolean hasMap() {
-        return me != null || partner != null;
+        return partner != null;
     }
 
     public static MapPayload parse(String json) {
@@ -64,6 +78,12 @@ public final class MapPayload {
         double lat = o.optDouble("lat");
         double lng = o.optDouble("lng");
         if (Double.isNaN(lat) || Double.isNaN(lng)) return null;
-        return new Dot(lat, lng, o.optString("initial", "·"), o.optBoolean("stale", false));
+        return new Dot(lat, lng, o.optString("initial", "·"), o.optBoolean("stale", false), text(o, "photo"), text(o, "photoKey"));
+    }
+
+    private static String text(JSONObject o, String key) {
+        if (o.isNull(key)) return null;
+        String value = o.optString(key, "");
+        return value.isEmpty() ? null : value;
     }
 }
