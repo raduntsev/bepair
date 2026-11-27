@@ -146,7 +146,7 @@ function DayStrip({
       }}
     >
       {cellW > 0 ? (
-        <div className="flex py-2" style={{ paddingInline: (width - cellW) / 2 }}>
+        <div className="flex w-max py-2" style={{ paddingInline: (width - cellW) / 2 }}>
           {days.map((day) => {
             const key = iso(day);
             return (
